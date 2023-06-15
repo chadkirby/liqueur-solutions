@@ -1,9 +1,9 @@
-import { assertAlmostEquals, assertEquals } from 'std/testing/asserts.ts';
-import { solve, Spirit } from './solutions.ts';
+import test from 'tape';
+import { solve, Spirit } from '../src/solutions.js';
 
-Deno.test('solve solves 80ABV', () => {
+test('solve solves 80ABV', (assert) => {
   const { mixture, iterations } = solve(new Spirit(250, 80), 30, 20);
-  assertEquals(
+  assert.deepEqual(
     mixture.analyze(0),
     {
       abv: 30,
@@ -12,30 +12,30 @@ Deno.test('solve solves 80ABV', () => {
       volume: 667,
     },
   );
-  assertEquals(
+  assert.deepEqual(
     iterations,
     47,
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.spirit.volume,
     250,
     'spirit volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.water.volume,
     332,
     'water volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.syrup.sugarMass,
     135,
     'sugar mass',
   );
 });
 
-Deno.test('solve solves 40ABV', () => {
+test('solve solves 40ABV', (assert) => {
   const { mixture, iterations } = solve(new Spirit(250, 40), 30, 30);
-  assertEquals(
+  assert.deepEqual(
     mixture.analyze(0),
     {
       abv: 30,
@@ -44,30 +44,30 @@ Deno.test('solve solves 40ABV', () => {
       volume: 333,
     },
   );
-  assertEquals(
+  assert.deepEqual(
     iterations,
     36,
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.spirit.volume,
     250,
     'spirit volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.water.volume,
     17,
     'water volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.syrup.sugarMass,
     105,
     'sugar mass',
   );
 });
 
-Deno.test('solve solves 10brix', () => {
+test('solve solves 10brix', (assert) => {
   const { mixture, iterations } = solve(new Spirit(250, 40), 25, 10);
-  assertEquals(
+  assert.deepEqual(
     mixture.analyze(0),
     {
       abv: 25,
@@ -76,30 +76,30 @@ Deno.test('solve solves 10brix', () => {
       volume: 400,
     },
   );
-  assertEquals(
+  assert.deepEqual(
     iterations,
     66,
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.spirit.volume,
     250,
     'spirit volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.water.volume,
     125,
     'water volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.components.syrup.mass,
     39,
     'sugar mass',
   );
 });
 
-Deno.test('solve solves with syrup', () => {
+test('solve solves with syrup', (assert) => {
   const { mixture } = solve(new Spirit(250, 40), 25, 20, 50);
-  assertEquals(
+  assert.deepEqual(
     mixture.analyze(0),
     {
       abv: 25,
@@ -109,25 +109,46 @@ Deno.test('solve solves with syrup', () => {
     },
   );
 
-  assertEquals(
+  assert.deepEqual(
     mixture.alcoholVolume,
     100,
     'alcohol volume',
   );
-  assertAlmostEquals(
-    (mixture.volume),
+  assert.equals(
+    mixture.volume,
     400,
-    1,
     'total volume',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.mass,
     410,
     'mass',
   );
-  assertEquals(
+  assert.deepEqual(
     mixture.sugarMass,
     82,
     'sugar mass',
+  );
+});
+
+test('grapefruit', (assert) => {
+  const { mixture } = solve(new Spirit(900, 80), 40, 10);
+  assert.deepEqual(
+    {
+      abv: Math.round(mixture.abv),
+      brix: Math.round(mixture.brix),
+      totalVolume: Math.round(mixture.volume),
+      sugar: mixture.components.syrup.sugarMass,
+      water: mixture.components.water.volume,
+      spirit: mixture.components.spirit.volume,
+    },
+    {
+      abv: 30,
+      brix: 15,
+      spirit: 900,
+      sugar: 357,
+      totalVolume: 2401,
+      water: 1276,
+    },
   );
 });

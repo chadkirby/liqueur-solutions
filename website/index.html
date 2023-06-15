@@ -5,7 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Strawberry App</title>
+    <link href="output.css" rel="stylesheet">
     <script src="sb.min.js"></script>
+    <script src="solutions.js" type="module"></script>
   </head>
 
   <style>
@@ -34,13 +36,7 @@
   </template>
   <template name="sb-h1">
     <h1
-      style="
-        margin: 0;
-        font-family: sans-serif;
-        font-weight: bold;
-        width: fit-content;
-        color: hsla(6, 64%, 59%, 1);
-      "
+    class="text-3xl font-bold underline"
     >
       <slot />
     </h1>
