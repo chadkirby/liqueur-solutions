@@ -1,54 +1,17 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "outDir": "esm",
-    "rootDir": ".",
-    "composite": true,
-    "module": "ES2020",
-
-    "moduleResolution": "node",
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noEmitOnError": false,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "experimentalDecorators": true,
-
-    "allowJs": true /* Allow javascript files to be compiled. */,
-
-    "checkJs": true /* Report errors in .js files. */,
-
-    "declaration": true /* Generates corresponding '.d.ts' file. */,
-    "strict": true /* Enable all strict type-checking options. */
-  },
-  "include": ["src/**/*", "tests/**/*"],
-
-  // Most ts-node options can be specified here using their programmatic names.
-  "ts-node": {
-    // It is faster to skip typechecking, but the resulting code &/or
-    // source maps may differ from what tsc writes into dist
-    "transpileOnly": false,
-
-    // Load "files" and "include" from `tsconfig.json` on startup.
-    "files": true,
-
-    "esm": true,
-
-    "ignore": ["(?:^|/)node_modules/", "(?:^|/)dist/"],
-
-    "compilerOptions": {
-      // compilerOptions specified here will override those declared
-      // below, but *only* in ts-node.  Useful if you want ts-node and
-      // tsc to use different options with a single tsconfig.json.
-      "checkJs": false
-    }
-  }
+	"extends": "./.svelte-kit/tsconfig.json",
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"strict": true
+	}
+	// Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
+	//
+	// If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
+	// from the referenced tsconfig.json - TypeScript does not merge them in
 }
