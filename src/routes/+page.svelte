@@ -1,13 +1,14 @@
 <script>
-
+  import MixtureList from '../components/MixtureList.svelte';
 </script>
 
-<style>
-  /* Define the component's CSS here. */
-</style>
+<div class="mixtures-page">
+  <h1>Mixtures</h1>
+  <MixtureList />
+</div>
 
-<main>
-  <p>
-    Hello World
-  </p>
-</main>
+<style>
+  .mixtures-page {
+    padding: 1rem;
+  }
+</style>

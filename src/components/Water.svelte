@@ -4,20 +4,21 @@
 	let dispatcher = createEventDispatcher();
 
 	export let name = 'sugar';
-	export let mixture: Component = new Water(100);
-	export let volume: number = mixture.volume;
+	export let volume: number = 100;
 	let analysis: ReturnType<Component['analyze']>;
 
 	onMount(() => {
-		analysis = mixture.analyze(0);
+		analysis = new Water(volume).analyze(0);
 	});
 
 	const updateAnalysis = () => {
-		mixture.volume = volume;
-		analysis = mixture.analyze(0);
-		dispatcher('update', analysis);
+		analysis = new Water(volume).analyze(0);
+		dispatcher('update', {name, volume});
 	};
-</script>
+	$: {
+		analysis = new Water(volume).analyze(0);
+	}
+	</script>
 
 <div class="mixture flex items-center justify-start space-x-5">
 	<h2 class="text-xl font-bold">{name}</h2>

@@ -4,21 +4,22 @@
 	let dispatcher = createEventDispatcher();
 
 	export let name = 'spirit';
-	export let mixture = new Spirit(100, 40);
-	export let volume: number = mixture.volume;
-	export let abv: number = mixture.abv;
+	export let volume: number = 100;
+	export let abv: number = 40;
 	let analysis: ReturnType<Spirit['analyze']>;
 
 	onMount(() => {
-		analysis = mixture.analyze(0);
+		analysis = new Spirit(volume, abv).analyze(0);
 	});
 
 	const updateAnalysis = () => {
-		mixture.volume = volume;
-		mixture.abv = abv;
-		analysis = mixture.analyze(0);
-		dispatcher('update', analysis);
+		analysis = new Spirit(volume, abv).analyze(0);
+		dispatcher('update', {name, volume});
 	};
+
+	$: {
+		analysis = new Spirit(volume, abv).analyze(0);
+	}
 </script>
 
 <div class="mixture flex items-center justify-start space-x-5">
@@ -32,7 +33,7 @@
 				type="number"
 				bind:value={volume}
 				on:input={updateAnalysis}
-				class="rounded border px-2 py-1 w-20"
+				class="w-20 rounded border px-2 py-1"
 			/>
 			ml
 		</div>
@@ -44,7 +45,7 @@
 				type="number"
 				bind:value={abv}
 				on:input={updateAnalysis}
-				class="rounded border px-2 py-1 w-20"
+				class="w-20 rounded border px-2 py-1"
 			/>
 			%
 		</div>

@@ -12,17 +12,16 @@ interface ComponentData {
 }
 
 export interface Component extends ComponentData {
-	clone(): Component;
+	clone(arg?: { volume?: number; brix?: number; abv?: number }): Component;
 	analyze(precision?: number): Target & {
 		mass: number;
 	};
+	setVolume(volume: number): void;
 }
 
-const sugarDensity = 1.59;
-const waterDensity = 1;
-const alcoholDensity = 0.79;
-
 export class Sugar implements Component {
+	static density = 1.59;
+
 	readonly name = 'Sugar';
 	readonly abv = 0;
 	readonly brix = 100;
@@ -32,17 +31,24 @@ export class Sugar implements Component {
 	readonly alcoholMass = 0;
 
 	constructor(public mass: number) {}
-	clone() {
-		return new Sugar(this.mass);
+
+	clone({ volume = this.volume }: { volume?: number } = {}) {
+		return new Sugar(volume / Sugar.density);
 	}
-  analyze(precision = 0): Target & { mass: number; } {
-    return analyze(this, precision);
-  }
+	analyze(precision = 0): Target & { mass: number } {
+		return analyze(this, precision);
+	}
+	setVolume(volume: number) {
+		this.mass = volume / Sugar.density;
+	}
 	get sugarVolume() {
-		return this.mass / sugarDensity;
+		return this.mass / Sugar.density;
 	}
 	get volume() {
 		return this.sugarVolume;
+	}
+	set volume(volume: number) {
+		this.setVolume(volume);
 	}
 	get sugarMass() {
 		return this.mass;
@@ -50,6 +56,8 @@ export class Sugar implements Component {
 }
 
 export class Water implements Component {
+	static density = 1;
+
 	readonly abv = 0;
 	readonly brix = 0;
 	readonly sugarVolume = 0;
@@ -61,14 +69,17 @@ export class Water implements Component {
 	clone() {
 		return new Water(this.volume);
 	}
-  analyze(precision = 0): Target & { mass: number; } {
-    return analyze(this, precision);
-  }
+	analyze(precision = 0): Target & { mass: number } {
+		return analyze(this, precision);
+	}
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
 	get waterVolume() {
 		return this.volume;
 	}
 	get waterMass() {
-		return this.waterVolume * waterDensity;
+		return this.waterVolume * Water.density;
 	}
 	get mass() {
 		return this.waterMass;
@@ -76,6 +87,8 @@ export class Water implements Component {
 }
 
 export class Ethanol implements Component {
+	static density = 0.79;
+
 	readonly abv = 100;
 	readonly brix = 0;
 	readonly sugarVolume = 0;
@@ -87,21 +100,25 @@ export class Ethanol implements Component {
 	clone() {
 		return new Ethanol(this.volume);
 	}
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
+
 	get alcoholVolume() {
 		return this.volume;
 	}
 	get alcoholMass() {
-		return this.alcoholVolume * alcoholDensity;
+		return this.alcoholVolume * Ethanol.density;
 	}
 	get mass() {
 		return this.alcoholMass;
 	}
-  analyze(precision = 0): Target & { mass: number; } {
-    return analyze(this, precision);
-  }
+	analyze(precision = 0): Target & { mass: number } {
+		return analyze(this, precision);
+	}
 }
 
-export class Mixture<T extends Record<string, Component>> implements Component {
+export class Mixture<T extends Record<string, Component>> {
 	constructor(readonly components: T = {} as T) {}
 
 	clone() {
@@ -110,6 +127,10 @@ export class Mixture<T extends Record<string, Component>> implements Component {
 				Object.entries(this.components).map(([key, component]) => [key, component.clone()])
 			) as T
 		);
+	}
+	// iterator to iterate over components
+	[Symbol.iterator]() {
+		return Object.entries(this.components)[Symbol.iterator]();
 	}
 	get abv() {
 		return (100 * this.alcoholVolume) / this.volume;
@@ -153,17 +174,19 @@ export class Mixture<T extends Record<string, Component>> implements Component {
 	}
 }
 
-function 	analyze(item: ComponentData,precision = 0): Target & {
-  mass: number;
+function analyze(
+	item: ComponentData,
+	precision = 0
+): Target & {
+	mass: number;
 } {
-  return {
-    volume: round(item.volume, precision),
-    mass: round(item.mass, precision),
-    abv: round(item.abv, precision),
-    brix: round(item.brix, precision)
-  };
+	return {
+		volume: round(item.volume, precision),
+		mass: round(item.mass, precision),
+		abv: round(item.abv, precision),
+		brix: round(item.brix, precision)
+	};
 }
-
 
 function round(value: number, precision: number) {
 	const factor = 10 ** precision;
@@ -186,10 +209,13 @@ export class Syrup extends Mixture<{ water: Water; sugar: Sugar }> {
 	clone() {
 		return new Syrup(this._volume, this._brix);
 	}
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
 
 	updateComponents() {
-		this.components.water = new Water(this._volume * (1 - this._brix / 100));
-		this.components.sugar = new Sugar(this._volume * (this._brix / 100));
+		this.components.water.volume = this._volume * (1 - this._brix / 100);
+		this.components.sugar.volume = this._volume * (this._brix / 100);
 	}
 
 	get volume() {
@@ -220,8 +246,12 @@ export class Spirit extends Mixture<{ water: Water; ethanol: Ethanol }> {
 	}
 
 	updateComponents() {
-		this.components.water = new Water(this._volume * (1 - this._abv / 100));
-		this.components.ethanol = new Ethanol(this._volume * (this._abv / 100));
+		this.components.water.volume = this._volume * (1 - this._abv / 100);
+		this.components.ethanol.volume = this._volume * (this._abv / 100);
+	}
+
+	setVolume(volume: number) {
+		this.volume = volume;
 	}
 
 	get volume() {
@@ -233,13 +263,13 @@ export class Spirit extends Mixture<{ water: Water; ethanol: Ethanol }> {
 		this.updateComponents();
 	}
 
-  get abv() {
-    return super.abv;
-  }
-  set abv(abv: number) {
-    this._abv = abv;
-    this.updateComponents();
-  }
+	get abv() {
+		return super.abv;
+	}
+	set abv(abv: number) {
+		this._abv = abv;
+		this.updateComponents();
+	}
 }
 
 export interface Target {
