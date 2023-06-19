@@ -11,7 +11,9 @@
 # abort on errors
 set -e
 
-cp npm/esm/solutions.js website/
+yarn tsc -b tsconfig.json
+
+cp esm/src/* website/
 
 cd website
 
