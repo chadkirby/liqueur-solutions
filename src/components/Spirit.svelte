@@ -14,7 +14,7 @@
 
 	const updateAnalysis = () => {
 		analysis = new Spirit(volume, abv).analyze(0);
-		dispatcher('update', {name, volume});
+		dispatcher('update', {name, volume, abv});
 	};
 
 	$: {

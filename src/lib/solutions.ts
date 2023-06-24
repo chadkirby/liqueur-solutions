@@ -193,40 +193,41 @@ function round(value: number, precision: number) {
 	return Math.round(value * factor) / factor;
 }
 
-export class Syrup extends Mixture<{ water: Water; sugar: Sugar }> {
-	private _volume: number;
-	private _brix: number;
-	constructor(brix: number, volume: number) {
-		super({
-			water: new Water(0),
-			sugar: new Sugar(0)
-		});
-		this._volume = volume;
-		this._brix = brix;
-		this.updateComponents();
-	}
+// export class Syrup extends Mixture<{ water: Water; sugar: Sugar }> {
+// 	private _volume: number;
+// 	private _brix: number;
+// 	constructor(brix: number, volume: number) {
+// 		super({
+// 			water: new Water(0),
+// 			sugar: new Sugar(0)
+// 		});
+// 		this._volume = volume;
+// 		this._brix = brix;
+// 		this.updateComponents();
+// 	}
 
-	clone() {
-		return new Syrup(this._volume, this._brix);
-	}
-	setVolume(volume: number) {
-		this.volume = volume;
-	}
+// 	clone() {
+// 		return new Syrup(this._volume, this._brix);
+// 	}
+// 	setVolume(volume: number) {
+// 		this.volume = volume;
+// 	}
 
-	updateComponents() {
-		this.components.water.volume = this._volume * (1 - this._brix / 100);
-		this.components.sugar.volume = this._volume * (this._brix / 100);
-	}
+// 	updateComponents() {
+// 		// WRONG
+// 		this.components.water.volume = this._volume * (1 - this._brix / 100);
+// 		this.components.sugar.mass = this._volume * (this._brix / 100);
+// 	}
 
-	get volume() {
-		return super.volume;
-	}
+// 	get volume() {
+// 		return super.volume;
+// 	}
 
-	set volume(volume: number) {
-		this._volume = volume;
-		this.updateComponents();
-	}
-}
+// 	set volume(volume: number) {
+// 		this._volume = volume;
+// 		this.updateComponents();
+// 	}
+// }
 
 export class Spirit extends Mixture<{ water: Water; ethanol: Ethanol }> {
 	private _volume: number;
@@ -282,7 +283,6 @@ export function solve(
 	sourceSpirit: Spirit,
 	targetAbv: number,
 	targetBrix: number,
-	sourceSweetenerBrix = 100 // pure sugar
 ) {
 	if (targetAbv > sourceSpirit.abv) {
 		throw new Error(`Target ABV (${targetAbv}) must be less than source ABV (${sourceSpirit.abv})`);
@@ -328,17 +328,14 @@ export function solve(
 		Math.round(mixture.alcoholVolume / (sourceSpirit.abv / 100)),
 		sourceSpirit.abv
 	);
-	const targetSyrup = new Syrup(
-		sourceSweetenerBrix,
-		Math.round((100 * mixture.sugarMass) / sourceSweetenerBrix)
-	);
+	const targetSugar = new Sugar(mixture.sugarMass);
 	const targetWater = new Water(
-		Math.round(mixture.waterVolume - targetSyrup.waterVolume - targetSpirit.waterVolume)
+		Math.round(mixture.waterVolume - targetSpirit.waterVolume)
 	);
 
 	const output = new Mixture({
 		spirit: targetSpirit,
-		syrup: targetSyrup,
+		sugar: targetSugar,
 		water: targetWater
 	});
 
