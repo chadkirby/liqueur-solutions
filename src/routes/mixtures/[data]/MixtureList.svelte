@@ -1,43 +1,28 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
 	import {
 		Mixture as MixtureObject,
 		Sugar as SugarObject,
 		Water as WaterObject,
 		Spirit as SpiritObject,
-		solve
-	} from '../lib/solutions';
-	import Spirit from './Spirit.svelte';
-	import SpiritComponent from './Spirit.svelte';
-	import SugarComponent from './Sugar.svelte';
-	import WaterComponent from './Water.svelte';
+		solve,
+		isSugar,
+		isSpirit,
+		isWater
+	} from '../../../lib/solutions';
+	import SpiritComponent from '../../../components/Spirit.svelte';
+	import SugarComponent from '../../../components/Sugar.svelte';
+	import WaterComponent from '../../../components/Water.svelte';
 	import debounce from 'lodash.debounce';
+	import type { PageData } from './$types.js';
 
-	let mxPojo: Record<
-		string,
-		| {
-				type: 'spirit';
-				volume: number;
-				abv: number;
-		  }
-		| {
-				type: 'water';
-				volume: number;
-		  }
-		| {
-				type: 'sugar';
-				mass: number;
-		  }
-	> = {
-		spirit: { volume: 100, abv: 40, type: 'spirit' },
-		water: { volume: 100, type: 'water' },
-		sugar: { mass: 50, type: 'sugar' }
-	};
+	export let data: PageData;
 
 	function makeMixture() {
-		const ingredients = Object.entries(mxPojo).map(([name, mx]) => {
-			if (mx.type === 'spirit') return [name, new SpiritObject(mx.volume, mx.abv)];
-			if (mx.type === 'water') return [name, new WaterObject(mx.volume)];
-			if (mx.type === 'sugar') return [name, new SugarObject(mx.mass)];
+		const ingredients = Object.entries(data || {}).map(([name, mx]) => {
+			if (isSpirit(mx)) return [name, new SpiritObject(mx.volume, mx.abv)];
+			if (isWater(mx)) return [name, new WaterObject(mx.volume)];
+			if (isSugar(mx)) return [name, new SugarObject(mx.mass)];
 			throw new Error('Unknown mixture type');
 		});
 		return new MixtureObject(Object.fromEntries(ingredients));
@@ -46,18 +31,22 @@
 	let analysis = makeMixture().analyze(0);
 
 	function updateAnalysis() {
-		analysis = makeMixture().analyze(0);
+		const mixture = makeMixture();
+		analysis = mixture.analyze(0);
+		Object.assign(data, mixture.mixtureData); // Mutate the `data` object in-place
+    goto(`/mixtures/${mixture.serialize()}`, { replaceState: true, noScroll: true, keepFocus: true });
+
 	}
 
 	const updateFromIngredient = debounce((e) => {
 		const updated = e.detail;
-		const which = Object.entries(mxPojo).find(([name]) => name === updated.name);
+		const which = Object.entries(data).find(([name]) => name === updated.name);
 		if (!which) return;
 		const [, mx] = which;
-		if (updated.volume && 'volume' in mx) mx.volume = updated.volume;
-		if (updated.abv && 'abv' in mx) mx.abv = updated.abv;
-		if (updated.mass && 'mass' in mx) mx.mass = updated.mass;
-		if (updated.brix && 'brix' in mx) mx.brix = updated.brix;
+		if (updated.volume && mx && 'volume' in mx) mx.volume = updated.volume;
+		if (updated.abv && mx && 'abv' in mx) mx.abv = updated.abv;
+		if (updated.mass && mx && 'mass' in mx) mx.mass = updated.mass;
+		if (updated.brix && mx && 'brix' in mx) mx.brix = updated.brix;
 
 		updateAnalysis();
 	}, 50);
@@ -73,16 +62,15 @@
 		const oldVolume = makeMixture().volume;
 		if (newVolume === oldVolume) return;
 		const delta = newVolume / oldVolume;
-		for (const item of Object.values(mxPojo)) {
-			if (item.type === 'sugar') {
+		for (const item of Object.values(data)) {
+			if (isSugar(item)) {
 				item.mass *= delta;
-			} else {
+			} else if (isSpirit(item) || isWater(item)) {
 				item.volume *= delta;
 			}
 		}
 
-		// Trigger Svelte's reactivity by assigning a new object to `mxPojo`
-		mxPojo = { ...mxPojo };
+		updateAnalysis();
 	}
 
 	const handleAbvInput = debounce((event: Event) => {
@@ -101,18 +89,16 @@
 		) as SpiritObject;
 		if (!spirit) return;
 		const solution = solve(spirit, newAbv, analysis.brix);
-		for (const item of Object.values(mxPojo)) {
-			if (item.type === 'sugar') {
+		for (const item of Object.values(data)) {
+			if (isSugar(item)) {
 				item.mass = Math.round(solution.mixture.components.sugar.mass);
-			} else if (item.type === 'spirit') {
+			} else if (isSpirit(item)) {
 				item.volume = solution.mixture.components.spirit.volume;
-			} else {
+			} else if (isWater(item)) {
 				item.volume = solution.mixture.components.water.volume;
 			}
 		}
 
-		// Trigger Svelte's reactivity by assigning a new object to `mxPojo`
-		mxPojo = { ...mxPojo };
 		updateAnalysis();
 	}
 
@@ -132,18 +118,16 @@
 		) as SpiritObject;
 		if (!spirit) return;
 		const solution = solve(spirit, analysis.abv, newBrix);
-		for (const item of Object.values(mxPojo)) {
-			if (item.type === 'sugar') {
+		for (const item of Object.values(data)) {
+			if (isSugar(item)) {
 				item.mass = Math.round(solution.mixture.components.sugar.mass);
-			} else if (item.type === 'spirit') {
+			} else if (isSpirit(item)) {
 				item.volume = solution.mixture.components.spirit.volume;
-			} else {
+			} else if (isWater(item)) {
 				item.volume = solution.mixture.components.water.volume;
 			}
 		}
 
-		// Trigger Svelte's reactivity by assigning a new object to `mxPojo`
-		mxPojo = { ...mxPojo };
 		updateAnalysis();
 	}
 
@@ -162,7 +146,7 @@
 		const numerator = closestNumerator / divisor;
 		const denominator = fractionDenominator / divisor;
 
-		const frac = (numerator === 0 || numerator === 16) ? '' : `${numerator}⁄${denominator}`;
+		const frac = numerator === 0 || numerator === 16 ? '' : `${numerator}⁄${denominator}`;
 
 		if (wholePart === 0 && frac === '') {
 			return '0';
@@ -185,14 +169,14 @@
 </script>
 
 <div class="mixture-list">
-	{#each Object.entries(mxPojo) as [name, data], index (index)}
+	{#each Object.entries(data) as [name, entry] (name)}
 		<div class="mixture-item">
-			{#if data.type === 'spirit'}
-				<SpiritComponent {name} {...data} on:update={updateFromIngredient} />
-			{:else if data.type === 'water'}
-				<WaterComponent {name} {...data} on:update={updateFromIngredient} />
-			{:else if data.type === 'sugar'}
-				<SugarComponent {name} {...data} on:update={updateFromIngredient} />
+			{#if entry?.type === 'spirit'}
+				<SpiritComponent {name} {...entry} on:update={updateFromIngredient} />
+			{:else if entry?.type === 'water'}
+				<WaterComponent {name} {...entry} on:update={updateFromIngredient} />
+			{:else if entry?.type === 'sugar'}
+				<SugarComponent {name} {...entry} on:update={updateFromIngredient} />
 			{/if}
 			<!-- <button on:click={() => removeMixture(index)}>Remove</button> -->
 		</div>

@@ -1,4 +1,5 @@
 interface ComponentData {
+	type: 'spirit' | 'water' | 'sugar' | 'ethanol';
 	abv: number;
 	brix: number;
 	volume: number;
@@ -11,18 +12,67 @@ interface ComponentData {
 	alcoholMass: number;
 }
 
+// get the number keys of ComponentData
+type ComponentValueKeys = {
+	[K in keyof ComponentData]: ComponentData[K] extends number ? K : never;
+}[keyof ComponentData];
+
+export type SpiritData = {
+	type: 'spirit';
+	volume: number;
+	abv: number;
+};
+export type WaterData = {
+	type: 'water';
+	volume: number;
+};
+export type SugarData = {
+	type: 'sugar';
+	mass: number;
+};
+
+export function isSpirit(input: unknown): input is SpiritData {
+	return (
+		typeof input === 'object' &&
+		input !== null &&
+		(input as Spirit).type === 'spirit' &&
+		typeof (input as Spirit).volume === 'number' &&
+		typeof (input as Spirit).abv === 'number'
+	);
+}
+
+export function isWater(input: unknown): input is WaterData {
+	return (
+		typeof input === 'object' &&
+		input !== null &&
+		(input as Water).type === 'water' &&
+		typeof (input as Water).volume === 'number'
+	);
+}
+
+export function isSugar(input: unknown): input is SugarData {
+	return (
+		typeof input === 'object' &&
+		input !== null &&
+		(input as Sugar).type === 'sugar' &&
+		typeof (input as Sugar).mass === 'number'
+	);
+}
+
 export interface Component extends ComponentData {
 	clone(arg?: { volume?: number; brix?: number; abv?: number }): Component;
 	analyze(precision?: number): Target & {
 		mass: number;
 	};
 	setVolume(volume: number): void;
+	serialize(): string;
+	data: SpiritData | WaterData | SugarData;
 }
 
 export class Sugar implements Component {
 	static density = 1.59;
 
-	readonly name = 'Sugar';
+	readonly type = 'sugar';
 	readonly abv = 0;
 	readonly brix = 100;
 	readonly waterVolume = 0;
@@ -31,6 +81,14 @@ export class Sugar implements Component {
 	readonly alcoholMass = 0;
 
 	constructor(public mass: number) {}
+
+	get data(): SugarData {
+		const { type, mass } = this;
+		return { type, mass: round(mass, 1) };
+	}
+	serialize(): string {
+		return serialize(this.data);
+	}
 
 	clone({ volume = this.volume }: { volume?: number } = {}) {
 		return new Sugar(volume / Sugar.density);
@@ -56,6 +114,7 @@ export class Sugar implements Component {
 }
 
 export class Water implements Component {
+	readonly type = 'water';
 	static density = 1;
 
 	readonly abv = 0;
@@ -66,6 +125,13 @@ export class Water implements Component {
 	readonly alcoholMass = 0;
 
 	constructor(public volume: number) {}
+	get data(): WaterData {
+		const { type, volume } = this;
+		return { type, volume: round(volume, 1) };
+	}
+	serialize(): string {
+		return serialize(this.data);
+	}
 	clone() {
 		return new Water(this.volume);
 	}
@@ -87,6 +153,7 @@ export class Water implements Component {
 }
 
 export class Ethanol implements Component {
+	readonly type = 'spirit';
 	static density = 0.79;
 
 	readonly abv = 100;
@@ -97,6 +164,14 @@ export class Ethanol implements Component {
 	readonly waterMass = 0;
 
 	constructor(public volume: number) {}
+	get data(): SpiritData {
+		const { type, volume, abv } = this;
+		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+	}
+
+	serialize(): string {
+		return serialize(this.data);
+	}
 	clone() {
 		return new Ethanol(this.volume);
 	}
@@ -121,6 +196,43 @@ export class Ethanol implements Component {
 export class Mixture<T extends Record<string, Component>> {
 	constructor(readonly components: T = {} as T) {}
 
+	serialize(): string {
+		return Object.entries(this.components)
+			.map(([key, component]) => `${key}:${component.serialize()}`)
+			.join(',');
+	}
+	static deserialize(data: string) {
+		const components: Record<string, Component> = {};
+		for (const item of data.trim().split(',')) {
+			const [nameAndKey, ...values] = item.trim().split('-');
+			const [name, key] = nameAndKey.split(':');
+			switch (key) {
+				case 'spirit': {
+					const [volume, abv] = values.map(parseFloat);
+					components[name] = new Spirit(volume, abv);
+					break;
+				}
+				case 'water': {
+					const [volume] = values.map(parseFloat);
+					components[name] = new Water(volume);
+					break;
+				}
+				case 'sugar': {
+					const [mass] = values.map(parseFloat);
+					components[name] = new Sugar(mass);
+					break;
+				}
+				default:
+					throw new Error(`Unknown component type: ${key}`);
+			}
+		}
+
+		return new Mixture(components);
+	}
+
+	get mixtureData() {
+		return Object.fromEntries([...this].map(([k, v]) => [k, v.data]));
+	}
 	clone() {
 		return new Mixture<T>(
 			Object.fromEntries(
@@ -163,7 +275,7 @@ export class Mixture<T extends Record<string, Component>> {
 		return this.sumComponents('mass');
 	}
 
-	private sumComponents(key: keyof ComponentData): number {
+	private sumComponents(key: ComponentValueKeys): number {
 		return Object.values(this.components).reduce((sum, component) => sum + component[key], 0);
 	}
 
@@ -175,7 +287,7 @@ export class Mixture<T extends Record<string, Component>> {
 }
 
 function analyze(
-	item: ComponentData,
+	item: Pick<ComponentData, 'volume' | 'mass' | 'abv' | 'brix'>,
 	precision = 0
 ): Target & {
 	mass: number;
@@ -229,7 +341,14 @@ function round(value: number, precision: number) {
 // 	}
 // }
 
+function serialize(data: SpiritData | WaterData | SugarData): string {
+	return Object.values(data)
+		.map((d) => (typeof d === 'number' ? d.toFixed(0) : d))
+		.join('-');
+}
+
 export class Spirit extends Mixture<{ water: Water; ethanol: Ethanol }> {
+	readonly type = 'spirit';
 	private _volume: number;
 	private _abv: number;
 	constructor(volume: number, abv: number) {
@@ -240,6 +359,15 @@ export class Spirit extends Mixture<{ water: Water; ethanol: Ethanol }> {
 		this._volume = volume;
 		this._abv = abv;
 		this.updateComponents();
+	}
+
+	get data(): SpiritData {
+		const { type, volume, abv } = this;
+		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+	}
+
+	serialize(): string {
+		return serialize(this.data);
 	}
 
 	clone() {
@@ -279,11 +407,7 @@ export interface Target {
 	volume: number;
 }
 
-export function solve(
-	sourceSpirit: Spirit,
-	targetAbv: number,
-	targetBrix: number,
-) {
+export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: number) {
 	if (targetAbv > sourceSpirit.abv) {
 		throw new Error(`Target ABV (${targetAbv}) must be less than source ABV (${sourceSpirit.abv})`);
 	}
@@ -329,9 +453,7 @@ export function solve(
 		sourceSpirit.abv
 	);
 	const targetSugar = new Sugar(mixture.sugarMass);
-	const targetWater = new Water(
-		Math.round(mixture.waterVolume - targetSpirit.waterVolume)
-	);
+	const targetWater = new Water(Math.round(mixture.waterVolume - targetSpirit.waterVolume));
 
 	const output = new Mixture({
 		spirit: targetSpirit,
