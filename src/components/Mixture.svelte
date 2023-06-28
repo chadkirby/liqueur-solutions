@@ -32,12 +32,12 @@
     <!-- show/update ABV -->
 		<div>
 			<label for="abv">ABV:</label>
-			<input id="abv" type="number" bind:value={abv} on:input={updateAnalysis} class="border px-2 py-1 rounded w-20">
+			<input id="abv" type="number" bind:value={abv} on:input={updateAnalysis} class="border px-2 py-1 rounded w-16">
 		</div>
     <!-- show/update Brix -->
     <div>
       <label for="brix">Brix:</label>
-      <input id="brix" type="number" bind:value={abv} on:input={updateAnalysis} class="border px-2 py-1 rounded w-20">
+      <input id="brix" type="number" bind:value={abv} on:input={updateAnalysis} class="border px-2 py-1 rounded w-16">
     </div>
 
 	</div>

@@ -1,18 +1,24 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import {
 		Mixture as MixtureObject,
 		Sugar as SugarObject,
 		Water as WaterObject,
 		Spirit as SpiritObject,
+		Syrup as SyrupObject,
 		solve,
 		isSugar,
+		isSyrup,
 		isSpirit,
 		isWater
-	} from '../../../lib/solutions';
-	import SpiritComponent from '../../../components/Spirit.svelte';
-	import SugarComponent from '../../../components/Sugar.svelte';
-	import WaterComponent from '../../../components/Water.svelte';
+	} from '$lib/solutions';
+	import SpiritComponent from '../../components/Spirit.svelte';
+	import SugarComponent from '../../components/Sugar.svelte';
+	import WaterComponent from '../../components/Water.svelte';
+	import SyrupComponent from '../../components/Syrup.svelte';
+	import VolumeComponent from '../../components/Volume.svelte';
+	import ABVComponent from '../../components/ABV.svelte';
+	import MassComponent from '../../components/Mass.svelte';
 	import debounce from 'lodash.debounce';
 	import type { PageData } from './$types.js';
 
@@ -23,6 +29,7 @@
 			if (isSpirit(mx)) return [name, new SpiritObject(mx.volume, mx.abv)];
 			if (isWater(mx)) return [name, new WaterObject(mx.volume)];
 			if (isSugar(mx)) return [name, new SugarObject(mx.mass)];
+			if (isSyrup(mx)) return [name, new SyrupObject(mx.volume, mx.brix)];
 			throw new Error('Unknown mixture type');
 		});
 		return new MixtureObject(Object.fromEntries(ingredients));
@@ -33,9 +40,11 @@
 	function updateAnalysis() {
 		const mixture = makeMixture();
 		analysis = mixture.analyze(0);
-		Object.assign(data, mixture.mixtureData); // Mutate the `data` object in-place
-    goto(`/mixtures/${mixture.serialize()}`, { replaceState: true, noScroll: true, keepFocus: true });
-
+		goto(`/mixtures?${mixture.serialize()}`, {
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
 	}
 
 	const updateFromIngredient = debounce((e) => {
@@ -49,7 +58,7 @@
 		if (updated.brix && mx && 'brix' in mx) mx.brix = updated.brix;
 
 		updateAnalysis();
-	}, 50);
+	}, 100);
 
 	const handleVolumeInput = debounce((event: Event) => {
 		if (!(event.target instanceof HTMLInputElement)) return;
@@ -89,6 +98,10 @@
 		) as SpiritObject;
 		if (!spirit) return;
 		const solution = solve(spirit, newAbv, analysis.brix);
+		const items = [...Object.values(data)];
+		const sugarItems = items.filter((x) => isSugar(x) || isSyrup(x));
+		const alcItems = items.filter((x) => isSpirit(x));
+		const waterItems = items.filter((x) => isWater(x));
 		for (const item of Object.values(data)) {
 			if (isSugar(item)) {
 				item.mass = Math.round(solution.mixture.components.sugar.mass);
@@ -131,73 +144,64 @@
 		updateAnalysis();
 	}
 
-	let newName = '';
-	let newVolume = 0;
-	let newAbv = 0;
-	let newBrix = 0;
-
-	function decimalToFraction(decimal: number): string {
-		const wholePart = Math.floor(decimal);
-		const fractionalPart = decimal - wholePart;
-		const fractionDenominator = 16;
-		const closestNumerator = Math.round(fractionalPart * fractionDenominator);
-		const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-		const divisor = gcd(closestNumerator, fractionDenominator);
-		const numerator = closestNumerator / divisor;
-		const denominator = fractionDenominator / divisor;
-
-		const frac = numerator === 0 || numerator === 16 ? '' : `${numerator}⁄${denominator}`;
-
-		if (wholePart === 0 && frac === '') {
-			return '0';
-		} else if (numerator === denominator) {
-			return `${wholePart + 1}`;
-		} else if (wholePart === 0) {
-			return `${frac}`;
-		} else if (frac === '') {
-			return `${wholePart}`;
-		} else {
-			return `${wholePart} ${frac}`;
-		}
+	function addSpirit() {
+		addObj(new SpiritObject(100, 40));
 	}
-
-	// function addMixture() {}
-
-	// function removeMixture(index: number) {
-	// 	mixtures = mixtures.filter((_, i) => i !== index);
-	// }
+	function addWater() {
+		addObj(new WaterObject(100));
+	}
+	function addSugar() {
+		addObj(new SugarObject(100));
+	}
+	function addSyrup() {
+		addObj(new SyrupObject(100, 50));
+	}
+	function addObj(obj: SpiritObject | WaterObject | SugarObject | SyrupObject) {
+		let key = obj.type;
+		let i = 1;
+		while (data[key]) {
+			key = `${obj.type}-${i++}`;
+		}
+		data[key] = obj.data;
+		updateAnalysis();
+	}
+	function removeComponent(key: string) {
+		delete data[key];
+		updateAnalysis();
+	}
 </script>
 
 <div class="mixture-list">
 	{#each Object.entries(data) as [name, entry] (name)}
-		<div class="mixture-item">
-			{#if entry?.type === 'spirit'}
-				<SpiritComponent {name} {...entry} on:update={updateFromIngredient} />
-			{:else if entry?.type === 'water'}
-				<WaterComponent {name} {...entry} on:update={updateFromIngredient} />
-			{:else if entry?.type === 'sugar'}
-				<SugarComponent {name} {...entry} on:update={updateFromIngredient} />
+		<div class="mixture-item flex items-center space-x-4">
+			<button on:click={() => removeComponent(name)}>⊖</button>
+			{#if isSpirit(entry)}
+				<SpiritComponent {name} volume={entry.volume} abv={entry.abv} on:update={updateFromIngredient} />
+			{:else if isWater(entry)}
+				<WaterComponent {name} volume={entry.volume} on:update={updateFromIngredient} />
+			{:else if isSugar(entry)}
+				<SugarComponent {name} mass={entry.mass} on:update={updateFromIngredient} />
+			{:else if isSyrup(entry)}
+				<SyrupComponent {name} volume={entry.volume} brix={entry.brix} on:update={updateFromIngredient} />
 			{/if}
-			<!-- <button on:click={() => removeMixture(index)}>Remove</button> -->
 		</div>
 	{/each}
 
+	<div class="flex items-center space-x-4">
+		<button on:click={() => addSpirit()}>⊕ spirit</button>
+		{#if !Object.values(data).some(isWater)}
+			<button on:click={() => addWater()}>⊕ water</button>
+		{/if}
+		{#if !Object.values(data).some(isSugar)}
+			<button on:click={() => addSugar()}>⊕ sugar</button>
+		{/if}
+		<button on:click={() => addSyrup()}>⊕ syrup</button>
+	</div>
+
 	<div class="mixture-state">
 		<h2>Totals</h2>
-		<div class="flex items-center justify-start space-x-4">
-			<div>
-				<label for="mixture-abv">ABV:</label>
-				<input
-					id="mixture-abv"
-					type="number"
-					bind:value={analysis.abv}
-					on:input={handleAbvInput}
-					class="w-20 rounded border px-2 py-1"
-				/>
-				%
-			</div>
-			<p>Proof: {2 * analysis.abv}</p>
-		</div>
+		<ABVComponent id="mixture-abv" abv={analysis.abv} onInput={handleAbvInput} />
+
 		<div class="flex items-center justify-start space-x-4">
 			<div>
 				<label for="mixture-brix">Brix:</label>
@@ -206,38 +210,14 @@
 					type="number"
 					bind:value={analysis.brix}
 					on:input={handleBrixInput}
-					class="w-20 rounded border px-2 py-1"
+					class="w-16 rounded border px-2 py-1"
 				/>
 				% sugar by weight
 			</div>
 		</div>
-		<div class="flex items-center justify-start space-x-4">
-			<div>
-				<label for="mixture-volume">Volume:</label>
-				<input
-					id="mixture-volume"
-					type="number"
-					bind:value={analysis.volume}
-					on:input={handleVolumeInput}
-					class="w-20 rounded border px-2 py-1"
-				/>
-				ml
-			</div>
-			<p>{(analysis.volume * 0.033814).toFixed(1)} fl oz</p>
-			<p>{decimalToFraction((analysis.volume * 0.033814) / 8)} cups</p>
-		</div>
-		<div class="flex items-center justify-start space-x-4">
-			<p>Mass: {analysis.mass}g</p>
-		</div>
+		<VolumeComponent id='mixture-volume' volume={analysis.volume} onInput={handleVolumeInput} />
+		<MassComponent id='mixture-mass' mass={analysis.mass} onInput={null} />
 	</div>
-
-	<!-- <div class="add-mixture">
-		<input bind:value={newName} placeholder="Name" />
-		<input type="number" bind:value={newVolume} placeholder="Volume" />
-		<input type="number" bind:value={newAbv} placeholder="ABV" />
-		<input type="number" bind:value={newBrix} placeholder="Brix" />
-		<button on:click={addMixture}>Add Mixture</button>
-	</div> -->
 </div>
 
 <style>

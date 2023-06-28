@@ -1,9 +1,25 @@
-interface ComponentData {
-	type: 'spirit' | 'water' | 'sugar' | 'ethanol';
+const ComponentValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
+type ComponentValueKeys = (typeof ComponentValueKeys)[number];
+
+function isComponentValueKey(key: string): key is ComponentValueKeys {
+	return ComponentValueKeys.includes(key as ComponentValueKeys);
+}
+
+const ComponentTypes = ['spirit', 'water', 'sugar', 'syrup'] as const;
+type ComponentTypes = (typeof ComponentTypes)[number];
+interface BaseComponentData {
+	type: ComponentTypes;
 	abv: number;
 	brix: number;
 	volume: number;
 	mass: number;
+}
+
+function isComponentType(type: string): type is ComponentTypes {
+	return ComponentTypes.includes(type as ComponentTypes);
+}
+
+interface ComponentData extends BaseComponentData {
 	sugarVolume: number;
 	waterVolume: number;
 	alcoholVolume: number;
@@ -12,8 +28,8 @@ interface ComponentData {
 	alcoholMass: number;
 }
 
-// get the number keys of ComponentData
-type ComponentValueKeys = {
+// get all the numeric keys of ComponentData
+type ComponentNumberKeys = {
 	[K in keyof ComponentData]: ComponentData[K] extends number ? K : never;
 }[keyof ComponentData];
 
@@ -30,33 +46,52 @@ export type SugarData = {
 	type: 'sugar';
 	mass: number;
 };
+export type SyrupData = {
+	type: 'syrup';
+	volume: number;
+	brix: number;
+};
 
-export function isSpirit(input: unknown): input is SpiritData {
-	return (
-		typeof input === 'object' &&
-		input !== null &&
-		(input as Spirit).type === 'spirit' &&
-		typeof (input as Spirit).volume === 'number' &&
-		typeof (input as Spirit).abv === 'number'
-	);
+export function checkData(type: 'spirit', input: unknown): input is SpiritData;
+export function checkData(type: 'water', input: unknown): input is WaterData;
+export function checkData(type: 'sugar', input: unknown): input is SugarData;
+export function checkData(type: 'syrup', input: unknown): input is SyrupData;
+export function checkData(
+	type: ComponentTypes,
+	input: unknown
+): input is SpiritData | WaterData | SugarData | SyrupData {
+	if (typeof input !== 'object' || input === null) return false;
+	const data = input as SpiritData | WaterData | SugarData | SyrupData;
+	if (data.type !== type) return false;
+	switch (type) {
+		case 'spirit':
+			return (
+				typeof (data as SpiritData).volume === 'number' &&
+				typeof (data as SpiritData).abv === 'number'
+			);
+		case 'water':
+			return typeof (data as WaterData).volume === 'number';
+		case 'sugar':
+			return typeof (data as SugarData).mass === 'number';
+		case 'syrup':
+			return (
+				typeof (data as SyrupData).volume === 'number' &&
+				typeof (data as SyrupData).brix === 'number'
+			);
+	}
 }
 
-export function isWater(input: unknown): input is WaterData {
-	return (
-		typeof input === 'object' &&
-		input !== null &&
-		(input as Water).type === 'water' &&
-		typeof (input as Water).volume === 'number'
-	);
+export function isSpirit(data: unknown): data is SpiritData {
+	return checkData('spirit', data);
 }
-
-export function isSugar(input: unknown): input is SugarData {
-	return (
-		typeof input === 'object' &&
-		input !== null &&
-		(input as Sugar).type === 'sugar' &&
-		typeof (input as Sugar).mass === 'number'
-	);
+export function isWater(data: unknown): data is WaterData {
+	return checkData('water', data);
+}
+export function isSugar(data: unknown): data is SugarData {
+	return checkData('sugar', data);
+}
+export function isSyrup(data: unknown): data is SyrupData {
+	return checkData('syrup', data);
 }
 
 export interface Component extends ComponentData {
@@ -66,7 +101,7 @@ export interface Component extends ComponentData {
 	};
 	setVolume(volume: number): void;
 	serialize(): string;
-	data: SpiritData | WaterData | SugarData;
+	data: SpiritData | WaterData | SugarData | SyrupData;
 }
 
 export class Sugar implements Component {
@@ -197,33 +232,65 @@ export class Mixture<T extends Record<string, Component>> {
 	constructor(readonly components: T = {} as T) {}
 
 	serialize(): string {
-		return Object.entries(this.components)
-			.map(([key, component]) => `${key}:${component.serialize()}`)
-			.join(',');
+		const params = new URLSearchParams();
+		for (const [key, component] of this) {
+			params.append('name', key);
+			for (const [k, v] of Object.entries(component.data)) {
+				params.append(k, v.toString());
+			}
+		}
+		return params.toString();
 	}
-	static deserialize(data: string) {
+
+	static deserialize(qs: string | URLSearchParams) {
+		const params = typeof qs === 'string' ? new URLSearchParams(qs) : qs;
 		const components: Record<string, Component> = {};
-		for (const item of data.trim().split(',')) {
-			const [nameAndKey, ...values] = item.trim().split('-');
-			const [name, key] = nameAndKey.split(':');
-			switch (key) {
+		const working: Partial<BaseComponentData & { name: string; type: string }>[] = [];
+		for (const [key, value] of params) {
+			if (key === 'name') {
+				working.push({ name: value });
+			} else {
+				const current = working.at(-1);
+				if (!current) throw new Error('Keys must be preceded by a component name');
+				if (isComponentValueKey(key)) {
+					current[key] = parseFloat(value);
+				} else if (key === 'type' && isComponentType(value)) {
+					current.type = value;
+				}
+			}
+		}
+		for (const { type, ...values } of working) {
+			switch (type) {
 				case 'spirit': {
-					const [volume, abv] = values.map(parseFloat);
-					components[name] = new Spirit(volume, abv);
+					const { volume, abv, name } = values;
+					if (name && undefined !== volume && undefined !== abv) {
+						components[name] = new Spirit(volume, abv);
+					}
 					break;
 				}
 				case 'water': {
-					const [volume] = values.map(parseFloat);
-					components[name] = new Water(volume);
+					const { volume, name } = values;
+					if (name && undefined !== volume) {
+						components[name] = new Water(volume);
+					}
 					break;
 				}
 				case 'sugar': {
-					const [mass] = values.map(parseFloat);
-					components[name] = new Sugar(mass);
+					const { mass, name } = values;
+					if (name && undefined !== mass) {
+						components[name] = new Sugar(mass);
+					}
+					break;
+				}
+				case 'syrup': {
+					const { volume, brix, name } = values;
+					if (name && undefined !== volume && undefined !== brix) {
+						components[name] = new Syrup(volume, brix);
+					}
 					break;
 				}
 				default:
-					throw new Error(`Unknown component type: ${key}`);
+					throw new Error(`Unknown component type: ${type}`);
 			}
 		}
 
@@ -275,7 +342,7 @@ export class Mixture<T extends Record<string, Component>> {
 		return this.sumComponents('mass');
 	}
 
-	private sumComponents(key: ComponentValueKeys): number {
+	private sumComponents(key: ComponentNumberKeys): number {
 		return Object.values(this.components).reduce((sum, component) => sum + component[key], 0);
 	}
 
@@ -305,43 +372,70 @@ function round(value: number, precision: number) {
 	return Math.round(value * factor) / factor;
 }
 
-// export class Syrup extends Mixture<{ water: Water; sugar: Sugar }> {
-// 	private _volume: number;
-// 	private _brix: number;
-// 	constructor(brix: number, volume: number) {
-// 		super({
-// 			water: new Water(0),
-// 			sugar: new Sugar(0)
-// 		});
-// 		this._volume = volume;
-// 		this._brix = brix;
-// 		this.updateComponents();
-// 	}
+export class Syrup extends Mixture<{ water: Water; sugar: Sugar }> {
+	readonly type = 'syrup';
+	private _volume: number;
+	private _brix: number;
+	constructor(volume: number, brix: number) {
+		super({
+			water: new Water(0),
+			sugar: new Sugar(0)
+		});
+		this._volume = volume;
+		this._brix = brix;
+		this.updateComponents();
+	}
+	get data(): SyrupData {
+		const { type, volume, brix } = this;
+		return { type, volume: round(volume, 1), brix: round(brix, 1) };
+	}
 
-// 	clone() {
-// 		return new Syrup(this._volume, this._brix);
-// 	}
-// 	setVolume(volume: number) {
-// 		this.volume = volume;
-// 	}
+	serialize(): string {
+		return serialize(this.data);
+	}
 
-// 	updateComponents() {
-// 		// WRONG
-// 		this.components.water.volume = this._volume * (1 - this._brix / 100);
-// 		this.components.sugar.mass = this._volume * (this._brix / 100);
-// 	}
+	clone() {
+		return new Syrup(this._volume, this._brix);
+	}
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
 
-// 	get volume() {
-// 		return super.volume;
-// 	}
+	updateComponents() {
+		const volume = this._volume;
+		const brix = this._brix;
 
-// 	set volume(volume: number) {
-// 		this._volume = volume;
-// 		this.updateComponents();
-// 	}
-// }
+		// see https://www.vinolab.hr/calculator/gravity-density-sugar-conversions-en19
+		const specificGravity =
+			0.00000005785037196 * brix ** 3 +
+			0.00001261831344 * brix ** 2 +
+			0.003873042366 * brix +
+			0.9999994636;
 
-function serialize(data: SpiritData | WaterData | SugarData): string {
+		// Calculate total mass of the solution
+		const massSolution = volume * specificGravity;
+
+		// Calculate mass of the sugar
+		const massSugar = (massSolution * brix) / 100;
+
+		// Calculate mass of the water
+		const massWater = massSolution - massSugar;
+
+		this.components.water.volume = massWater / Water.density;
+		this.components.sugar.mass = massSugar;
+	}
+
+	get volume() {
+		return super.volume;
+	}
+
+	set volume(volume: number) {
+		this._volume = volume;
+		this.updateComponents();
+	}
+}
+
+function serialize(data: SpiritData | WaterData | SugarData | SyrupData): string {
 	return Object.values(data)
 		.map((d) => (typeof d === 'number' ? d.toFixed(0) : d))
 		.join('-');

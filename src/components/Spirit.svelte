@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { Spirit } from '../lib/solutions';
 	import { onMount, createEventDispatcher } from 'svelte';
+	import VolumeComponent from './Volume.svelte';
+	import ABVComponent from './ABV.svelte';
+	import MassComponent from './Mass.svelte';
 	let dispatcher = createEventDispatcher();
 
 	export let name = 'spirit';
@@ -12,9 +15,18 @@
 		analysis = new Spirit(volume, abv).analyze(0);
 	});
 
-	const updateAnalysis = () => {
+	const updateVolume = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    volume = parseFloat(target.value);
 		analysis = new Spirit(volume, abv).analyze(0);
-		dispatcher('update', {name, volume, abv});
+		dispatcher('update', { name, volume, abv });
+	};
+
+	const updateAbv = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    abv = parseFloat(target.value);
+		analysis = new Spirit(volume, abv).analyze(0);
+		dispatcher('update', { name, volume, abv });
 	};
 
 	$: {
@@ -24,31 +36,10 @@
 
 <div class="mixture flex items-center justify-start space-x-5">
 	<h2 class="text-xl font-bold">{name}</h2>
+
 	<div class="flex items-center space-x-4">
-		<!-- show/update Volume -->
-		<div>
-			<label for="spirit-volume">Volume:</label>
-			<input
-				id="spirit-volume"
-				type="number"
-				bind:value={volume}
-				on:input={updateAnalysis}
-				class="w-20 rounded border px-2 py-1"
-			/>
-			ml
-		</div>
-		<!-- show/update ABV -->
-		<div>
-			<label for="abv">ABV:</label>
-			<input
-				id="abv"
-				type="number"
-				bind:value={abv}
-				on:input={updateAnalysis}
-				class="w-20 rounded border px-2 py-1"
-			/>
-			%
-		</div>
-		<p>Mass: {analysis?.mass}g</p>
+		<VolumeComponent id="{name}-volume" {volume} onInput={updateVolume} />
+		<ABVComponent id="{name}-abv" {abv} onInput={updateAbv} />
+		<MassComponent id="{name}-mass" mass={analysis.mass} onInput={null} />
 	</div>
 </div>
