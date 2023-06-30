@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Fab, { Icon, Label } from '@smui/fab';
 	import { goto } from '$app/navigation';
 	import {
 		Mixture as MixtureObject,
@@ -11,7 +12,7 @@
 		isSyrup,
 		isSpirit,
 		isWater
-	} from '$lib/solutions';
+	} from '$lib';
 	import SpiritComponent from '../../components/Spirit.svelte';
 	import SugarComponent from '../../components/Sugar.svelte';
 	import WaterComponent from '../../components/Water.svelte';
@@ -19,6 +20,7 @@
 	import VolumeComponent from '../../components/Volume.svelte';
 	import ABVComponent from '../../components/ABV.svelte';
 	import MassComponent from '../../components/Mass.svelte';
+	import BrixComponent from '../../components/Brix.svelte';
 	import debounce from 'lodash.debounce';
 	import type { PageData } from './$types.js';
 
@@ -171,52 +173,65 @@
 	}
 </script>
 
-<div class="mixture-list">
+<div class="mixture-list grid gap-4">
 	{#each Object.entries(data) as [name, entry] (name)}
-		<div class="mixture-item flex items-center space-x-4">
-			<button on:click={() => removeComponent(name)}>⊖</button>
+		<div class="mixture-item flex items-center space-x-4 rounded bg-white p-4 shadow">
 			{#if isSpirit(entry)}
-				<SpiritComponent {name} volume={entry.volume} abv={entry.abv} on:update={updateFromIngredient} />
+				<SpiritComponent
+					{name}
+					volume={entry.volume}
+					abv={entry.abv}
+					on:update={updateFromIngredient}
+				/>
 			{:else if isWater(entry)}
 				<WaterComponent {name} volume={entry.volume} on:update={updateFromIngredient} />
 			{:else if isSugar(entry)}
 				<SugarComponent {name} mass={entry.mass} on:update={updateFromIngredient} />
 			{:else if isSyrup(entry)}
-				<SyrupComponent {name} volume={entry.volume} brix={entry.brix} on:update={updateFromIngredient} />
+				<SyrupComponent
+					{name}
+					volume={entry.volume}
+					brix={entry.brix}
+					on:update={updateFromIngredient}
+				/>
 			{/if}
+			<Fab on:click={() => removeComponent(name)} mini>
+				<Icon class="material-icons">cancel</Icon>
+			</Fab>
+
 		</div>
 	{/each}
 
 	<div class="flex items-center space-x-4">
-		<button on:click={() => addSpirit()}>⊕ spirit</button>
+		<Fab on:click={addSpirit} extended>
+			<Icon class="material-icons">add_circle</Icon>
+			<Label>spirit</Label>
+		</Fab>
 		{#if !Object.values(data).some(isWater)}
-			<button on:click={() => addWater()}>⊕ water</button>
+			<Fab on:click={addWater} extended>
+				<Icon class="material-icons">add_circle</Icon>
+				<Label>water</Label>
+			</Fab>
 		{/if}
 		{#if !Object.values(data).some(isSugar)}
-			<button on:click={() => addSugar()}>⊕ sugar</button>
+			<Fab on:click={addSugar} extended>
+				<Icon class="material-icons">add_circle</Icon>
+				<Label>sugar</Label>
+			</Fab>
 		{/if}
-		<button on:click={() => addSyrup()}>⊕ syrup</button>
+		<Fab on:click={addSyrup} extended>
+			<Icon class="material-icons">add_circle</Icon>
+			<Label>syrup</Label>
+		</Fab>
 	</div>
 
-	<div class="mixture-state">
-		<h2>Totals</h2>
-		<ABVComponent id="mixture-abv" abv={analysis.abv} onInput={handleAbvInput} />
+	<div class="mixture-state mt-6">
+		<h2 class="mb-4 text-2xl font-bold">Totals</h2>
+		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
 
-		<div class="flex items-center justify-start space-x-4">
-			<div>
-				<label for="mixture-brix">Brix:</label>
-				<input
-					id="mixture-brix"
-					type="number"
-					bind:value={analysis.brix}
-					on:input={handleBrixInput}
-					class="w-16 rounded border px-2 py-1"
-				/>
-				% sugar by weight
-			</div>
-		</div>
-		<VolumeComponent id='mixture-volume' volume={analysis.volume} onInput={handleVolumeInput} />
-		<MassComponent id='mixture-mass' mass={analysis.mass} onInput={null} />
+		<BrixComponent brix={analysis.brix} onInput={handleBrixInput} />
+		<VolumeComponent volume={analysis.volume} onInput={handleVolumeInput} />
+		<MassComponent mass={analysis.mass} onInput={null} />
 	</div>
 </div>
 

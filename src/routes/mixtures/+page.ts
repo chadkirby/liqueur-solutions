@@ -1,8 +1,9 @@
-import { Mixture, type SpiritData, type SugarData, type WaterData, type SyrupData } from '$lib/solutions.js';
+import { deserialize } from '$lib';
+import type { SpiritData, WaterData, SugarData, SyrupData } from '$lib';
 
 export function load({ url }: {url: URL}): Record<string, SpiritData | WaterData | SugarData | SyrupData> {
 	try {
-		const mixture = Mixture.deserialize(url.searchParams);
+		const mixture = deserialize(url.searchParams);
 		return Object.fromEntries([...mixture].map(([key, { data }]) => [key, data]));
 	} catch (err) {
     console.error(err);

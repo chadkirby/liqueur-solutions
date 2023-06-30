@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sugar, type Component } from '../lib/solutions';
+	import { Sugar, type Component } from '../lib/index.js';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import MassComponent from './Mass.svelte'
 	import VolumeComponent from './Volume.svelte'
@@ -27,6 +27,6 @@
 
 <div class="mixture flex items-center justify-start space-x-5">
 	<h2 class="text-xl font-bold">{name}</h2>
-	<MassComponent id="{name}-mass" mass={analysis.mass} onInput={updateAnalysis} />
-	<VolumeComponent id="{name}-volume" volume={analysis.volume} onInput={null} />
+	<MassComponent mass={analysis.mass} onInput={updateAnalysis} />
+	<VolumeComponent volume={analysis.volume} onInput={null} />
 </div>

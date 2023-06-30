@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Spirit } from '../lib/solutions';
+	import { Spirit } from '../lib/index.js';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
@@ -38,8 +38,8 @@
 	<h2 class="text-xl font-bold">{name}</h2>
 
 	<div class="flex items-center space-x-4">
-		<VolumeComponent id="{name}-volume" {volume} onInput={updateVolume} />
-		<ABVComponent id="{name}-abv" {abv} onInput={updateAbv} />
-		<MassComponent id="{name}-mass" mass={analysis.mass} onInput={null} />
+		<VolumeComponent {volume} onInput={updateVolume} />
+		<ABVComponent {abv} onInput={updateAbv} />
+		<!-- <MassComponent mass={analysis.mass} onInput={null} /> -->
 	</div>
 </div>

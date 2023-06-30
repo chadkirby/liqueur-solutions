@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Water, type Component } from '../lib/solutions';
+	import { Water, type Component } from '../lib/index.js';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import VolumeComponent from './Volume.svelte';
 	import MassComponent from './Mass.svelte';
@@ -27,6 +27,6 @@
 
 <div class="mixture flex items-center justify-start space-x-5">
 	<h2 class="text-xl font-bold">{name}</h2>
-	<VolumeComponent id="{name}-volume" {volume} onInput={updateVolume} />
-	<MassComponent id="{name}-mass" mass={analysis.mass} onInput={null} />
+	<VolumeComponent {volume} onInput={updateVolume} />
+	<MassComponent mass={analysis.mass} onInput={null} />
 </div>
