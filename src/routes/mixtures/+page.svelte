@@ -1,10 +1,11 @@
 <script>
-  import MixtureList from '../../components/MixtureList.svelte';
+  import MixtureList from './MixtureList.svelte';
+  export let data;
 </script>
 
 <div class="mixtures-page">
   <h1>Mixtures</h1>
-  <MixtureList />
+  <MixtureList {data} />
 </div>
 
 <style>
