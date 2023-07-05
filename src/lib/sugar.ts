@@ -1,6 +1,6 @@
 import type { Component, SugarData } from "./component.js";
 import type { Target } from './solver.js';
-import { round, serialize, analyze } from './utils.js';
+import { round, analyze } from './utils.js';
 
 export class Sugar implements Component {
 	static density = 1.59;
@@ -13,24 +13,22 @@ export class Sugar implements Component {
 	readonly alcoholVolume = 0;
 	readonly alcoholMass = 0;
 
+	static is(component: unknown): component is Sugar {
+		return component instanceof Sugar;
+	}
+
 	constructor(public mass: number) {}
 
 	get data(): SugarData {
 		const { type, mass } = this;
 		return { type, mass: round(mass, 1) };
 	}
-	serialize(): string {
-		return serialize(this.data);
-	}
 
-	clone({ volume = this.volume }: { volume?: number } = {}) {
-		return new Sugar(volume / Sugar.density);
+	clone() {
+		return new Sugar(this.mass);
 	}
 	analyze(precision = 0): Target & { mass: number } {
 		return analyze(this, precision);
-	}
-	setVolume(volume: number) {
-		this.mass = volume / Sugar.density;
 	}
 	get sugarVolume() {
 		return this.mass / Sugar.density;
@@ -39,7 +37,7 @@ export class Sugar implements Component {
 		return this.sugarVolume;
 	}
 	set volume(volume: number) {
-		this.setVolume(volume);
+		this.mass = volume * Sugar.density;
 	}
 	get sugarMass() {
 		return this.mass;

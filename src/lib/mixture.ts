@@ -2,13 +2,22 @@ import type { Component, ComponentNumberKeys } from './component.js';
 import type { Target } from './solver.js';
 import { analyze } from './utils.js';
 
-export class Mixture<T extends Record<string, Component>> {
-	constructor(readonly components: T = {} as T) {}
+export class Mixture<T extends Component = Component> {
+	constructor(readonly components: Array<{ name: string; component: T }> = []) {}
+
+	clone() {
+		return new Mixture<T>(
+			this.components.map((item) => ({
+				name: item.name,
+				component: item.component.clone() as T
+			}))
+		);
+	}
 
 	serialize(precision = 0): string {
 		const params = new URLSearchParams();
-		for (const [key, component] of this) {
-			params.append('name', key);
+		for (const { name, component } of this) {
+			params.append('name', name);
 			for (const [k, v] of Object.entries(component.data)) {
 				if (typeof v === 'number') {
 					params.append(k, v.toFixed(precision));
@@ -20,19 +29,22 @@ export class Mixture<T extends Record<string, Component>> {
 		return params.toString();
 	}
 
-	get mixtureData() {
-		return Object.fromEntries([...this].map(([k, v]) => [k, v.data]));
+	get componentObjects() {
+		return this.components.map(({ component }) => component);
 	}
-	clone() {
-		return new Mixture<T>(
-			Object.fromEntries(
-				Object.entries(this.components).map(([key, component]) => [key, component.clone()])
-			) as T
-		);
+
+	findComponent(predicate: (component: T) => boolean): T | undefined {
+		return this.components.find(({ component }) => predicate(component))?.component;
 	}
+
+	findByType<X extends Component>(is: (x: unknown) => x is X): X | undefined {
+		return this.components.find(({ component }) => is(component))?.component as X | undefined;
+	}
+
+
 	// iterator to iterate over components
 	[Symbol.iterator]() {
-		return Object.entries(this.components)[Symbol.iterator]();
+		return this.components[Symbol.iterator]();
 	}
 	get abv() {
 		return (100 * this.alcoholVolume) / this.volume;
@@ -66,7 +78,7 @@ export class Mixture<T extends Record<string, Component>> {
 	}
 
 	private sumComponents(key: ComponentNumberKeys): number {
-		return Object.values(this.components).reduce((sum, component) => sum + component[key], 0);
+		return this.components.reduce((sum, { component }) => sum + component[key], 0);
 	}
 
 	analyze(precision = 0): Target & {

@@ -34,12 +34,6 @@
 	}
 </script>
 
-<div class="mixture flex items-center justify-start space-x-5">
-	<h2 class="text-xl font-bold">{name}</h2>
-
-	<div class="flex items-center space-x-4">
-		<VolumeComponent {volume} onInput={updateVolume} />
-		<ABVComponent {abv} onInput={updateAbv} />
-		<!-- <MassComponent mass={analysis.mass} onInput={null} /> -->
-	</div>
-</div>
+<VolumeComponent {volume} onInput={updateVolume} />
+<ABVComponent {abv} onInput={updateAbv} />
+<!-- <MassComponent mass={analysis.mass} onInput={null} /> -->

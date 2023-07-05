@@ -1,10 +1,9 @@
 <script>
-  import MixtureList from './MixtureList.svelte';
+  import MixtureList from '../../components/MixtureList.svelte';
   export let data;
 </script>
 
 <div class="mixtures-page">
-  <h1>Mixtures</h1>
   <MixtureList {data} />
 </div>
 

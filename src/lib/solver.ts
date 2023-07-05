@@ -1,7 +1,9 @@
-import { Mixture } from "./mixture.js";
-import { Spirit } from "./spirit.js";
-import { Sugar } from "./sugar.js";
-import { Water } from "./water.js";
+import { Ethanol } from './ethanol.js';
+import { Mixture } from './mixture.js';
+import { Spirit } from './spirit.js';
+import { Sugar } from './sugar.js';
+import { Syrup } from './syrup.js';
+import { Water } from './water.js';
 
 export interface Target {
 	abv: number;
@@ -14,15 +16,22 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 		throw new Error(`Target ABV (${targetAbv}) must be less than source ABV (${sourceSpirit.abv})`);
 	}
 
+	const ethanol = sourceSpirit.findByType(Ethanol.is);
+	if (!ethanol) throw new Error('Ethanol component not found');
+
 	const volumeAtTargetAbv = sourceSpirit.alcoholVolume / (targetAbv / 100);
+	const syrup = new Syrup(volumeAtTargetAbv - sourceSpirit.volume, targetBrix);
+	const water = syrup.findByType(Water.is);
+	if (!water) throw new Error('Water component not found');
+	const sugar = syrup.findByType(Sugar.is);
+	if (!sugar) throw new Error('Sugar component not found');
 
-	const mixture = new Mixture({
-		ethanol: sourceSpirit.components.ethanol.clone(),
-		water: new Water(volumeAtTargetAbv * (1 - targetBrix / 100)),
-		sugar: new Sugar(volumeAtTargetAbv * (targetBrix / 100))
-	});
-
-	const components = mixture.components;
+	const components = [
+		{ name: 'ethanol', component: ethanol.clone() },
+		{ name: 'water', component: water },
+		{ name: 'sugar', component: sugar }
+	];
+	const mixture = new Mixture<Water | Ethanol | Sugar>(components);
 
 	let error = 1;
 	let iterations = 1000;
@@ -32,19 +41,19 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 		const { volume, mass } = mixture;
 
 		// is abv is below target, we need less water
-		components.water.volume -= volume * dError_dAbv;
+		water.volume -= volume * dError_dAbv;
 		// if brix is below target, we need more sugar
-		components.sugar.mass *= 1 + dError_dBrix;
+		sugar.mass *= 1 + dError_dBrix;
 		// if brix is below target, we need less water
-		components.water.volume -= mass * dError_dBrix;
+		water.volume -= mass * dError_dBrix;
 
 		// Ensure component volumes and mass stay within the valid range
-		components.ethanol.volume = Math.min(
+		ethanol.volume = Math.min(
 			sourceSpirit.alcoholVolume,
-			Math.max(0, components.ethanol.volume)
+			Math.max(0, ethanol.volume)
 		);
-		components.water.volume = Math.max(0, components.water.volume);
-		components.sugar.mass = Math.max(0, components.sugar.mass);
+		water.volume = Math.max(0, water.volume);
+		sugar.mass = Math.max(0, sugar.mass);
 
 		error = Math.sqrt((mixture.abv - targetAbv) ** 2 + (mixture.brix - targetBrix) ** 2);
 	}
@@ -57,11 +66,11 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 	const targetSugar = new Sugar(mixture.sugarMass);
 	const targetWater = new Water(Math.round(mixture.waterVolume - targetSpirit.waterVolume));
 
-	const output = new Mixture({
-		spirit: targetSpirit,
-		sugar: targetSugar,
-		water: targetWater
-	});
+	const output = new Mixture<Water | Spirit | Sugar>([
+		{name:'spirit', component: targetSpirit,},
+		{name:'sugar', component: targetSugar,},
+		{name:'water', component: targetWater},
+	]);
 
 	return {
 		mixture: output,
@@ -69,4 +78,3 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 		iterations: 1000 - iterations
 	};
 }
-

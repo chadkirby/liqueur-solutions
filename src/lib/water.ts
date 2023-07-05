@@ -1,6 +1,6 @@
 import type { Component, WaterData } from "./component.js";
 import type { Target } from './solver.js';
-import { round, serialize, analyze } from './utils.js';
+import { round, analyze } from './utils.js';
 
 export class Water implements Component {
 	readonly type = 'water';
@@ -13,13 +13,14 @@ export class Water implements Component {
 	readonly alcoholVolume = 0;
 	readonly alcoholMass = 0;
 
+	static is(component: unknown): component is Water {
+		return component instanceof Water;
+	}
+
 	constructor(public volume: number) {}
 	get data(): WaterData {
 		const { type, volume } = this;
 		return { type, volume: round(volume, 1) };
-	}
-	serialize(): string {
-		return serialize(this.data);
 	}
 	clone() {
 		return new Water(this.volume);
@@ -27,9 +28,7 @@ export class Water implements Component {
 	analyze(precision = 0): Target & { mass: number } {
 		return analyze(this, precision);
 	}
-	setVolume(volume: number) {
-		this.volume = volume;
-	}
+
 	get waterVolume() {
 		return this.volume;
 	}

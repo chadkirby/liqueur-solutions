@@ -54,6 +54,14 @@ export type SyrupData = {
 	brix: number;
 };
 
+export interface Component extends ComponentData {
+	clone(): Component;
+	analyze(precision?: number): Target & {
+		mass: number;
+	};
+	data: SpiritData | WaterData | SugarData | SyrupData;
+}
+
 export function checkData(type: 'spirit', input: unknown): input is SpiritData;
 export function checkData(type: 'water', input: unknown): input is WaterData;
 export function checkData(type: 'sugar', input: unknown): input is SugarData;
@@ -83,26 +91,15 @@ export function checkData(
 	}
 }
 
-export function isSpirit(data: unknown): data is SpiritData {
+export function isSpiritData(data: unknown): data is SpiritData {
 	return checkData('spirit', data);
 }
-export function isWater(data: unknown): data is WaterData {
+export function isWaterData(data: unknown): data is WaterData {
 	return checkData('water', data);
 }
-export function isSugar(data: unknown): data is SugarData {
+export function isSugarData(data: unknown): data is SugarData {
 	return checkData('sugar', data);
 }
-export function isSyrup(data: unknown): data is SyrupData {
+export function isSyrupData(data: unknown): data is SyrupData {
 	return checkData('syrup', data);
-}
-
-
-export interface Component extends ComponentData {
-	clone(arg?: { volume?: number; brix?: number; abv?: number }): Component;
-	analyze(precision?: number): Target & {
-		mass: number;
-	};
-	setVolume(volume: number): void;
-	serialize(): string;
-	data: SpiritData | WaterData | SugarData | SyrupData;
 }

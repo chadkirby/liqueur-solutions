@@ -1,5 +1,5 @@
-import type { ComponentData, SpiritData, SugarData, SyrupData, WaterData } from "./component.js";
-import type { Target } from "./solver.js";
+import type { ComponentData } from './component.js';
+import type { Target } from './solver.js';
 
 export function round(value: number, precision: number) {
 	const factor = 10 ** precision;
@@ -17,12 +17,6 @@ export function computeSg(brix: number) {
 	);
 }
 
-export function serialize(data: SpiritData | WaterData | SugarData | SyrupData): string {
-	return Object.values(data)
-		.map((d) => (typeof d === 'number' ? d.toFixed(0) : d))
-		.join('-');
-}
-
 export function analyze(
 	item: Pick<ComponentData, 'volume' | 'mass' | 'abv' | 'brix'>,
 	precision = 0
@@ -36,4 +30,3 @@ export function analyze(
 		brix: round(item.brix, precision)
 	};
 }
-

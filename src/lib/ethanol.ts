@@ -1,6 +1,6 @@
 import type { Component, SpiritData } from './component.js';
 import type { Target } from './solver.js';
-import { round, serialize, analyze } from './utils.js';
+import { round, analyze } from './utils.js';
 
 export class Ethanol implements Component {
 	readonly type = 'spirit';
@@ -13,20 +13,18 @@ export class Ethanol implements Component {
 	readonly waterVolume = 0;
 	readonly waterMass = 0;
 
+	static is(component: unknown): component is Ethanol {
+		return component instanceof Ethanol;
+	}
+
 	constructor(public volume: number) {}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
 		return { type, volume: round(volume, 1), abv: round(abv, 1) };
 	}
 
-	serialize(): string {
-		return serialize(this.data);
-	}
 	clone() {
 		return new Ethanol(this.volume);
-	}
-	setVolume(volume: number) {
-		this.volume = volume;
 	}
 
 	get alcoholVolume() {

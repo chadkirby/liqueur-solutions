@@ -5,9 +5,11 @@
 	import { decimalToFraction } from '../lib/decimal-to-fraction.js';
 	export let onInput: null | ((event: Event) => void) = null;
 	export let volume: number = 100;
+	let rounded: number;
 	let showDetails = false;
 	let flOz: number;
 	let cups: number;
+	$: rounded = Math.round(volume);
 	$: flOz = volume * 0.033814;
 	$: cups = flOz / 8;
 </script>
@@ -19,9 +21,10 @@
 	<div>
 		<Textfield
 			class="w-20"
-			bind:value={volume}
+			bind:value={rounded}
 			label="Volume"
 			type="number"
+			input$inputmode="numeric"
 			on:input={onInput ? onInput : () => {}}
 			suffix="ml"
 			invalid={volume < 0}

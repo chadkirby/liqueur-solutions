@@ -6,6 +6,8 @@
 	export let mass: number = 100; // grams
 	let showDetails = false;
 	let ounces: number;
+	let rounded: number;
+	$: rounded = Math.round(mass);
 	$: ounces = mass * 0.035274;
 </script>
 
@@ -16,7 +18,7 @@
 	<div>
 		<Textfield
 			class="w-20"
-			bind:value={mass}
+			bind:value={rounded}
 			label="Mass"
 			type="number"
 			on:input={onInput ? onInput : () => {}}
