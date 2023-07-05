@@ -240,28 +240,29 @@
 			<Icon class="material-icons">add_circle</Icon>
 			<Label>spirit</Label>
 		</Fab>
-		{#if !Object.values(data.components).some(isWaterData)}
+		{#if !Object.values(data.components).some((c) => isWaterData(c.data))}
 			<Fab on:click={addWater} extended>
 				<Icon class="material-icons">add_circle</Icon>
 				<Label>water</Label>
 			</Fab>
 		{/if}
-		{#if !Object.values(data.components).some(isSugarData)}
+		{#if !Object.values(data.components).some(c => isSugarData(c.data))}
 			<Fab on:click={addSugar} extended>
 				<Icon class="material-icons">add_circle</Icon>
 				<Label>sugar</Label>
 			</Fab>
 		{/if}
-		<Fab on:click={addSyrup} extended>
-			<Icon class="material-icons">add_circle</Icon>
-			<Label>syrup</Label>
-		</Fab>
+		{#if !Object.values(data.components).some(c => isSyrupData(c.data))}
+			<Fab on:click={addSyrup} extended>
+				<Icon class="material-icons">add_circle</Icon>
+				<Label>syrup</Label>
+			</Fab>
+		{/if}
 	</div>
 
 	<div class="mixture-state mt-6">
 		<h2 class="mb-4 text-2xl font-bold">Totals</h2>
 		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
-
 		<BrixComponent brix={analysis.brix} onInput={handleBrixInput} />
 		<VolumeComponent volume={analysis.volume} onInput={handleVolumeInput} />
 		<MassComponent mass={analysis.mass} onInput={null} />
