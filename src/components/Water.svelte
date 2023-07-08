@@ -13,10 +13,9 @@
 		analysis = new Water(volume).analyze(0);
 	});
 
-	const updateVolume = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-    volume = parseFloat(target.value);
-
+	const updateVolume = (event: CustomEvent) => {
+		if (volume === event.detail) return;
+    volume = event.detail;
 		analysis = new Water(volume).analyze(0);
 		dispatcher('update', {name, volume});
 	};

@@ -9,14 +9,14 @@
 	export let brix: number = 50;
 	export let volume: number = 100;
 
-	const updateVolume = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		volume = parseFloat(target.value);
+	const updateVolume = (event: CustomEvent) => {
+		if (volume === event.detail) return;
+		volume = event.detail;
 		dispatcher('update', { name, volume, brix });
 	};
-	const updateBrix = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		brix = parseFloat(target.value);
+	const updateBrix = (event: CustomEvent) => {
+		if (brix === event.detail) return;
+		brix = event.detail;
 		dispatcher('update', { name, volume, brix });
 	};
 </script>

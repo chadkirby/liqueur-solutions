@@ -32,7 +32,7 @@
 				type="number"
 				bind:value={volume}
 				on:input={updateAnalysis}
-				class="w-20 rounded border px-2 py-1"
+				class="w-24 rounded border px-2 py-1"
 			/>
 		</div>
 		<!-- show/update ABV -->
@@ -43,7 +43,7 @@
 				type="number"
 				bind:value={abv}
 				on:input={updateAnalysis}
-				class="w-16 rounded border px-2 py-1"
+				class="w-24 rounded border px-2 py-1"
 			/>
 		</div>
 		<!-- show/update Brix -->
@@ -54,7 +54,7 @@
 				type="number"
 				bind:value={abv}
 				on:input={updateAnalysis}
-				class="w-16 rounded border px-2 py-1"
+				class="w-24 rounded border px-2 py-1"
 			/>
 		</div>
 	</div>

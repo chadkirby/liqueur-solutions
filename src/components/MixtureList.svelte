@@ -70,10 +70,8 @@
 		updateAnalysis();
 	}, 100);
 
-	const handleVolumeInput = debounce((event: Event) => {
-		if (!(event.target instanceof HTMLInputElement)) return;
-		// Call your function here
-		solveVolume(Number(event.target.value));
+	const handleVolumeInput = debounce((event: CustomEvent) => {
+		solveVolume(event.detail);
 	}, 100);
 
 	function solveVolume(newVolume: number) {
@@ -88,9 +86,8 @@
 		updateAnalysis(dataMx);
 	}
 
-	const handleAbvInput = debounce((event: Event) => {
-		if (!(event.target instanceof HTMLInputElement)) return;
-		solveAbv(Number(event.target.value));
+	const handleAbvInput = debounce((event: CustomEvent) => {
+		solveAbv(event.detail);
 	}, 100);
 
 	const changeName = debounce((newName: string, index: number) => {
@@ -141,10 +138,8 @@
 		updateAnalysis(dataMx);
 	}
 
-	const handleBrixInput = debounce((event: Event) => {
-		if (!(event.target instanceof HTMLInputElement)) return;
-		// Call your function here
-		solveBrix(Number(event.target.value));
+	const handleBrixInput = debounce((event: CustomEvent) => {
+		solveBrix(event.detail);
 	}, 100);
 
 	function solveBrix(newBrix: number) {
@@ -187,8 +182,9 @@
 	}
 </script>
 
-<div class="mixture-list grid gap-4">
+<div class="flex flex-col gap-x-2 gap-y-2">
 	<Textfield
+		class="col-span-4"
 		input$class="font-sans text-2xl font-bold"
 		bind:value={data.liqueur}
 		on:input={() => updateAnalysis()}
@@ -196,81 +192,80 @@
 	/>
 
 	{#each data.components.entries() as [index, { name, data: entry }] (index)}
-		<div class="mixture-item flex items-center space-x-4 rounded bg-white p-4 shadow">
-			<div class="mixture flex items-center justify-start space-x-5">
+		<div class="flex flex-col">
+			<div class="flex flex-row gap-x-2 max-w-lg items-center">
 				<Textfield
-					input$class="font-sans text-xl font-bold"
-					class="w-20"
+					class="flex-grow"
+					input$class="font-sans text-lg font-bold"
+					variant="outlined"
 					value={name}
+					label={entry.type}
 					on:input={(event) =>
 						event.target instanceof HTMLInputElement && changeName(event.target.value, index)}
 					required
 				/>
-
-				<div class="flex items-center space-x-4">
-					{#if isSpiritData(entry)}
-						<SpiritComponent
-							{name}
-							volume={entry.volume}
-							abv={entry.abv}
-							on:update={updateFromIngredient}
-						/>
-					{:else if isWaterData(entry)}
-						<WaterComponent {name} volume={entry.volume} on:update={updateFromIngredient} />
-					{:else if isSugarData(entry)}
-						<SugarComponent {name} mass={entry.mass} on:update={updateFromIngredient} />
-					{:else if isSyrupData(entry)}
-						<SyrupComponent
-							{name}
-							volume={entry.volume}
-							brix={entry.brix}
-							on:update={updateFromIngredient}
-						/>
-					{/if}
-					<Fab on:click={() => removeComponent(name)} mini>
-						<Icon class="material-icons">cancel</Icon>
-					</Fab>
-				</div>
+				<Fab on:click={() => removeComponent(name)} mini>
+					<Icon class="material-icons">cancel</Icon>
+				</Fab>
 			</div>
+
+			<div class="flex flex-row">
+				{#if isSpiritData(entry)}
+					<SpiritComponent
+						{name}
+						volume={entry.volume}
+						abv={entry.abv}
+						on:update={updateFromIngredient}
+					/>
+				{:else if isWaterData(entry)}
+					<WaterComponent {name} volume={entry.volume} on:update={updateFromIngredient} />
+				{:else if isSugarData(entry)}
+					<SugarComponent {name} mass={entry.mass} on:update={updateFromIngredient} />
+				{:else if isSyrupData(entry)}
+					<SyrupComponent
+						{name}
+						volume={entry.volume}
+						brix={entry.brix}
+						on:update={updateFromIngredient}
+					/>
+				{/if}
+			</div>
+			<hr class="col-span-4 w-full" />
 		</div>
 	{/each}
+</div>
 
-	<div class="flex items-center space-x-4">
-		<Fab on:click={addSpirit} extended>
+<div class="mt-3 flex flex-row items-center gap-x-2 gap-y-2 pt-1">
+	<Fab on:click={addSpirit} extended>
+		<Icon class="material-icons">add_circle</Icon>
+		<Label>spirit</Label>
+	</Fab>
+	{#if !Object.values(data.components).some((c) => isWaterData(c.data))}
+		<Fab on:click={addWater} extended>
 			<Icon class="material-icons">add_circle</Icon>
-			<Label>spirit</Label>
+			<Label>water</Label>
 		</Fab>
-		{#if !Object.values(data.components).some((c) => isWaterData(c.data))}
-			<Fab on:click={addWater} extended>
-				<Icon class="material-icons">add_circle</Icon>
-				<Label>water</Label>
-			</Fab>
-		{/if}
-		{#if !Object.values(data.components).some(c => isSugarData(c.data))}
-			<Fab on:click={addSugar} extended>
-				<Icon class="material-icons">add_circle</Icon>
-				<Label>sugar</Label>
-			</Fab>
-		{/if}
-		{#if !Object.values(data.components).some(c => isSyrupData(c.data))}
-			<Fab on:click={addSyrup} extended>
-				<Icon class="material-icons">add_circle</Icon>
-				<Label>syrup</Label>
-			</Fab>
-		{/if}
-	</div>
+	{/if}
+	{#if !Object.values(data.components).some((c) => isSugarData(c.data))}
+		<Fab on:click={addSugar} extended>
+			<Icon class="material-icons">add_circle</Icon>
+			<Label>sugar</Label>
+		</Fab>
+	{/if}
+	{#if !Object.values(data.components).some((c) => isSyrupData(c.data))}
+		<Fab on:click={addSyrup} extended>
+			<Icon class="material-icons">add_circle</Icon>
+			<Label>syrup</Label>
+		</Fab>
+	{/if}
+</div>
 
-	<div class="mixture-state mt-6">
-		<h2 class="mb-4 text-2xl font-bold">Totals</h2>
+<div class="mt-3 items-center gap-x-2 gap-y-2 border-t-2 pt-1">
+	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
+	<div class="flex flex-row flex-wrap">
 		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
 		<BrixComponent brix={analysis.brix} onInput={handleBrixInput} />
 		<VolumeComponent volume={analysis.volume} onInput={handleVolumeInput} />
 		<MassComponent mass={analysis.mass} onInput={null} />
 	</div>
 </div>
-
-<style>
-	.mixture-item {
-		margin-bottom: 1rem;
-	}
-</style>

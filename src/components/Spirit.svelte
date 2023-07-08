@@ -15,16 +15,16 @@
 		analysis = new Spirit(volume, abv).analyze(0);
 	});
 
-	const updateVolume = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    volume = parseFloat(target.value);
+	const updateVolume = (event: CustomEvent) => {
+		if (volume === event.detail) return;
+		volume = event.detail;
 		analysis = new Spirit(volume, abv).analyze(0);
 		dispatcher('update', { name, volume, abv });
 	};
 
-	const updateAbv = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    abv = parseFloat(target.value);
+	const updateAbv = (event: CustomEvent) => {
+		if (abv === event.detail) return;
+		abv = event.detail;
 		analysis = new Spirit(volume, abv).analyze(0);
 		dispatcher('update', { name, volume, abv });
 	};

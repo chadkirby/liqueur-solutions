@@ -14,9 +14,9 @@
 		analysis = new Sugar(mass).analyze(0);
 	});
 
-	const updateAnalysis = (event: Event) => {
-		const target = event.target as HTMLInputElement;
-    mass = parseFloat(target.value);
+	const updateAnalysis = (event: CustomEvent) => {
+		if (mass === event.detail) return;
+    mass = event.detail;
 		analysis = new Sugar(mass).analyze(0);
 		dispatcher('update', {name, mass});
 	};
