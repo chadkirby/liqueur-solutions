@@ -86,4 +86,8 @@ export class Mixture<T extends Component = Component> {
 	} {
 		return analyze(this, precision);
 	}
+
+	get isValid(): boolean {
+		return this.components.every(({ component }) => component.isValid);
+	}
 }

@@ -8,5 +8,14 @@
 </script>
 
 <div class="mx-1">
-	<NumberSpinner label="ABV" suffix="%" value={abv} max={100} {onInput} />
+	<NumberSpinner
+		label="ABV"
+		suffix="%"
+		value={abv}
+		max={100}
+		{onInput}
+		keyStep={1}
+		keyStepFast={10}
+		keyStepSlow={0.1}
+	/>
 </div>

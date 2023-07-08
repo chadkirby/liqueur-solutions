@@ -27,6 +27,11 @@ export class Sugar implements Component {
 	clone() {
 		return new Sugar(this.mass);
 	}
+
+	get isValid() {
+		return this.mass >= 0;
+	}
+
 	analyze(precision = 0): Target & { mass: number } {
 		return analyze(this, precision);
 	}

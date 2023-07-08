@@ -8,6 +8,9 @@
 	export let label: string;
 	export let suffix: string;
 	export let max = Infinity
+	export let keyStep = 10;
+	export let keyStepSlow = 1;
+	export let keyStepFast = 100;
 	let rounded: number;
 	$: rounded = Math.round(value);
 	const id = Math.random().toString(36).substring(2);
@@ -24,7 +27,7 @@
 		<NumberSpinner
 			id="volume-{id}"
 			class="mdc-text-field__input"
-			bind:value={rounded}
+			value={rounded}
 			on:input={onInput}
 			min="1"
 			max={max}
@@ -33,7 +36,9 @@
 			editOnClick={true}
 			vertical={true}
 			horizontal={false}
-
+			keyStep={keyStep}
+			keyStepSlow={keyStepSlow}
+			keyStepFast={keyStepFast}
 		/>
 		<span class="mdc-text-field__affix mdc-text-field__affix--suffix">{suffix}</span>
 		<div class="mdc-line-ripple" style="" />

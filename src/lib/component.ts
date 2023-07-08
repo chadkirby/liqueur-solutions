@@ -60,6 +60,7 @@ export interface Component extends ComponentData {
 		mass: number;
 	};
 	data: SpiritData | WaterData | SugarData | SyrupData;
+	isValid: boolean;
 }
 
 export function checkData(type: 'spirit', input: unknown): input is SpiritData;

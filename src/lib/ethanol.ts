@@ -27,6 +27,10 @@ export class Ethanol implements Component {
 		return new Ethanol(this.volume);
 	}
 
+	get isValid() {
+		return this.volume >= 0;
+	}
+
 	get alcoholVolume() {
 		return this.volume;
 	}

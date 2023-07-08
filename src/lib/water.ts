@@ -29,6 +29,11 @@ export class Water implements Component {
 		return analyze(this, precision);
 	}
 
+	get isValid() {
+		return this.volume >= 0;
+	}
+
+
 	get waterVolume() {
 		return this.volume;
 	}

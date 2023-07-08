@@ -49,12 +49,14 @@
 	let analysis = dataToMixture().analyze(0);
 
 	function updateAnalysis(mixture = dataToMixture()) {
-		analysis = mixture.analyze(0);
-		goto(`/${encodeURIComponent(data.liqueur)}?${mixture.serialize(1)}`, {
-			replaceState: true,
-			noScroll: true,
-			keepFocus: true
-		});
+		if (mixture.isValid) {
+			analysis = mixture.analyze(0);
+			goto(`/${encodeURIComponent(data.liqueur)}?${mixture.serialize(1)}`, {
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true
+			});
+		}
 	}
 
 	const updateFromIngredient = debounce((e) => {
@@ -71,8 +73,14 @@
 	}, 100);
 
 	const handleVolumeInput = debounce((event: CustomEvent) => {
-		solveVolume(event.detail);
+		if (!roundEq(event.detail, analysis.volume)) {
+			solveVolume(event.detail);
+		}
 	}, 100);
+
+	function roundEq(a: number, b: number) {
+		return Math.round(a) === Math.round(b);
+	}
 
 	function solveVolume(newVolume: number) {
 		if (newVolume < 1) return;
@@ -87,7 +95,9 @@
 	}
 
 	const handleAbvInput = debounce((event: CustomEvent) => {
-		solveAbv(event.detail);
+		if (!roundEq(event.detail, analysis.abv)) {
+			solveAbv(event.detail);
+		}
 	}, 100);
 
 	const changeName = debounce((newName: string, index: number) => {
@@ -139,7 +149,9 @@
 	}
 
 	const handleBrixInput = debounce((event: CustomEvent) => {
-		solveBrix(event.detail);
+		if (!roundEq(event.detail, analysis.brix)) {
+			solveBrix(event.detail);
+		}
 	}, 100);
 
 	function solveBrix(newBrix: number) {
@@ -193,7 +205,7 @@
 
 	{#each data.components.entries() as [index, { name, data: entry }] (index)}
 		<div class="flex flex-col">
-			<div class="flex flex-row gap-x-2 max-w-lg items-center">
+			<div class="flex max-w-lg flex-row items-center gap-x-2">
 				<Textfield
 					class="flex-grow"
 					input$class="font-sans text-lg font-bold"

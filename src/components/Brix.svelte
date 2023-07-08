@@ -9,5 +9,13 @@
 </script>
 
 <div class="mx-1">
-	<NumberSpinner label="ºBrix" suffix="%" value={brix} {onInput} />
+	<NumberSpinner
+	label="ºBrix"
+	suffix="%"
+	value={brix}
+	{onInput}
+	keyStep={1}
+	keyStepFast={10}
+	keyStepSlow={0.1}
+	/>
 </div>
