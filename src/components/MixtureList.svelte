@@ -15,7 +15,8 @@
 		isWaterData,
 		type Component,
 		type SugarData,
-		type SyrupData
+		type SyrupData,
+		dataToMixture
 	} from '$lib';
 	import SpiritComponent from './Spirit.svelte';
 	import SugarComponent from './Sugar.svelte';
@@ -30,25 +31,14 @@
 
 	export let data: PageData;
 
-	function dataToMixture(d: PageData = data) {
-		const ingredients = (d.components || []).map(({ name, data }) => {
-			if (isSpiritData(data)) return { name, component: new SpiritObject(data.volume, data.abv) };
-			if (isWaterData(data)) return { name, component: new WaterObject(data.volume) };
-			if (isSugarData(data)) return { name, component: new SugarObject(data.mass) };
-			if (isSyrupData(data)) return { name, component: new SyrupObject(data.volume, data.brix) };
-			throw new Error('Unknown mixture type');
-		});
-		return new MixtureObject<Component>(ingredients);
-	}
-
 	function mixtureToData(mixture: MixtureObject) {
 		const components = mixture.componentObjects.map((x) => x.data);
 		return { components };
 	}
 
-	let analysis = dataToMixture().analyze(0);
+	let analysis = dataToMixture(data).analyze(0);
 
-	function updateAnalysis(mixture = dataToMixture()) {
+	function updateAnalysis(mixture = dataToMixture(data)) {
 		if (mixture.isValid) {
 			analysis = mixture.analyze(0);
 			goto(`/${encodeURIComponent(data.liqueur)}?${mixture.serialize(1)}`, {
@@ -84,7 +74,7 @@
 
 	function solveVolume(newVolume: number) {
 		if (newVolume < 1) return;
-		const dataMx = dataToMixture();
+		const dataMx = dataToMixture(data);
 		if (newVolume === dataMx.volume) return;
 		const delta = newVolume / dataMx.volume;
 		for (const item of dataMx.componentObjects) {
@@ -110,7 +100,7 @@
 
 	function solveAbv(newAbv: number) {
 		if (newAbv < 1) return;
-		const mx = dataToMixture();
+		const mx = dataToMixture(data);
 		const oldAbv = mx.abv;
 		if (newAbv === oldAbv) return;
 		const spirit = mx.findByType(SpiritObject.is);
@@ -120,7 +110,7 @@
 	}
 
 	function updateDataFromSolution(solvedMx: MixtureObject) {
-		const dataMx = dataToMixture();
+		const dataMx = dataToMixture(data);
 
 		// update sugar
 		const sugarItems = dataMx.componentObjects.filter(
@@ -156,7 +146,7 @@
 
 	function solveBrix(newBrix: number) {
 		if (newBrix < 0) return;
-		const mx = dataToMixture();
+		const mx = dataToMixture(data);
 		const oldBrix = mx.brix;
 		if (newBrix === oldBrix) return;
 		const spirit = mx.findByType(SpiritObject.is);

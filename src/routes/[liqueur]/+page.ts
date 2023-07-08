@@ -1,5 +1,11 @@
-import { deserialize } from '$lib';
-import type { SpiritData, WaterData, SugarData, SyrupData } from '$lib';
+import {
+	type SpiritData,
+	type WaterData,
+	type SugarData,
+	type SyrupData,
+	dataToMixture,
+	deserialize
+} from '$lib';
 
 export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
 	liqueur: string;
@@ -9,6 +15,8 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 		const { components } = deserialize(url.searchParams);
 		// decode params.liqueur
 		const liqueur = decodeURIComponent(params.liqueur) ?? 'mixture';
+		const mixture = dataToMixture({ components });
+		if (!mixture.isValid) throw new Error('Invalid mixture');
 		return {
 			liqueur,
 			components
