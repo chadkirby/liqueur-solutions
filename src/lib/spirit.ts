@@ -28,7 +28,7 @@ export class Spirit extends Mixture<Water | Ethanol> {
 	}
 
 	get waterComponent() {
-		const component = this.componentObjects.find( Water.is);
+		const component = this.componentObjects.find(Water.is);
 		if (!component) throw new Error('Water component not found');
 		return component;
 	}

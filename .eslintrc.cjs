@@ -18,22 +18,23 @@ module.exports = {
 		es2017: true,
 		node: true
 	},
-	overrides: [{
-		files: ['*.cjs'],
-		parserOptions: {
-			sourceType: 'script',
+	overrides: [
+		{
+			files: ['*.cjs'],
+			parserOptions: {
+				sourceType: 'script'
+			},
+			rules: {
+				'@typescript-eslint/no-var-requires': 'off'
+			}
 		},
-		"rules": {
-			"@typescript-eslint/no-var-requires": "off"
-		}
-	},
 
-	{
-		files: ['*.svelte'],
-		parser: 'svelte-eslint-parser',
-		parserOptions: {
-			parser: '@typescript-eslint/parser'
+		{
+			files: ['*.svelte'],
+			parser: 'svelte-eslint-parser',
+			parserOptions: {
+				parser: '@typescript-eslint/parser'
+			}
 		}
-	}
 	]
 };

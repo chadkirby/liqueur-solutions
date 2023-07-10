@@ -41,7 +41,6 @@ export class Mixture<T extends Component = Component> {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-
 	// iterator to iterate over components
 	[Symbol.iterator]() {
 		return this.components[Symbol.iterator]();

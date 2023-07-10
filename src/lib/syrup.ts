@@ -28,7 +28,7 @@ export class Syrup extends Mixture<Water | Sugar> {
 	}
 
 	get waterComponent() {
-		const component = this.componentObjects.find( Water.is);
+		const component = this.componentObjects.find(Water.is);
 		if (!component) throw new Error('Water component not found');
 		return component;
 	}

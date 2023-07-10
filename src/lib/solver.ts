@@ -48,10 +48,7 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 		water.volume -= mass * dError_dBrix;
 
 		// Ensure component volumes and mass stay within the valid range
-		ethanol.volume = Math.min(
-			sourceSpirit.alcoholVolume,
-			Math.max(0, ethanol.volume)
-		);
+		ethanol.volume = Math.min(sourceSpirit.alcoholVolume, Math.max(0, ethanol.volume));
 		water.volume = Math.max(0, water.volume);
 		sugar.mass = Math.max(0, sugar.mass);
 
@@ -67,9 +64,9 @@ export function solve(sourceSpirit: Spirit, targetAbv: number, targetBrix: numbe
 	const targetWater = new Water(Math.round(mixture.waterVolume - targetSpirit.waterVolume));
 
 	const output = new Mixture<Water | Spirit | Sugar>([
-		{name:'spirit', component: targetSpirit,},
-		{name:'sugar', component: targetSugar,},
-		{name:'water', component: targetWater},
+		{ name: 'spirit', component: targetSpirit },
+		{ name: 'sugar', component: targetSugar },
+		{ name: 'water', component: targetWater }
 	]);
 
 	return {

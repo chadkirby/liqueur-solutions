@@ -1,4 +1,4 @@
-import type { Component, SugarData } from "./component.js";
+import type { Component, SugarData } from './component.js';
 import type { Target } from './solver.js';
 import { round, analyze } from './utils.js';
 

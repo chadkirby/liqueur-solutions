@@ -1,4 +1,4 @@
-import type { Component, WaterData } from "./component.js";
+import type { Component, WaterData } from './component.js';
 import type { Target } from './solver.js';
 import { round, analyze } from './utils.js';
 
@@ -32,7 +32,6 @@ export class Water implements Component {
 	get isValid() {
 		return this.volume >= 0;
 	}
-
 
 	get waterVolume() {
 		return this.volume;

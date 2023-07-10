@@ -1,4 +1,4 @@
-import type { Target } from "./solver.js";
+import type { Target } from './solver.js';
 
 const ComponentValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
 type ComponentValueKeys = (typeof ComponentValueKeys)[number];

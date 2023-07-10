@@ -1,73 +1,76 @@
 import test from 'tape';
 import { solve, Spirit } from '../src/solutions.js';
 test('solve solves 80ABV', (assert) => {
-    const { mixture, iterations } = solve(new Spirit(250, 80), 30, 20);
-    assert.deepEqual(mixture.analyze(0), {
-        abv: 30,
-        brix: 20,
-        mass: 675,
-        volume: 667,
-    });
-    assert.deepEqual(iterations, 47);
-    assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
-    assert.deepEqual(mixture.components.water.volume, 332, 'water volume');
-    assert.deepEqual(mixture.components.syrup.sugarMass, 135, 'sugar mass');
+	const { mixture, iterations } = solve(new Spirit(250, 80), 30, 20);
+	assert.deepEqual(mixture.analyze(0), {
+		abv: 30,
+		brix: 20,
+		mass: 675,
+		volume: 667
+	});
+	assert.deepEqual(iterations, 47);
+	assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.components.water.volume, 332, 'water volume');
+	assert.deepEqual(mixture.components.syrup.sugarMass, 135, 'sugar mass');
 });
 test('solve solves 40ABV', (assert) => {
-    const { mixture, iterations } = solve(new Spirit(250, 40), 30, 30);
-    assert.deepEqual(mixture.analyze(0), {
-        abv: 30,
-        brix: 30,
-        mass: 351,
-        volume: 333,
-    });
-    assert.deepEqual(iterations, 36);
-    assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
-    assert.deepEqual(mixture.components.water.volume, 17, 'water volume');
-    assert.deepEqual(mixture.components.syrup.sugarMass, 105, 'sugar mass');
+	const { mixture, iterations } = solve(new Spirit(250, 40), 30, 30);
+	assert.deepEqual(mixture.analyze(0), {
+		abv: 30,
+		brix: 30,
+		mass: 351,
+		volume: 333
+	});
+	assert.deepEqual(iterations, 36);
+	assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.components.water.volume, 17, 'water volume');
+	assert.deepEqual(mixture.components.syrup.sugarMass, 105, 'sugar mass');
 });
 test('solve solves 10brix', (assert) => {
-    const { mixture, iterations } = solve(new Spirit(250, 40), 25, 10);
-    assert.deepEqual(mixture.analyze(0), {
-        abv: 25,
-        brix: 10,
-        mass: 393,
-        volume: 400,
-    });
-    assert.deepEqual(iterations, 66);
-    assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
-    assert.deepEqual(mixture.components.water.volume, 125, 'water volume');
-    assert.deepEqual(mixture.components.syrup.mass, 39, 'sugar mass');
+	const { mixture, iterations } = solve(new Spirit(250, 40), 25, 10);
+	assert.deepEqual(mixture.analyze(0), {
+		abv: 25,
+		brix: 10,
+		mass: 393,
+		volume: 400
+	});
+	assert.deepEqual(iterations, 66);
+	assert.deepEqual(mixture.components.spirit.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.components.water.volume, 125, 'water volume');
+	assert.deepEqual(mixture.components.syrup.mass, 39, 'sugar mass');
 });
 test('solve solves with syrup', (assert) => {
-    const { mixture } = solve(new Spirit(250, 40), 25, 20, 50);
-    assert.deepEqual(mixture.analyze(0), {
-        abv: 25,
-        brix: 20,
-        mass: 410,
-        volume: 401,
-    });
-    assert.deepEqual(mixture.alcoholVolume, 100, 'alcohol volume');
-    assert.equals(mixture.volume, 400, 'total volume');
-    assert.deepEqual(mixture.mass, 410, 'mass');
-    assert.deepEqual(mixture.sugarMass, 82, 'sugar mass');
+	const { mixture } = solve(new Spirit(250, 40), 25, 20, 50);
+	assert.deepEqual(mixture.analyze(0), {
+		abv: 25,
+		brix: 20,
+		mass: 410,
+		volume: 401
+	});
+	assert.deepEqual(mixture.alcoholVolume, 100, 'alcohol volume');
+	assert.equals(mixture.volume, 400, 'total volume');
+	assert.deepEqual(mixture.mass, 410, 'mass');
+	assert.deepEqual(mixture.sugarMass, 82, 'sugar mass');
 });
 test('grapefruit', (assert) => {
-    const { mixture } = solve(new Spirit(900, 80), 40, 10);
-    assert.deepEqual({
-        abv: Math.round(mixture.abv),
-        brix: Math.round(mixture.brix),
-        totalVolume: Math.round(mixture.volume),
-        sugar: mixture.components.syrup.sugarMass,
-        water: mixture.components.water.volume,
-        spirit: mixture.components.spirit.volume,
-    }, {
-        abv: 30,
-        brix: 15,
-        spirit: 900,
-        sugar: 357,
-        totalVolume: 2401,
-        water: 1276,
-    });
+	const { mixture } = solve(new Spirit(900, 80), 40, 10);
+	assert.deepEqual(
+		{
+			abv: Math.round(mixture.abv),
+			brix: Math.round(mixture.brix),
+			totalVolume: Math.round(mixture.volume),
+			sugar: mixture.components.syrup.sugarMass,
+			water: mixture.components.water.volume,
+			spirit: mixture.components.spirit.volume
+		},
+		{
+			abv: 30,
+			brix: 15,
+			spirit: 900,
+			sugar: 357,
+			totalVolume: 2401,
+			water: 1276
+		}
+	);
 });
 //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic29sdXRpb25zX3Rlc3QuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJzb2x1dGlvbnNfdGVzdC50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSxPQUFPLElBQUksTUFBTSxNQUFNLENBQUM7QUFDeEIsT0FBTyxFQUFFLEtBQUssRUFBRSxNQUFNLEVBQUUsTUFBTSxxQkFBcUIsQ0FBQztBQUVwRCxJQUFJLENBQUMsb0JBQW9CLEVBQUUsQ0FBQyxNQUFNLEVBQUUsRUFBRTtJQUNwQyxNQUFNLEVBQUUsT0FBTyxFQUFFLFVBQVUsRUFBRSxHQUFHLEtBQUssQ0FBQyxJQUFJLE1BQU0sQ0FBQyxHQUFHLEVBQUUsRUFBRSxDQUFDLEVBQUUsRUFBRSxFQUFFLEVBQUUsQ0FBQyxDQUFDO0lBQ25FLE1BQU0sQ0FBQyxTQUFTLENBQ2QsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDLENBQUMsRUFDbEI7UUFDRSxHQUFHLEVBQUUsRUFBRTtRQUNQLElBQUksRUFBRSxFQUFFO1FBQ1IsSUFBSSxFQUFFLEdBQUc7UUFDVCxNQUFNLEVBQUUsR0FBRztLQUNaLENBQ0YsQ0FBQztJQUNGLE1BQU0sQ0FBQyxTQUFTLENBQ2QsVUFBVSxFQUNWLEVBQUUsQ0FDSCxDQUFDO0lBQ0YsTUFBTSxDQUFDLFNBQVMsQ0FDZCxPQUFPLENBQUMsVUFBVSxDQUFDLE1BQU0sQ0FBQyxNQUFNLEVBQ2hDLEdBQUcsRUFDSCxlQUFlLENBQ2hCLENBQUM7SUFDRixNQUFNLENBQUMsU0FBUyxDQUNkLE9BQU8sQ0FBQyxVQUFVLENBQUMsS0FBSyxDQUFDLE1BQU0sRUFDL0IsR0FBRyxFQUNILGNBQWMsQ0FDZixDQUFDO0lBQ0YsTUFBTSxDQUFDLFNBQVMsQ0FDZCxPQUFPLENBQUMsVUFBVSxDQUFDLEtBQUssQ0FBQyxTQUFTLEVBQ2xDLEdBQUcsRUFDSCxZQUFZLENBQ2IsQ0FBQztBQUNKLENBQUMsQ0FBQyxDQUFDO0FBRUgsSUFBSSxDQUFDLG9CQUFvQixFQUFFLENBQUMsTUFBTSxFQUFF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LEVBQ0gsTUFBTSxDQUNQLENBQUM7SUFDRixNQUFNLENBQUMsU0FBUyxDQUNkLE9BQU8sQ0FBQyxTQUFTLEVBQ2pCLEVBQUUsRUFDRixZQUFZLENBQ2IsQ0FBQztBQUNKLENBQUMsQ0FBQyxDQUFDO0FBRUgsSUFBSSxDQUFDLFlBQVksRUFBRSxDQUFDLE1BQU0sRUFBRSxFQUFFO0lBQzVCLE1BQU0sRUFBRSxPQUFPLEVBQUUsR0FBRyxLQUFLLENBQUMsSUFBSSxNQUFNLENBQUMsR0FBRyxFQUFFLEVBQUUsQ0FBQyxFQUFFLEVBQUUsRUFBRSxFQUFFLENBQUMsQ0FBQztJQUN2RCxNQUFNLENBQUMsU0FBUyxDQUNkO1FBQ0UsR0FBRyxFQUFFLElBQUksQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLEdBQUcsQ0FBQztRQUM1QixJQUFJLEVBQUUsSUFBSSxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDO1FBQzlCLFdBQVcsRUFBRSxJQUFJLENBQUMsS0FBSyxDQUFDLE9BQU8sQ0FBQyxNQUFNLENBQUM7UUFDdkMsS0FBSyxFQUFFLE9BQU8sQ0FBQyxVQUFVLENBQUMsS0FBSyxDQUFDLFNBQVM7UUFDekMsS0FBSyxFQUFFLE9BQU8sQ0FBQyxVQUFVLENBQUMsS0FBSyxDQUFDLE1BQU07UUFDdEMsTUFBTSxFQUFFLE9BQU8sQ0FBQyxVQUFVLENBQUMsTUFBTSxDQUFDLE1BQU07S0FDekMsRUFDRDtRQUNFLEdBQUcsRUFBRSxFQUFFO1FBQ1AsSUFBSSxFQUFFLEVBQUU7UUFDUixNQUFNLEVBQUUsR0FBRztRQUNYLEtBQUssRUFBRSxHQUFHO1FBQ1YsV0FBVyxFQUFFLElBQUk7UUFDakIsS0FBSyxFQUFFLElBQUk7S0FDWixDQUNGLENBQUM7QUFDSixDQUFDLENBQUMsQ0FBQyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB0ZXN0IGZyb20gJ3RhcGUnO1xuaW1wb3J0IHsgc29sdmUsIFNwaXJpdCB9IGZyb20gJy4uL3NyYy9zb2x1dGlvbnMuanMnO1xuXG50ZXN0KCdzb2x2ZSBzb2x2ZXMgODBBQlYnLCAoYXNzZXJ0KSA9PiB7XG4gIGNvbnN0IHsgbWl4dHVyZSwgaXRlcmF0aW9ucyB9ID0gc29sdmUobmV3IFNwaXJpdCgyNTAsIDgwKSwgMzAsIDIwKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICBtaXh0dXJlLmFuYWx5emUoMCksXG4gICAge1xuICAgICAgYWJ2OiAzMCxcbiAgICAgIGJyaXg6IDIwLFxuICAgICAgbWFzczogNjc1LFxuICAgICAgdm9sdW1lOiA2NjcsXG4gICAgfSxcbiAgKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICBpdGVyYXRpb25zLFxuICAgIDQ3LFxuICApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuY29tcG9uZW50cy5zcGlyaXQudm9sdW1lLFxuICAgIDI1MCxcbiAgICAnc3Bpcml0IHZvbHVtZScsXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5jb21wb25lbnRzLndhdGVyLnZvbHVtZSxcbiAgICAzMzIsXG4gICAgJ3dhdGVyIHZvbHVtZScsXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5jb21wb25lbnRzLnN5cnVwLnN1Z2FyTWFzcyxcbiAgICAxMzUsXG4gICAgJ3N1Z2FyIG1hc3MnLFxuICApO1xufSk7XG5cbnRlc3QoJ3NvbHZlIHNvbHZlcyA0MEFCVicsIChhc3NlcnQpID0+IHtcbiAgY29uc3QgeyBtaXh0dXJlLCBpdGVyYXRpb25zIH0gPSBzb2x2ZShuZXcgU3Bpcml0KDI1MCwgNDApLCAzMCwgMzApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuYW5hbHl6ZSgwKSxcbiAgICB7XG4gICAgICBhYnY6IDMwLFxuICAgICAgYnJpeDogMzAsXG4gICAgICBtYXNzOiAzNTEsXG4gICAgICB2b2x1bWU6IDMzMyxcbiAgICB9LFxuICApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIGl0ZXJhdGlvbnMsXG4gICAgMzYsXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5jb21wb25lbnRzLnNwaXJpdC52b2x1bWUsXG4gICAgMjUwLFxuICAgICdzcGlyaXQgdm9sdW1lJyxcbiAgKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICBtaXh0dXJlLmNvbXBvbmVudHMud2F0ZXIudm9sdW1lLFxuICAgIDE3LFxuICAgICd3YXRlciB2b2x1bWUnLFxuICApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuY29tcG9uZW50cy5zeXJ1cC5zdWdhck1hc3MsXG4gICAgMTA1LFxuICAgICdzdWdhciBtYXNzJyxcbiAgKTtcbn0pO1xuXG50ZXN0KCdzb2x2ZSBzb2x2ZXMgMTBicml4JywgKGFzc2VydCkgPT4ge1xuICBjb25zdCB7IG1peHR1cmUsIGl0ZXJhdGlvbnMgfSA9IHNvbHZlKG5ldyBTcGlyaXQoMjUwLCA0MCksIDI1LCAxMCk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5hbmFseXplKDApLFxuICAgIHtcbiAgICAgIGFidjogMjUsXG4gICAgICBicml4OiAxMCxcbiAgICAgIG1hc3M6IDM5MyxcbiAgICAgIHZvbHVtZTogNDAwLFxuICAgIH0sXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgaXRlcmF0aW9ucyxcbiAgICA2NixcbiAgKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICBtaXh0dXJlLmNvbXBvbmVudHMuc3Bpcml0LnZvbHVtZSxcbiAgICAyNTAsXG4gICAgJ3NwaXJpdCB2b2x1bWUnLFxuICApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuY29tcG9uZW50cy53YXRlci52b2x1bWUsXG4gICAgMTI1LFxuICAgICd3YXRlciB2b2x1bWUnLFxuICApO1xuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuY29tcG9uZW50cy5zeXJ1cC5tYXNzLFxuICAgIDM5LFxuICAgICdzdWdhciBtYXNzJyxcbiAgKTtcbn0pO1xuXG50ZXN0KCdzb2x2ZSBzb2x2ZXMgd2l0aCBzeXJ1cCcsIChhc3NlcnQpID0+IHtcbiAgY29uc3QgeyBtaXh0dXJlIH0gPSBzb2x2ZShuZXcgU3Bpcml0KDI1MCwgNDApLCAyNSwgMjAsIDUwKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICBtaXh0dXJlLmFuYWx5emUoMCksXG4gICAge1xuICAgICAgYWJ2OiAyNSxcbiAgICAgIGJyaXg6IDIwLFxuICAgICAgbWFzczogNDEwLFxuICAgICAgdm9sdW1lOiA0MDEsXG4gICAgfSxcbiAgKTtcblxuICBhc3NlcnQuZGVlcEVxdWFsKFxuICAgIG1peHR1cmUuYWxjb2hvbFZvbHVtZSxcbiAgICAxMDAsXG4gICAgJ2FsY29ob2wgdm9sdW1lJyxcbiAgKTtcbiAgYXNzZXJ0LmVxdWFscyhcbiAgICBtaXh0dXJlLnZvbHVtZSxcbiAgICA0MDAsXG4gICAgJ3RvdGFsIHZvbHVtZScsXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5tYXNzLFxuICAgIDQxMCxcbiAgICAnbWFzcycsXG4gICk7XG4gIGFzc2VydC5kZWVwRXF1YWwoXG4gICAgbWl4dHVyZS5zdWdhck1hc3MsXG4gICAgODIsXG4gICAgJ3N1Z2FyIG1hc3MnLFxuICApO1xufSk7XG5cbnRlc3QoJ2dyYXBlZnJ1aXQnLCAoYXNzZXJ0KSA9PiB7XG4gIGNvbnN0IHsgbWl4dHVyZSB9ID0gc29sdmUobmV3IFNwaXJpdCg5MDAsIDgwKSwgNDAsIDEwKTtcbiAgYXNzZXJ0LmRlZXBFcXVhbChcbiAgICB7XG4gICAgICBhYnY6IE1hdGgucm91bmQobWl4dHVyZS5hYnYpLFxuICAgICAgYnJpeDogTWF0aC5yb3VuZChtaXh0dXJlLmJyaXgpLFxuICAgICAgdG90YWxWb2x1bWU6IE1hdGgucm91bmQobWl4dHVyZS52b2x1bWUpLFxuICAgICAgc3VnYXI6IG1peHR1cmUuY29tcG9uZW50cy5zeXJ1cC5zdWdhck1hc3MsXG4gICAgICB3YXRlcjogbWl4dHVyZS5jb21wb25lbnRzLndhdGVyLnZvbHVtZSxcbiAgICAgIHNwaXJpdDogbWl4dHVyZS5jb21wb25lbnRzLnNwaXJpdC52b2x1bWUsXG4gICAgfSxcbiAgICB7XG4gICAgICBhYnY6IDMwLFxuICAgICAgYnJpeDogMTUsXG4gICAgICBzcGlyaXQ6IDkwMCxcbiAgICAgIHN1Z2FyOiAzNTcsXG4gICAgICB0b3RhbFZvbHVtZTogMjQwMSxcbiAgICAgIHdhdGVyOiAxMjc2LFxuICAgIH0sXG4gICk7XG59KTtcbiJdfQ==
