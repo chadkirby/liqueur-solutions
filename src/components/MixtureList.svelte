@@ -271,3 +271,10 @@
 		<MassComponent mass={analysis.mass} onInput={null} />
 	</div>
 </div>
+
+<style>
+	:global(.mdc-text-field--focused .mdc-notched-outline__notch) {
+		border-left: none;
+		border-right: none;
+	}
+</style>
