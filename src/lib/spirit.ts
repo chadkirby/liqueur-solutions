@@ -62,6 +62,15 @@ export class Spirit extends Mixture<Water | Ethanol> {
 		this.updateComponents();
 	}
 
+	get alcoholVolume() {
+		return super.alcoholVolume;
+	}
+
+	set alcoholVolume(newEthVolume: number) {
+		// maintain the same abv
+		this.volume = newEthVolume / (this._abv / 100);
+	}
+
 	get abv() {
 		return super.abv;
 	}

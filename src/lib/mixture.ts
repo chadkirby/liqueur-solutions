@@ -54,6 +54,14 @@ export class Mixture<T extends Component = Component> {
 	get volume() {
 		return this.sumComponents('volume');
 	}
+	set volume(newVolume: number) {
+		const originalVolume = this.volume;
+		if (originalVolume === newVolume) return;
+		const factor = newVolume / originalVolume;
+		for (const { component } of this) {
+			component.volume *= factor;
+		}
+	}
 	get waterVolume() {
 		return this.sumComponents('waterVolume');
 	}
@@ -62,6 +70,14 @@ export class Mixture<T extends Component = Component> {
 	}
 	get alcoholVolume() {
 		return this.sumComponents('alcoholVolume');
+	}
+	set alcoholVolume(newVolume: number) {
+		const originalVolume = this.alcoholVolume;
+		if (originalVolume === newVolume) return;
+		const factor = newVolume / originalVolume;
+		for (const { component } of this) {
+			component.volume *= factor;
+		}
 	}
 	get alcoholMass() {
 		return this.sumComponents('alcoholMass');

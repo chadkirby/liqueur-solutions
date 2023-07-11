@@ -8,7 +8,7 @@
 		Water as WaterObject,
 		Spirit as SpiritObject,
 		Syrup as SyrupObject,
-		solve,
+		solveProportions,
 		isSugarData,
 		isSyrupData,
 		isSpiritData,
@@ -28,6 +28,7 @@
 	import BrixComponent from './Brix.svelte';
 	import debounce from 'lodash.debounce';
 	import type { PageData } from '../routes/[liqueur]/$types.js';
+	import { Ethanol } from '$lib/ethanol.js';
 
 	export let data: PageData;
 
@@ -105,35 +106,35 @@
 		if (newAbv === oldAbv) return;
 		const spirit = mx.findByType(SpiritObject.is);
 		if (!spirit) return;
-		const solution = solve(spirit, newAbv, analysis.brix);
+		const solution = solveProportions(newAbv, analysis.brix);
 		updateDataFromSolution(solution.mixture);
 	}
 
 	function updateDataFromSolution(solvedMx: MixtureObject) {
 		const dataMx = dataToMixture(data);
 
+		// keep the alcohol volume the same
+		solvedMx.alcoholVolume = dataMx.alcoholVolume;
+
+		// update spirit
+		const [spiritItem] = dataMx.componentObjects.filter(SpiritObject.is);
+		// NB this will also change the amount of water in the solution
+		spiritItem.alcoholVolume = solvedMx.alcoholVolume;
+
 		// update sugar
 		const sugarItems = dataMx.componentObjects.filter(
 			(x): x is SugarObject | SyrupObject => SugarObject.is(x) || SyrupObject.is(x)
 		);
 		const sugarProportions = sugarItems.map((x) => x.sugarMass / dataMx.sugarMass);
-		const sugarSolution = solvedMx.findByType(SugarObject.is)!;
 		for (const [i, item] of sugarItems.entries()) {
 			const proportion = sugarProportions[i];
-			const desiredMass = Math.round(sugarSolution.sugarMass * proportion);
-			const sugar = SugarObject.is(item) ? item : item.findByType(SugarObject.is)!;
-			sugar.mass = desiredMass;
+			const desiredMass = Math.round(solvedMx.sugarMass * proportion);
+			item.sugarMass = desiredMass;
 		}
 
 		// update water
 		const [waterItem] = dataMx.componentObjects.filter(WaterObject.is);
-		const waterSolution = solvedMx.findByType(WaterObject.is)!;
-		waterItem.volume = waterSolution.volume;
-
-		// update spirit
-		const [spiritItem] = dataMx.componentObjects.filter(SpiritObject.is);
-		const spiritSolution = solvedMx.findByType(SpiritObject.is)!;
-		spiritItem.volume = spiritSolution.volume;
+		waterItem.volume += solvedMx.waterVolume - dataMx.waterVolume;
 
 		updateAnalysis(dataMx);
 	}
@@ -151,7 +152,7 @@
 		if (newBrix === oldBrix) return;
 		const spirit = mx.findByType(SpiritObject.is);
 		if (!spirit) return;
-		const solution = solve(spirit, analysis.abv, newBrix);
+		const solution = solveProportions(analysis.abv, newBrix);
 		updateDataFromSolution(solution.mixture);
 	}
 

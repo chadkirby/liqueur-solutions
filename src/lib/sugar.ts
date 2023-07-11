@@ -47,4 +47,7 @@ export class Sugar implements Component {
 	get sugarMass() {
 		return this.mass;
 	}
+	set sugarMass(mass: number) {
+		this.mass = mass;
+	}
 }

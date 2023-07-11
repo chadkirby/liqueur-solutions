@@ -90,4 +90,14 @@ export class Syrup extends Mixture<Water | Sugar> {
 		this._brix = brix;
 		this.updateComponents();
 	}
+
+	get sugarMass() {
+		return super.sugarMass;
+	}
+	set sugarMass(newMass: number) {
+		// update the sugar component, but maintain the same brix
+		const factor = newMass / this.sugarMass;
+		this.sugarComponent.mass = newMass;
+		this.waterComponent.volume *= factor;
+	}
 }
