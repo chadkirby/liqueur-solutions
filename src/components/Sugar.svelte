@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Sugar, type Component } from '../lib/index.js';
 	import { onMount, createEventDispatcher } from 'svelte';
-	import MassComponent from './Mass.svelte'
-	import VolumeComponent from './Volume.svelte'
+	import MassComponent from './Mass.svelte';
+	import VolumeComponent from './Volume.svelte';
 	import Mass from './Mass.svelte';
 	let dispatcher = createEventDispatcher();
 
@@ -14,17 +14,16 @@
 		analysis = new Sugar(mass).analyze(0);
 	});
 
-	const updateAnalysis = (event: CustomEvent) => {
+	const updateMass = (event: CustomEvent) => {
 		if (mass === event.detail) return;
-    mass = event.detail;
+		mass = event.detail;
 		analysis = new Sugar(mass).analyze(0);
-		dispatcher('update', {name, mass});
+		dispatcher('update', { name, mass });
 	};
 	$: {
 		analysis = new Sugar(mass).analyze(0);
 	}
 </script>
 
-
-<MassComponent mass={analysis.mass} onInput={updateAnalysis} />
+<MassComponent mass={analysis.mass} onInput={updateMass} />
 <VolumeComponent volume={analysis.volume} onInput={null} />

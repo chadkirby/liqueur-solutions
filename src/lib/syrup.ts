@@ -4,7 +4,7 @@ import { Sugar } from './sugar.js';
 import { computeSg, round } from './utils.js';
 import { Water } from './water.js';
 
-export class Syrup extends Mixture<Water | Sugar> {
+export class Syrup extends Mixture {
 	readonly type = 'syrup';
 	private _volume: number;
 	private _brix: number;

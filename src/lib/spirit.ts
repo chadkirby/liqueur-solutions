@@ -4,7 +4,7 @@ import { Mixture } from './mixture.js';
 import { round } from './utils.js';
 import { Water } from './water.js';
 
-export class Spirit extends Mixture<Water | Ethanol> {
+export class Spirit extends Mixture {
 	readonly type = 'spirit';
 	private _volume: number;
 	private _abv: number;

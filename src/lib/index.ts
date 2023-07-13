@@ -8,13 +8,7 @@ export { isSugarData, isSyrupData, isSpiritData, isWaterData } from './component
 export type { Component, SyrupData, SpiritData, SugarData, WaterData } from './component.js';
 export { deserialize } from './deserialize.js';
 
-import {
-	isSpiritData,
-	isSugarData,
-	isSyrupData,
-	isWaterData,
-	type Component
-} from './component.js';
+import { isSpiritData, isSugarData, isSyrupData, isWaterData } from './component.js';
 import { Mixture } from './mixture.js';
 import { Sugar } from './sugar.js';
 import { Water } from './water.js';
@@ -29,5 +23,5 @@ export function dataToMixture(d: { components: Array<{ name: string; data: unkno
 		if (isSyrupData(data)) return { name, component: new Syrup(data.volume, data.brix) };
 		throw new Error('Unknown mixture type');
 	});
-	return new Mixture<Component>(ingredients);
+	return new Mixture(ingredients);
 }

@@ -102,41 +102,8 @@
 	function solveAbv(newAbv: number) {
 		if (newAbv < 1) return;
 		const mx = dataToMixture(data);
-		const oldAbv = mx.abv;
-		if (newAbv === oldAbv) return;
-		const spirit = mx.findByType(SpiritObject.is);
-		if (!spirit) return;
-		const solution = solveProportions(newAbv, analysis.brix);
-		updateDataFromSolution(solution.mixture);
-	}
-
-	function updateDataFromSolution(solvedMx: MixtureObject) {
-		const dataMx = dataToMixture(data);
-
-		// keep the alcohol volume the same
-		solvedMx.alcoholVolume = dataMx.alcoholVolume;
-
-		// update spirit
-		const [spiritItem] = dataMx.componentObjects.filter(SpiritObject.is);
-		// NB this will also change the amount of water in the solution
-		spiritItem.alcoholVolume = solvedMx.alcoholVolume;
-
-		// update sugar
-		const sugarItems = dataMx.componentObjects.filter(
-			(x): x is SugarObject | SyrupObject => SugarObject.is(x) || SyrupObject.is(x)
-		);
-		const sugarProportions = sugarItems.map((x) => x.sugarMass / dataMx.sugarMass);
-		for (const [i, item] of sugarItems.entries()) {
-			const proportion = sugarProportions[i];
-			const desiredMass = Math.round(solvedMx.sugarMass * proportion);
-			item.sugarMass = desiredMass;
-		}
-
-		// update water
-		const [waterItem] = dataMx.componentObjects.filter(WaterObject.is);
-		waterItem.volume += solvedMx.waterVolume - dataMx.waterVolume;
-
-		updateAnalysis(dataMx);
+		mx.abv = newAbv;
+		updateAnalysis(mx);
 	}
 
 	const handleBrixInput = debounce((event: CustomEvent) => {
@@ -148,12 +115,8 @@
 	function solveBrix(newBrix: number) {
 		if (newBrix < 0) return;
 		const mx = dataToMixture(data);
-		const oldBrix = mx.brix;
-		if (newBrix === oldBrix) return;
-		const spirit = mx.findByType(SpiritObject.is);
-		if (!spirit) return;
-		const solution = solveProportions(analysis.abv, newBrix);
-		updateDataFromSolution(solution.mixture);
+		mx.brix = newBrix;
+		updateAnalysis(mx);
 	}
 
 	function addSpirit() {

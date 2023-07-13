@@ -24,7 +24,7 @@ export function solveProportions(targetAbv: number, targetBrix: number) {
 		{ name: 'water', component: water },
 		{ name: 'sugar', component: sugar }
 	];
-	const mixture = new Mixture<Water | Ethanol | Sugar>(components);
+	const mixture = new Mixture(components);
 
 	let error = 1;
 	let iterations = 1000;
@@ -48,7 +48,7 @@ export function solveProportions(targetAbv: number, targetBrix: number) {
 		error = Math.sqrt((mixture.abv - targetAbv) ** 2 + (mixture.brix - targetBrix) ** 2);
 	}
 
-	const output = new Mixture<Water | Ethanol | Sugar>(components);
+	const output = new Mixture(components);
 
 	// Scale the mixture to 100ml
 	output.volume = 100;
