@@ -10,14 +10,14 @@
 	let analysis: ReturnType<Component['analyze']>;
 
 	onMount(() => {
-		analysis = mixture.analyze(0);
+		analysis = mixture.analyze(1);
 	});
 
 	const updateAnalysis = () => {
 		mixture.volume = volume;
 		mixture.abv = abv;
 		mixture.brix = brix;
-		analysis = mixture.analyze(0);
+		analysis = mixture.analyze(1);
 	};
 </script>
 

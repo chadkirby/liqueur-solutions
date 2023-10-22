@@ -12,7 +12,7 @@
 	export let keyStepSlow = 1;
 	export let keyStepFast = 100;
 	let rounded: number;
-	$: rounded = Math.round(value);
+	$: rounded = Number(value.toFixed(1));
 	const id = Math.random().toString(36).substring(2);
 </script>
 
@@ -29,7 +29,7 @@
 			class="mdc-text-field__input"
 			value={rounded}
 			on:input={onInput}
-			min="1"
+			min="0"
 			max={max}
 			step="1"
 			decimals="0"

@@ -8,7 +8,6 @@
 		Water as WaterObject,
 		Spirit as SpiritObject,
 		Syrup as SyrupObject,
-		solveProportions,
 		isSugarData,
 		isSyrupData,
 		isSpiritData,
@@ -37,11 +36,11 @@
 		return { components };
 	}
 
-	let analysis = dataToMixture(data).analyze(0);
+	let analysis = dataToMixture(data).analyze(1);
 
 	function updateAnalysis(mixture = dataToMixture(data)) {
 		if (mixture.isValid) {
-			analysis = mixture.analyze(0);
+			analysis = mixture.analyze(1);
 			goto(`/${encodeURIComponent(data.liqueur)}?${mixture.serialize(1)}`, {
 				replaceState: true,
 				noScroll: true,
@@ -201,7 +200,7 @@
 	{/each}
 </div>
 
-<div class="mt-3 flex flex-row items-center gap-x-2 gap-y-2 pt-1">
+<div class="mt-3 flex flex-row items-center gap-x-2 gap-y-2 pt-1 no-print">
 	<Fab on:click={addSpirit} extended>
 		<Icon class="material-icons">add_circle</Icon>
 		<Label>spirit</Label>
@@ -229,16 +228,44 @@
 <div class="mt-3 items-center gap-x-2 gap-y-2 border-t-2 pt-1">
 	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
 	<div class="flex flex-row flex-wrap">
-		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
-		<BrixComponent brix={analysis.brix} onInput={handleBrixInput} />
 		<VolumeComponent volume={analysis.volume} onInput={handleVolumeInput} />
 		<MassComponent mass={analysis.mass} onInput={null} />
+		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
+		<BrixComponent brix={analysis.brix} onInput={handleBrixInput} />
 	</div>
 </div>
 
 <style>
+	:root {
+		--screenGray: rgb(0 0 0 / 50%);
+		--printGray: rgb(0 0 0 / 75%);
+	}
+
 	:global(.mdc-text-field--focused .mdc-notched-outline__notch) {
 		border-left: none;
 		border-right: none;
 	}
+
+
+
+	:global(.mdc-text-field--disabled .mdc-text-field__input) {
+    color: var(--screenGray)
+	}
+	:global(.mdc-text-field--disabled .mdc-floating-label) {
+    color: var(--screenGray)
+	}
+
+
+	@media print {
+    .no-print {
+        display: none;
+    }
+		:global(.mdc-text-field--disabled .mdc-text-field__input) {
+			color: var(--printGray);
+		}
+		:global(.mdc-text-field--disabled .mdc-floating-label) {
+			color: var(--printGray)
+		}
+
+}
 </style>

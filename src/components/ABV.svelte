@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberSpinner from './NumberSpinner.svelte';
-	export let onInput: (event: CustomEvent) => void;
+	export let onInput: null | ((event: CustomEvent) => void);
 	export let abv: number = 40;
 	let showDetails = false;
 	let proof: number;

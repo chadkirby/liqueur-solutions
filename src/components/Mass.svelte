@@ -5,11 +5,9 @@
 	export let mass: number = 100; // grams
 	let showDetails = false;
 	let ounces: number;
-	let rounded: number;
-	$: rounded = Math.round(mass);
 	$: ounces = mass * 0.035274;
 </script>
 
 <div class="mx-1">
-	<NumberSpinner label="Mass" suffix="g" value={rounded} {onInput} />
+	<NumberSpinner label="Mass" suffix="g" value={mass} {onInput} />
 </div>
