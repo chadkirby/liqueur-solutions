@@ -3124,7 +3124,7 @@ a.smui-fab--color-primary:visited:disabled .mdc-fab__label {
 	pointer-events: none;
 }
 .mdc-text-field--disabled .mdc-text-field__input {
-	color: rgba(0, 0, 0, 0.38);
+	color: rgb(0 0 0 / 70%);
 }
 @media all {
 	.mdc-text-field--disabled .mdc-text-field__input::placeholder {
