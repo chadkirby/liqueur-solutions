@@ -43,6 +43,11 @@ export class Spirit extends Mixture {
 		const { type, volume, abv } = this;
 		return { type, volume: round(volume, 1), abv: round(abv, 1) };
 	}
+	set data(data: SpiritData) {
+		this._volume = data.volume;
+		this._abv = data.abv;
+		this.updateComponents();
+	}
 
 	clone() {
 		return new Spirit(this._volume, this._abv);
@@ -69,6 +74,14 @@ export class Spirit extends Mixture {
 	set alcoholVolume(newEthVolume: number) {
 		// maintain the same abv
 		this.volume = newEthVolume / (this._abv / 100);
+	}
+
+	get waterVolume() {
+		return super.waterVolume;
+	}
+	set waterVolume(newWaterVolume: number) {
+		// maintain the same abv
+		this.volume = newWaterVolume / (1 - this._abv / 100);
 	}
 
 	get abv() {

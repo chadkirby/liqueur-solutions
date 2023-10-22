@@ -4,6 +4,8 @@ import { round, analyze } from './utils.js';
 
 export class Water implements Component {
 	readonly type = 'water';
+	readonly hasWater = true;
+	readonly hasSugar = false;
 	static density = 1;
 
 	readonly abv = 0;
@@ -22,6 +24,9 @@ export class Water implements Component {
 		const { type, volume } = this;
 		return { type, volume: round(volume, 1) };
 	}
+	set data(data: WaterData) {
+		this.volume = data.volume;
+	}
 	clone() {
 		return new Water(this.volume);
 	}
@@ -36,6 +41,10 @@ export class Water implements Component {
 	get waterVolume() {
 		return this.volume;
 	}
+	set waterVolume(volume: number) {
+		this.volume = volume;
+	}
+
 	get waterMass() {
 		return this.waterVolume * Water.density;
 	}

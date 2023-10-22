@@ -4,6 +4,8 @@ import { round, analyze } from './utils.js';
 
 export class Ethanol implements Component {
 	readonly type = 'spirit';
+	readonly hasWater = false;
+	readonly hasSugar = false;
 	static density = 0.79;
 
 	readonly abv = 100;
@@ -21,6 +23,9 @@ export class Ethanol implements Component {
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
 		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+	}
+	set data(data: SpiritData) {
+		this.volume = data.volume;
 	}
 
 	clone() {

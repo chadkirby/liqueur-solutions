@@ -43,6 +43,11 @@ export class Syrup extends Mixture {
 		const { type, volume, brix } = this;
 		return { type, volume: round(volume, 1), brix: round(brix, 1) };
 	}
+	set data(data: SyrupData) {
+		this._volume = data.volume;
+		this._brix = data.brix;
+		this.updateComponents();
+	}
 
 	clone() {
 		return new Syrup(this._volume, this._brix);
@@ -99,5 +104,14 @@ export class Syrup extends Mixture {
 		const factor = newMass / this.sugarMass;
 		this.sugarComponent.mass = newMass;
 		this.waterComponent.volume *= factor;
+	}
+
+	get waterVolume() {
+		return super.waterVolume;
+	}
+	set waterVolume(newVolume: number) {
+		// update the water component, but maintain the same brix
+		this.waterComponent.volume = newVolume;
+		this.sugarComponent.mass = this._brix * 0.01 * newVolume * Sugar.density;
 	}
 }

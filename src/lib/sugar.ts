@@ -6,6 +6,8 @@ export class Sugar implements Component {
 	static density = 1.59;
 
 	readonly type = 'sugar';
+	readonly hasWater = false;
+	readonly hasSugar = true;
 	readonly abv = 0;
 	readonly brix = 100;
 	readonly waterVolume = 0;
@@ -22,6 +24,9 @@ export class Sugar implements Component {
 	get data(): SugarData {
 		const { type, mass } = this;
 		return { type, mass: round(mass, 1) };
+	}
+	set data(data: SugarData) {
+		this.mass = data.mass;
 	}
 
 	clone() {

@@ -1,6 +1,6 @@
 import type { Component, ComponentNumberKeys } from './component.js';
 import type { Ethanol } from './ethanol.js';
-import { solveProportions, type Target } from './solver.js';
+import { solver, type Target } from './solver.js';
 import type { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
 import type { Syrup } from './syrup.js';
@@ -52,28 +52,42 @@ export class Mixture {
 	[Symbol.iterator]() {
 		return this.components[Symbol.iterator]();
 	}
+	get hasWater(): boolean {
+		return this.components.some(({ component }) => component.hasWater);
+	}
+	get hasSugar(): boolean {
+		return this.components.some(({ component }) => component.hasSugar);
+	}
+
 	get abv() {
 		return (100 * this.alcoholVolume) / this.volume;
 	}
-	set abv(newAbv: number) {
-		if (newAbv === this.abv) return;
-		const solution = solveProportions(newAbv, this.brix);
-		this.updateFromSolution(solution.mixture);
+	set abv(targetAbv: number) {
+		if (targetAbv === this.abv) return;
+		if (!this.hasWater) throw new Error('Cannot adjust ABV of a mixture with no water');
+		const working = solver(this, targetAbv, this.brix);
+		for (const [i, obj] of this.componentObjects.entries()) {
+			obj.data = working.componentObjects[i].data;
+		}
 	}
 	get brix() {
 		return (100 * this.sugarMass) / this.mass;
 	}
 	set brix(newBrix: number) {
-		if (newBrix === this.brix) return;
-		const solution = solveProportions(this.abv, newBrix);
-		this.updateFromSolution(solution.mixture);
+		if (isClose(newBrix, this.brix)) return;
+		if (!this.hasSugar) throw new Error('Cannot adjust Brix of a mixture with no sugar');
+		const working = solver(this, this.abv, newBrix);
+		for (const [i, obj] of this.componentObjects.entries()) {
+			obj.data = working.componentObjects[i].data;
+		}
 	}
+
 	get volume() {
 		return this.sumComponents('volume');
 	}
 	set volume(newVolume: number) {
 		const originalVolume = this.volume;
-		if (originalVolume === newVolume) return;
+		if (isClose(originalVolume, newVolume)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
 			component.volume *= factor;
@@ -83,13 +97,24 @@ export class Mixture {
 		return this.sumComponents('waterVolume');
 	}
 	set waterVolume(newVolume: number) {
-		const originalVolume = this.waterVolume;
-		if (originalVolume === newVolume) return;
-		const factor = newVolume / originalVolume;
+		if (isClose(this.waterVolume, newVolume)) return;
+		if (!this.hasWater) throw new Error('Cannot adjust water volume of a mixture with no water');
+
+		// try to effect the change using a water component
+		const waterComponent = this.findByType(Water.is);
+		if (waterComponent) {
+			waterComponent.volume += newVolume - this.waterVolume;
+			return;
+		}
+
+		const factor = newVolume / this.waterVolume;
 		for (const { component } of this) {
-			component.volume *= factor;
+			if (component.hasWater) {
+				component.waterVolume *= factor;
+			}
 		}
 	}
+
 	get waterMass() {
 		return this.sumComponents('waterMass');
 	}
@@ -98,7 +123,7 @@ export class Mixture {
 	}
 	set alcoholVolume(newVolume: number) {
 		const originalVolume = this.alcoholVolume;
-		if (originalVolume === newVolume) return;
+		if (isClose(originalVolume, newVolume)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
 			component.volume *= factor;
@@ -112,6 +137,24 @@ export class Mixture {
 	}
 	get sugarMass() {
 		return this.sumComponents('sugarMass');
+	}
+	set sugarMass(newMass: number) {
+		if (isClose(this.sugarMass, newMass)) return;
+		if (!this.hasSugar) throw new Error('Cannot adjust sugar mass of a mixture with no sugar');
+
+		// try to effect the change using a sugar component
+		const sugarComponent = this.findByType(Sugar.is);
+		if (sugarComponent) {
+			sugarComponent.mass += newMass - this.sugarMass;
+			return;
+		}
+
+		const factor = newMass / this.sugarMass;
+		for (const { component } of this) {
+			if (component.hasSugar && component !== sugarComponent) {
+				component.sugarMass *= factor;
+			}
+		}
 	}
 	get mass() {
 		return this.sumComponents('mass');
@@ -130,52 +173,8 @@ export class Mixture {
 	get isValid(): boolean {
 		return this.components.every(({ component }) => component.isValid);
 	}
+}
 
-	private updateFromSolution(solution: Mixture) {
-		// keep the alcohol volume the same
-		solution.alcoholVolume = this.alcoholVolume;
-
-		const waterItems = this.componentObjects.filter(Water.is);
-		// temporarily remove water
-		for (const water of waterItems) {
-			water.volume = 0;
-		}
-
-		// update syrup items
-		const syrupItems = this.componentObjects.filter((x): x is Syrup => x.type === 'syrup');
-		const syrupProportions = syrupItems.map((x) => x.sugarMass / this.sugarMass);
-		for (const [i, item] of syrupItems.entries()) {
-			const proportion = syrupProportions[i];
-			const desiredMass = Math.round(solution.sugarMass * proportion);
-			item.sugarMass = desiredMass;
-		}
-		// check whether adding syrup left us with too much water
-		if (this.waterVolume > solution.waterVolume) {
-			const excessWater = this.waterVolume - solution.waterVolume;
-			// remove the excess water from the syrup items
-			for (const [i, item] of syrupItems.entries()) {
-				const proportionalExcess = excessWater * syrupProportions[i];
-				item.waterVolume -= proportionalExcess;
-			}
-		}
-
-		if (Math.round(this.sugarMass) !== Math.round(solution.sugarMass)) {
-			const sugarItem = this.componentObjects.find(Sugar.is) ?? new Sugar(0);
-			if (!this.componentObjects.includes(sugarItem)) {
-				this.components.push({ name: 'sugar', component: sugarItem });
-			}
-			sugarItem.sugarMass += solution.sugarMass - this.sugarMass;
-		}
-
-		if (Math.round(this.waterVolume) !== Math.round(solution.waterVolume)) {
-			const waterItem = waterItems.length ? waterItems[0] : new Water(0);
-
-			// update water
-			if (!this.componentObjects.includes(waterItem)) {
-				this.components.push({ name: 'water', component: waterItem });
-			}
-
-			waterItem.volume += solution.waterVolume - this.waterVolume;
-		}
-	}
+function isClose(a: number, b: number) {
+	return Math.abs(a - b) < 0.01;
 }
