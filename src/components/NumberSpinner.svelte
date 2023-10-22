@@ -20,7 +20,7 @@
 	{#if onInput}
 	<label
 		for="volume-{id}"
-		class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-24"
+		class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-20"
 		style=""
 	>
 		<span class="mdc-floating-label mdc-floating-label--float-above" style="">{label}</span>

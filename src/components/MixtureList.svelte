@@ -157,8 +157,8 @@
 	/>
 
 	{#each data.components.entries() as [index, { name, data: entry }] (index)}
-		<div class="flex flex-col">
-			<div class="flex max-w-lg flex-row items-center gap-x-2">
+		<div class="flex flex-col items-stretch">
+			<div class="flex flex-row items-center gap-x-2">
 				<Textfield
 					class="flex-grow"
 					input$class="font-sans text-lg font-bold"
@@ -174,7 +174,7 @@
 				</Fab>
 			</div>
 
-			<div class="flex flex-row">
+			<div class="flex flex-row grow">
 				{#if isSpiritData(entry)}
 					<SpiritComponent
 						{name}

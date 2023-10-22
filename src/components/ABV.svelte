@@ -7,7 +7,7 @@
 	$: proof = abv * 2;
 </script>
 
-<div class="mx-1">
+<div class="mx-1 grow">
 	<NumberSpinner
 		label="ABV"
 		suffix="%"

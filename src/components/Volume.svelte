@@ -12,6 +12,6 @@
 	const id = Math.random().toString(36).substring(2);
 </script>
 
-<div class="mx-1">
+<div class="mx-1" grow>
 	<NumberSpinner label="Volume" suffix="ml" value={volume} {onInput} />
 </div>

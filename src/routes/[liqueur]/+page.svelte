@@ -3,7 +3,7 @@
   export let data;
 </script>
 
-<div class="mixtures-page">
+<div class="mixtures-page max-w-lg">
   <MixtureList {data} />
 </div>
 

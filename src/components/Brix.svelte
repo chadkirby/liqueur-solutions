@@ -8,7 +8,7 @@
 	$: gravity = computeSg(brix);
 </script>
 
-<div class="mx-1">
+<div class="mx-1 grow">
 	<NumberSpinner
 	label="ºBrix"
 	suffix="%"
