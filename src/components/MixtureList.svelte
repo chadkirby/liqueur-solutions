@@ -174,7 +174,7 @@
 				</Fab>
 			</div>
 
-			<div class="flex flex-row grow">
+			<div class="flex flex-row grow my-1">
 				{#if isSpiritData(entry)}
 					<SpiritComponent
 						{name}
@@ -227,7 +227,7 @@
 
 <div class="mt-3 items-center gap-x-2 gap-y-2 border-t-2 pt-1">
 	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
-	<div class="flex flex-row flex-wrap">
+	<div class="flex flex-row">
 		<VolumeComponent volume={analysis.volume} onInput={handleVolumeInput} />
 		<MassComponent mass={analysis.mass} onInput={null} />
 		<ABVComponent abv={analysis.abv} onInput={handleAbvInput} />
@@ -253,6 +253,10 @@
 	}
 	:global(.mdc-text-field--disabled .mdc-floating-label) {
     color: var(--screenGray)
+	}
+
+	:global(.mdc-text-field__affix--suffix) {
+		padding-left: 4px;
 	}
 
 
