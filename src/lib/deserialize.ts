@@ -5,7 +5,12 @@ import {
 	type SpiritData,
 	type WaterData,
 	type SugarData,
-	type SyrupData
+	type SyrupData,
+	isLockedString,
+	isSpiritLocked,
+	isWaterLocked,
+	isSugarLocked,
+	isSyrupLocked
 } from './component.js';
 import { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
@@ -31,6 +36,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				current[key] = parseFloat(value);
 			} else if (key === 'type' && isComponentType(value)) {
 				current.type = value;
+			} else if (key === 'locked' && isLockedString(value)) {
+				current.locked = value;
 			}
 		}
 	}
@@ -40,30 +47,42 @@ export function deserialize(qs: string | URLSearchParams) {
 				break;
 			}
 			case 'spirit': {
-				const { volume, abv, name } = values;
+				const { volume, abv, name, locked } = values;
 				if (name && undefined !== volume && undefined !== abv) {
-					components.push({ name, data: new Spirit(volume, abv).data });
+					components.push({
+						name,
+						data: new Spirit(volume, abv, isSpiritLocked(locked) ? locked : 'none').data
+					});
 				}
 				break;
 			}
 			case 'water': {
-				const { volume, name } = values;
+				const { volume, name, locked } = values;
 				if (name && undefined !== volume) {
-					components.push({ name, data: new Water(volume).data });
+					components.push({
+						name,
+						data: new Water(volume, isWaterLocked(locked) ? locked : 'none').data
+					});
 				}
 				break;
 			}
 			case 'sugar': {
-				const { mass, name } = values;
+				const { mass, name, locked } = values;
 				if (name && undefined !== mass) {
-					components.push({ name, data: new Sugar(mass).data });
+					components.push({
+						name,
+						data: new Sugar(mass, isSugarLocked(locked) ? locked : 'none').data
+					});
 				}
 				break;
 			}
 			case 'syrup': {
-				const { volume, brix, name } = values;
+				const { volume, brix, name, locked } = values;
 				if (name && undefined !== volume && undefined !== brix) {
-					components.push({ name, data: new Syrup(volume, brix).data });
+					components.push({
+						name,
+						data: new Syrup(volume, brix, isSyrupLocked(locked) ? locked : 'none').data
+					});
 				}
 				break;
 			}

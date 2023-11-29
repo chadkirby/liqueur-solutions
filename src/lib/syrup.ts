@@ -1,4 +1,4 @@
-import type { SyrupData } from './component.js';
+import type { ComponentNumberKeys, SyrupData } from './component.js';
 import { Mixture } from './mixture.js';
 import { Sugar } from './sugar.js';
 import { computeSg, round } from './utils.js';
@@ -13,10 +13,14 @@ export class Syrup extends Mixture {
 		return component instanceof Syrup;
 	}
 
-	constructor(volume: number, brix: number) {
+	constructor(
+		volume: number,
+		brix: number,
+		public locked: SyrupData['locked']
+	) {
 		super([
-			{ name: 'water', component: new Water(0) },
-			{ name: 'sugar', component: new Sugar(0) }
+			{ name: 'water', component: new Water(0, 'none') },
+			{ name: 'sugar', component: new Sugar(0, 'none') }
 		]);
 		this._volume = volume;
 		this._brix = brix;
@@ -41,16 +45,25 @@ export class Syrup extends Mixture {
 
 	get data(): SyrupData {
 		const { type, volume, brix } = this;
-		return { type, volume: round(volume, 1), brix: round(brix, 1) };
+		return { type, volume: round(volume, 1), brix: round(brix, 1), locked: this.locked };
 	}
 	set data(data: SyrupData) {
 		this._volume = data.volume;
 		this._brix = data.brix;
+		this.locked = data.locked;
 		this.updateComponents();
 	}
 
+	canEdit(key: ComponentNumberKeys): boolean {
+		return ['volume', 'brix'].includes(key)
+			? !this.locked.includes(key)
+			: ['sugarMass', 'waterVolume'].includes(key)
+			? this.locked === 'none'
+			: false;
+	}
+
 	clone() {
-		return new Syrup(this._volume, this._brix);
+		return new Syrup(this._volume, this._brix, this.locked);
 	}
 
 	updateComponents() {
@@ -83,35 +96,46 @@ export class Syrup extends Mixture {
 		return super.volume;
 	}
 
-	set volume(volume: number) {
-		this._volume = volume;
-		this.updateComponents();
+	set(key: ComponentNumberKeys, value: number) {
+		if (this.canEdit(key)) {
+			switch (key) {
+				case 'volume':
+					this._volume = value;
+					break;
+				case 'brix':
+					this._brix = value;
+					break;
+				case 'waterVolume':
+					{
+						// update the water component, but maintain the same brix
+						this.waterComponent.volume = value;
+						this.sugarComponent.mass = this._brix * 0.01 * value * Sugar.density;
+					}
+					break;
+				case 'sugarMass':
+					{
+						// update the sugar component, but maintain the same brix
+						const factor = value / this.sugarMass;
+						this.sugarComponent.mass = value;
+						this.waterComponent.volume *= factor;
+					}
+					break;
+				default:
+					return;
+			}
+			this.updateComponents();
+		}
 	}
 
 	get brix() {
 		return this._brix;
 	}
-	set brix(brix: number) {
-		this._brix = brix;
-		this.updateComponents();
-	}
 
 	get sugarMass() {
 		return super.sugarMass;
 	}
-	set sugarMass(newMass: number) {
-		// update the sugar component, but maintain the same brix
-		const factor = newMass / this.sugarMass;
-		this.sugarComponent.mass = newMass;
-		this.waterComponent.volume *= factor;
-	}
 
 	get waterVolume() {
 		return super.waterVolume;
-	}
-	set waterVolume(newVolume: number) {
-		// update the water component, but maintain the same brix
-		this.waterComponent.volume = newVolume;
-		this.sugarComponent.mass = this._brix * 0.01 * newVolume * Sugar.density;
 	}
 }

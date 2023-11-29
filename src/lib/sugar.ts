@@ -1,4 +1,4 @@
-import type { Component, SugarData } from './component.js';
+import type { Component, ComponentNumberKeys, SugarData } from './component.js';
 import type { Target } from './solver.js';
 import { round, analyze } from './utils.js';
 
@@ -6,8 +6,6 @@ export class Sugar implements Component {
 	static density = 1.59;
 
 	readonly type = 'sugar';
-	readonly hasWater = false;
-	readonly hasSugar = true;
 	readonly abv = 0;
 	readonly brix = 100;
 	readonly waterVolume = 0;
@@ -19,18 +17,29 @@ export class Sugar implements Component {
 		return component instanceof Sugar;
 	}
 
-	constructor(public mass: number) {}
+	constructor(
+		public mass: number,
+		public locked: SugarData['locked']
+	) {}
 
 	get data(): SugarData {
 		const { type, mass } = this;
-		return { type, mass: round(mass, 1) };
+		return { type, mass: round(mass, 1), locked: this.locked };
 	}
 	set data(data: SugarData) {
 		this.mass = data.mass;
+		this.locked = data.locked;
+	}
+
+	get isLocked() {
+		return this.locked !== 'none';
+	}
+	canEdit(key: ComponentNumberKeys): boolean {
+		return ['sugarMass', 'volume'].includes(key) ? this.locked === 'none' : false;
 	}
 
 	clone() {
-		return new Sugar(this.mass);
+		return new Sugar(this.mass, this.locked);
 	}
 
 	get isValid() {
@@ -46,13 +55,22 @@ export class Sugar implements Component {
 	get volume() {
 		return this.sugarVolume;
 	}
-	set volume(volume: number) {
-		this.mass = volume * Sugar.density;
-	}
 	get sugarMass() {
 		return this.mass;
 	}
-	set sugarMass(mass: number) {
-		this.mass = mass;
+
+	set(key: ComponentNumberKeys, value: number) {
+		if (this.canEdit(key)) {
+			switch (key) {
+				case 'volume':
+					this.mass = value * Sugar.density;
+					break;
+				case 'sugarMass':
+					this.mass = value;
+					break;
+				default:
+					return;
+			}
+		}
 	}
 }

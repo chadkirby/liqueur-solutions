@@ -16,10 +16,12 @@ import { Syrup } from './syrup.js';
 
 export function dataToMixture(d: { components: Array<{ name: string; data: unknown }> }) {
 	const ingredients = (d.components || []).map(({ name, data }) => {
-		if (isSpiritData(data)) return { name, component: new Spirit(data.volume, data.abv) };
-		if (isWaterData(data)) return { name, component: new Water(data.volume) };
-		if (isSugarData(data)) return { name, component: new Sugar(data.mass) };
-		if (isSyrupData(data)) return { name, component: new Syrup(data.volume, data.brix) };
+		if (isSpiritData(data))
+			return { name, component: new Spirit(data.volume, data.abv, data.locked) };
+		if (isWaterData(data)) return { name, component: new Water(data.volume, data.locked) };
+		if (isSugarData(data)) return { name, component: new Sugar(data.mass, data.locked) };
+		if (isSyrupData(data))
+			return { name, component: new Syrup(data.volume, data.brix, data.locked) };
 		throw new Error('Unknown mixture type');
 	});
 	return new Mixture(ingredients);

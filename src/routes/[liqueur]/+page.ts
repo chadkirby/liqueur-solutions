@@ -26,9 +26,9 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 		return {
 			liqueur: 'mixture',
 			components: [
-				{ name: 'spirit', data: { volume: 100, abv: 40, type: 'spirit' } },
-				{ name: 'water', data: { volume: 100, type: 'water' } },
-				{ name: 'sugar', data: { mass: 50, type: 'sugar' } }
+				{ name: 'spirit', data: { volume: 100, abv: 40, type: 'spirit', locked: 'none' } },
+				{ name: 'water', data: { volume: 100, type: 'water', locked: 'none' } },
+				{ name: 'sugar', data: { mass: 50, type: 'sugar', locked: 'none' } }
 			]
 		};
 	}

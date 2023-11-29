@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 
 	export let name = 'spirit';
-	export let mixture: Component = new Spirit(100, 40);
+	export let mixture: Component = new Spirit(100, 40, 'none');
 	export let volume: number = mixture.volume;
 	export let abv: number = mixture.abv;
 	export let brix: number = mixture.brix;

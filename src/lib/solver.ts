@@ -22,16 +22,16 @@ export function solver(mixture: Mixture, targetAbv: number, targetBrix: number) 
 		const { volume, mass } = working;
 
 		// is abv is below target, we need less water
-		working.waterVolume -= volume * deltas.abv;
+		working.set('waterVolume', working.waterVolume - volume * deltas.abv);
 		// if brix is below target, we need more sugar
-		working.sugarMass *= 1 + deltas.brix;
+		working.set('sugarMass', working.sugarMass * 1 + deltas.brix);
 		// if brix is below target, we need less water
-		working.waterVolume -= mass * deltas.brix;
+		working.set('waterVolume', working.waterVolume - mass * deltas.brix);
 
 		for (const [i, component] of working.componentObjects.entries()) {
 			if (component.type === 'spirit') {
 				// assume that we have only a fixed amount of spirit available, so clamp its volume
-				component.volume = Math.min(component.volume, originalVolumes[i]);
+				component.set('volume', Math.min(component.volume, originalVolumes[i]));
 			}
 		}
 

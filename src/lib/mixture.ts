@@ -52,19 +52,16 @@ export class Mixture {
 	[Symbol.iterator]() {
 		return this.components[Symbol.iterator]();
 	}
-	get hasWater(): boolean {
-		return this.components.some(({ component }) => component.hasWater);
-	}
-	get hasSugar(): boolean {
-		return this.components.some(({ component }) => component.hasSugar);
+
+	canEdit(key: ComponentNumberKeys): boolean {
+		return this.components.some(({ component }) => component.canEdit(key));
 	}
 
 	get abv() {
 		return (100 * this.alcoholVolume) / this.volume;
 	}
-	set abv(targetAbv: number) {
+	setAbv(targetAbv: number) {
 		if (targetAbv === this.abv) return;
-		if (!this.hasWater) throw new Error('Cannot adjust ABV of a mixture with no water');
 		const working = solver(this, targetAbv, this.brix);
 		for (const [i, obj] of this.componentObjects.entries()) {
 			obj.data = working.componentObjects[i].data;
@@ -73,33 +70,36 @@ export class Mixture {
 	get brix() {
 		return (100 * this.sugarMass) / this.mass;
 	}
-	set brix(newBrix: number) {
+	setBrix(newBrix: number) {
 		if (isClose(newBrix, this.brix)) return;
-		if (!this.hasSugar) throw new Error('Cannot adjust Brix of a mixture with no sugar');
 		const working = solver(this, this.abv, newBrix);
 		for (const [i, obj] of this.componentObjects.entries()) {
 			obj.data = working.componentObjects[i].data;
 		}
 	}
 
+	get unlockedVolume() {
+		return this.sumComponents(
+			'volume',
+			this.components.filter(({ component }) => component.canEdit('volume'))
+		);
+	}
 	get volume() {
 		return this.sumComponents('volume');
 	}
-	set volume(newVolume: number) {
+	setVolume(newVolume: number) {
 		const originalVolume = this.volume;
 		if (isClose(originalVolume, newVolume)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
-			component.volume *= factor;
+			component.set('volume', component.volume * factor);
 		}
 	}
 	get waterVolume() {
 		return this.sumComponents('waterVolume');
 	}
-	set waterVolume(newVolume: number) {
+	setWaterVolume(newVolume: number) {
 		if (isClose(this.waterVolume, newVolume)) return;
-		if (!this.hasWater) throw new Error('Cannot adjust water volume of a mixture with no water');
-
 		// try to effect the change using a water component
 		const waterComponent = this.findByType(Water.is);
 		if (waterComponent) {
@@ -109,8 +109,8 @@ export class Mixture {
 
 		const factor = newVolume / this.waterVolume;
 		for (const { component } of this) {
-			if (component.hasWater) {
-				component.waterVolume *= factor;
+			if (component.canEdit('waterVolume')) {
+				component.set('waterVolume', component.waterVolume * factor);
 			}
 		}
 	}
@@ -121,12 +121,12 @@ export class Mixture {
 	get alcoholVolume() {
 		return this.sumComponents('alcoholVolume');
 	}
-	set alcoholVolume(newVolume: number) {
+	setAlcoholVolume(newVolume: number) {
 		const originalVolume = this.alcoholVolume;
 		if (isClose(originalVolume, newVolume)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
-			component.volume *= factor;
+			component.set('volume', component.volume * factor);
 		}
 	}
 	get alcoholMass() {
@@ -138,10 +138,8 @@ export class Mixture {
 	get sugarMass() {
 		return this.sumComponents('sugarMass');
 	}
-	set sugarMass(newMass: number) {
+	setSugarMass(newMass: number) {
 		if (isClose(this.sugarMass, newMass)) return;
-		if (!this.hasSugar) throw new Error('Cannot adjust sugar mass of a mixture with no sugar');
-
 		// try to effect the change using a sugar component
 		const sugarComponent = this.findByType(Sugar.is);
 		if (sugarComponent) {
@@ -151,8 +149,8 @@ export class Mixture {
 
 		const factor = newMass / this.sugarMass;
 		for (const { component } of this) {
-			if (component.hasSugar && component !== sugarComponent) {
-				component.sugarMass *= factor;
+			if (component.canEdit('sugarMass') && component !== sugarComponent) {
+				component.set('sugarMass', component.sugarMass * factor);
 			}
 		}
 	}
@@ -160,8 +158,8 @@ export class Mixture {
 		return this.sumComponents('mass');
 	}
 
-	private sumComponents(key: ComponentNumberKeys): number {
-		return this.components.reduce((sum, { component }) => sum + component[key], 0);
+	private sumComponents(key: ComponentNumberKeys, components = this.components): number {
+		return components.reduce((sum, { component }) => sum + component[key], 0);
 	}
 
 	analyze(precision = 0): Target & {
@@ -172,6 +170,33 @@ export class Mixture {
 
 	get isValid(): boolean {
 		return this.components.every(({ component }) => component.isValid);
+	}
+
+	set(key: ComponentNumberKeys, value: number) {
+		if (this.canEdit(key)) {
+			switch (key) {
+				case 'volume':
+					this.setVolume(value);
+					break;
+				case 'waterVolume':
+					this.setWaterVolume(value);
+					break;
+				case 'alcoholVolume':
+					this.setAlcoholVolume(value);
+					break;
+				case 'sugarMass':
+					this.setSugarMass(value);
+					break;
+				case 'abv':
+					this.setAbv(value);
+					break;
+				case 'brix':
+					this.setBrix(value);
+					break;
+				default:
+					return;
+			}
+		}
 	}
 }
 

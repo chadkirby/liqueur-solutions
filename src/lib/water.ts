@@ -1,11 +1,9 @@
-import type { Component, WaterData } from './component.js';
+import type { Component, ComponentNumberKeys, WaterData } from './component.js';
 import type { Target } from './solver.js';
 import { round, analyze } from './utils.js';
 
 export class Water implements Component {
 	readonly type = 'water';
-	readonly hasWater = true;
-	readonly hasSugar = false;
 	static density = 1;
 
 	readonly abv = 0;
@@ -19,16 +17,25 @@ export class Water implements Component {
 		return component instanceof Water;
 	}
 
-	constructor(public volume: number) {}
+	constructor(
+		public volume: number,
+		public locked: WaterData['locked']
+	) {}
 	get data(): WaterData {
 		const { type, volume } = this;
-		return { type, volume: round(volume, 1) };
+		return { type, volume: round(volume, 1), locked: this.locked };
 	}
 	set data(data: WaterData) {
 		this.volume = data.volume;
+		this.locked = data.locked;
 	}
+
+	canEdit(key: ComponentNumberKeys): boolean {
+		return ['volume', 'waterVolume'].includes(key) ? this.locked === 'none' : false;
+	}
+
 	clone() {
-		return new Water(this.volume);
+		return new Water(this.volume, this.locked);
 	}
 	analyze(precision = 0): Target & { mass: number } {
 		return analyze(this, precision);
@@ -41,14 +48,23 @@ export class Water implements Component {
 	get waterVolume() {
 		return this.volume;
 	}
-	set waterVolume(volume: number) {
-		this.volume = volume;
-	}
-
 	get waterMass() {
 		return this.waterVolume * Water.density;
 	}
 	get mass() {
 		return this.waterMass;
+	}
+
+	set(key: ComponentNumberKeys, value: number) {
+		if (this.canEdit(key)) {
+			switch (key) {
+				case 'volume':
+				case 'waterVolume':
+					this.volume = value;
+					break;
+				default:
+					return;
+			}
+		}
 	}
 }

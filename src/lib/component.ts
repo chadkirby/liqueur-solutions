@@ -1,7 +1,7 @@
 import type { Target } from './solver.js';
 
 const ComponentValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
-type ComponentValueKeys = (typeof ComponentValueKeys)[number];
+export type ComponentValueKeys = (typeof ComponentValueKeys)[number];
 
 export function isComponentValueKey(key: string): key is ComponentValueKeys {
 	return ComponentValueKeys.includes(key as ComponentValueKeys);
@@ -15,6 +15,7 @@ export interface BaseComponentData {
 	brix: number;
 	volume: number;
 	mass: number;
+	locked: LockedString;
 }
 
 export function isComponentType(type: string): type is ComponentTypes {
@@ -30,6 +31,16 @@ export interface ComponentData extends BaseComponentData {
 	alcoholMass: number;
 }
 
+export interface Component extends ComponentData {
+	clone(): Component;
+	analyze(precision?: number): Target & {
+		mass: number;
+	};
+	data: SpiritData | WaterData | SugarData | SyrupData;
+	isValid: boolean;
+	canEdit(key: ComponentNumberKeys): boolean;
+}
+
 // get all the numeric keys of ComponentData
 export type ComponentNumberKeys = {
 	[K in keyof ComponentData]: ComponentData[K] extends number ? K : never;
@@ -39,28 +50,47 @@ export type SpiritData = {
 	type: 'spirit';
 	volume: number;
 	abv: number;
+	locked: 'volume' | 'abv' | 'volume+abv' | 'none';
 };
 export type WaterData = {
 	type: 'water';
 	volume: number;
+	locked: 'volume' | 'none';
 };
 export type SugarData = {
 	type: 'sugar';
 	mass: number;
+	locked: 'mass' | 'none';
 };
 export type SyrupData = {
 	type: 'syrup';
 	volume: number;
 	brix: number;
+	locked: 'volume' | 'brix' | 'volume+brix' | 'none';
 };
 
-export interface Component extends ComponentData {
-	clone(): Component;
-	analyze(precision?: number): Target & {
-		mass: number;
-	};
-	data: SpiritData | WaterData | SugarData | SyrupData;
-	isValid: boolean;
+export type LockedString =
+	| SpiritData['locked']
+	| WaterData['locked']
+	| SugarData['locked']
+	| SyrupData['locked'];
+
+export function isSpiritLocked(input: unknown): input is SpiritData['locked'] {
+	return typeof input === 'string' && ['volume', 'abv', 'volume+abv', 'none'].includes(input);
+}
+export function isWaterLocked(input: unknown): input is WaterData['locked'] {
+	return typeof input === 'string' && ['volume', 'none'].includes(input);
+}
+export function isSugarLocked(input: unknown): input is SugarData['locked'] {
+	return typeof input === 'string' && ['mass', 'none'].includes(input);
+}
+export function isSyrupLocked(input: unknown): input is SyrupData['locked'] {
+	return typeof input === 'string' && ['volume', 'brix', 'volume+brix', 'none'].includes(input);
+}
+export function isLockedString(input: unknown): input is LockedString {
+	return (
+		isSpiritLocked(input) || isWaterLocked(input) || isSugarLocked(input) || isSyrupLocked(input)
+	);
 }
 
 export function checkData(type: 'spirit', input: unknown): input is SpiritData;

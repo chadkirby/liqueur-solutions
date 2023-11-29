@@ -1,4 +1,4 @@
-import type { SpiritData } from './component.js';
+import type { ComponentNumberKeys, SpiritData } from './component.js';
 import { Ethanol } from './ethanol.js';
 import { Mixture } from './mixture.js';
 import { round } from './utils.js';
@@ -13,10 +13,14 @@ export class Spirit extends Mixture {
 		return component instanceof Spirit;
 	}
 
-	constructor(volume: number, abv: number) {
+	constructor(
+		volume: number,
+		abv: number,
+		public locked: SpiritData['locked']
+	) {
 		super([
-			{ name: 'water', component: new Water(0) },
-			{ name: 'ethanol', component: new Ethanol(0) }
+			{ name: 'water', component: new Water(0, 'none') },
+			{ name: 'ethanol', component: new Ethanol(0, 'none') }
 		]);
 		this._volume = volume;
 		this._abv = abv;
@@ -41,16 +45,25 @@ export class Spirit extends Mixture {
 
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
-		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+		return { type, volume: round(volume, 1), abv: round(abv, 1), locked: this.locked };
 	}
 	set data(data: SpiritData) {
 		this._volume = data.volume;
 		this._abv = data.abv;
+		this.locked = data.locked;
 		this.updateComponents();
 	}
 
+	canEdit(key: ComponentNumberKeys): boolean {
+		return ['volume', 'abv'].includes(key)
+			? !this.locked.includes(key)
+			: ['alcoholVolume', 'waterVolume'].includes(key)
+			? this.locked === 'none'
+			: false;
+	}
+
 	clone() {
-		return new Spirit(this._volume, this._abv);
+		return new Spirit(this._volume, this._abv, this.locked);
 	}
 
 	updateComponents() {
@@ -62,33 +75,39 @@ export class Spirit extends Mixture {
 		return super.volume;
 	}
 
-	set volume(volume: number) {
-		this._volume = volume;
-		this.updateComponents();
-	}
-
 	get alcoholVolume() {
 		return super.alcoholVolume;
-	}
-
-	set alcoholVolume(newEthVolume: number) {
-		// maintain the same abv
-		this.volume = newEthVolume / (this._abv / 100);
 	}
 
 	get waterVolume() {
 		return super.waterVolume;
 	}
-	set waterVolume(newWaterVolume: number) {
-		// maintain the same abv
-		this.volume = newWaterVolume / (1 - this._abv / 100);
-	}
 
 	get abv() {
 		return super.abv;
 	}
-	set abv(abv: number) {
-		this._abv = abv;
-		this.updateComponents();
+
+	set(key: ComponentNumberKeys, value: number) {
+		if (this.canEdit(key)) {
+			switch (key) {
+				case 'volume':
+					this._volume = value;
+					break;
+				case 'waterVolume':
+					// maintain the same abv
+					this._volume = value / (1 - this._abv / 100);
+					break;
+				case 'abv':
+					this._abv = value;
+					break;
+				case 'alcoholVolume':
+					// maintain the same abv
+					this._volume = value / (this._abv / 100);
+					break;
+				default:
+					return;
+			}
+			this.updateComponents();
+		}
 	}
 }

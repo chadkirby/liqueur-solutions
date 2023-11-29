@@ -8,9 +8,9 @@ export function load() {
      * component: import('$lib').Spirit | import('$lib').Water | import('$lib').Sugar
      * }[] } */
     const components = [
-        { name: 'spirit', component: new Spirit(100, 40) },
-        { name: 'water', component: new Water(100) },
-        { name: 'sugar', component: new Sugar(50) }
+        { name: 'spirit', component: new Spirit(100, 40, 'none') },
+        { name: 'water', component: new Water(100, 'none') },
+        { name: 'sugar', component: new Sugar(50, 'none') }
     ];
     const mixture = new Mixture(components);
 
