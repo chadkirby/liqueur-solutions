@@ -16,11 +16,11 @@ export class Syrup extends Mixture {
 	constructor(
 		volume: number,
 		brix: number,
-		public locked: SyrupData['locked']
+		public locked: SyrupData['locked'] = []
 	) {
 		super([
-			{ name: 'water', component: new Water(0, 'none') },
-			{ name: 'sugar', component: new Sugar(0, 'none') }
+			{ name: 'water', id: 'water', component: new Water(0, []) },
+			{ name: 'sugar', id: 'sugar', component: new Sugar(0, []) }
 		]);
 		this._volume = volume;
 		this._brix = brix;
@@ -55,10 +55,10 @@ export class Syrup extends Mixture {
 	}
 
 	canEdit(key: ComponentNumberKeys): boolean {
-		return ['volume', 'brix'].includes(key)
+		return key === 'volume' || key === 'brix'
 			? !this.locked.includes(key)
 			: ['sugarMass', 'waterVolume'].includes(key)
-			? this.locked === 'none'
+			? this.locked.length === 0
 			: false;
 	}
 

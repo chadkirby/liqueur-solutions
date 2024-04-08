@@ -9,7 +9,11 @@ import {
 
 export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
 	liqueur: string;
-	components: Array<{ name: string; data: SpiritData | WaterData | SugarData | SyrupData }>;
+	components: Array<{
+		name: string;
+		id: string;
+		data: SpiritData | WaterData | SugarData | SyrupData;
+	}>;
 } {
 	try {
 		const { components } = deserialize(url.searchParams);
@@ -26,9 +30,13 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 		return {
 			liqueur: 'mixture',
 			components: [
-				{ name: 'spirit', data: { volume: 100, abv: 40, type: 'spirit', locked: 'none' } },
-				{ name: 'water', data: { volume: 100, type: 'water', locked: 'none' } },
-				{ name: 'sugar', data: { mass: 50, type: 'sugar', locked: 'none' } }
+				{
+					name: 'spirit',
+					id: 'spirit-0',
+					data: { volume: 100, abv: 40, type: 'spirit', locked: [] }
+				},
+				{ name: 'water', id: 'water-0', data: { volume: 100, type: 'water', locked: [] } },
+				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sugar', locked: [] } }
 			]
 		};
 	}

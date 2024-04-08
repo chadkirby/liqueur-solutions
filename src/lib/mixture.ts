@@ -1,21 +1,24 @@
 import type { Component, ComponentNumberKeys } from './component.js';
-import type { Ethanol } from './ethanol.js';
-import { solver, type Target } from './solver.js';
+import { Ethanol } from './ethanol.js';
+import { solver } from './solver.js';
 import type { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
 import type { Syrup } from './syrup.js';
-import { analyze } from './utils.js';
+import { analyze, type Analysis } from './utils.js';
 import { Water } from './water.js';
 
 type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
 
 export class Mixture {
-	constructor(readonly components: Array<{ name: string; component: AnyComponent }> = []) {}
+	constructor(
+		readonly components: Array<{ name: string; id: string; component: AnyComponent }> = []
+	) {}
 
 	clone() {
 		return new Mixture(
 			this.components.map((item) => ({
 				name: item.name,
+				id: item.id,
 				component: item.component.clone()
 			}))
 		);
@@ -28,6 +31,8 @@ export class Mixture {
 			for (const [k, v] of Object.entries(component.data)) {
 				if (typeof v === 'number') {
 					params.append(k, v.toFixed(precision));
+				} else if (k === 'locked') {
+					params.append(k, v.length ? v.join('+') : 'none');
 				} else {
 					params.append(k, v);
 				}
@@ -54,6 +59,18 @@ export class Mixture {
 	}
 
 	canEdit(key: ComponentNumberKeys): boolean {
+		if (key === 'abv') {
+			return (
+				this.components.some(({ component }) => component.componentObjects.some(Ethanol.is)) &&
+				this.canEdit('volume')
+			);
+		}
+		if (key === 'brix') {
+			return (
+				this.components.some(({ component }) => component.componentObjects.some(Sugar.is)) &&
+				this.canEdit('volume')
+			);
+		}
 		return this.components.some(({ component }) => component.canEdit(key));
 	}
 
@@ -82,6 +99,12 @@ export class Mixture {
 		return this.sumComponents(
 			'volume',
 			this.components.filter(({ component }) => component.canEdit('volume'))
+		);
+	}
+	get lockedVolume() {
+		return this.sumComponents(
+			'volume',
+			this.components.filter(({ component }) => !component.canEdit('volume'))
 		);
 	}
 	get volume() {
@@ -162,9 +185,7 @@ export class Mixture {
 		return components.reduce((sum, { component }) => sum + component[key], 0);
 	}
 
-	analyze(precision = 0): Target & {
-		mass: number;
-	} {
+	analyze(precision = 0): Analysis {
 		return analyze(this, precision);
 	}
 

@@ -19,7 +19,7 @@ export class Sugar implements Component {
 
 	constructor(
 		public mass: number,
-		public locked: SugarData['locked']
+		public locked: SugarData['locked'] = []
 	) {}
 
 	get data(): SugarData {
@@ -32,14 +32,17 @@ export class Sugar implements Component {
 	}
 
 	get isLocked() {
-		return this.locked !== 'none';
+		return this.locked.length;
 	}
 	canEdit(key: ComponentNumberKeys): boolean {
-		return ['sugarMass', 'volume'].includes(key) ? this.locked === 'none' : false;
+		return ['sugarMass', 'volume'].includes(key) ? this.locked.length > 0 : false;
 	}
 
 	clone() {
 		return new Sugar(this.mass, this.locked);
+	}
+	get componentObjects() {
+		return [this];
 	}
 
 	get isValid() {

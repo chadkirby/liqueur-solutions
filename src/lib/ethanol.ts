@@ -19,7 +19,7 @@ export class Ethanol implements Component {
 
 	constructor(
 		public volume: number,
-		public locked: SpiritData['locked']
+		public locked: SpiritData['locked'] = []
 	) {}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
@@ -28,6 +28,9 @@ export class Ethanol implements Component {
 	set data(data: SpiritData) {
 		this.volume = data.volume;
 		this.locked = data.locked;
+	}
+	get componentObjects() {
+		return [this];
 	}
 
 	clone() {

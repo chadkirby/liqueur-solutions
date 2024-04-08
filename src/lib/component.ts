@@ -15,7 +15,7 @@ export interface BaseComponentData {
 	brix: number;
 	volume: number;
 	mass: number;
-	locked: LockedString;
+	locked: AnyLockedValue;
 }
 
 export function isComponentType(type: string): type is ComponentTypes {
@@ -41,53 +41,72 @@ export interface Component extends ComponentData {
 	canEdit(key: ComponentNumberKeys): boolean;
 }
 
+export type NumberKeys<T> = {
+	[K in keyof T]: T[K] extends number ? K : never;
+}[keyof T];
+
 // get all the numeric keys of ComponentData
-export type ComponentNumberKeys = {
-	[K in keyof ComponentData]: ComponentData[K] extends number ? K : never;
-}[keyof ComponentData];
+export type ComponentNumberKeys = NumberKeys<ComponentData>;
 
 export type SpiritData = {
-	type: 'spirit';
+	readonly type: 'spirit';
 	volume: number;
 	abv: number;
-	locked: 'volume' | 'abv' | 'volume+abv' | 'none';
+	locked: Array<'volume' | 'abv'>;
 };
 export type WaterData = {
-	type: 'water';
+	readonly type: 'water';
 	volume: number;
-	locked: 'volume' | 'none';
+	locked: Array<'volume'>;
 };
 export type SugarData = {
-	type: 'sugar';
+	readonly type: 'sugar';
 	mass: number;
-	locked: 'mass' | 'none';
+	locked: Array<'mass'>;
 };
 export type SyrupData = {
-	type: 'syrup';
+	readonly type: 'syrup';
 	volume: number;
 	brix: number;
-	locked: 'volume' | 'brix' | 'volume+brix' | 'none';
+	locked: Array<'volume' | 'brix'>;
 };
 
-export type LockedString =
+// Utility type to get writable keys
+type WritableKeys<T> = {
+	[P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>;
+}[keyof T];
+
+// Helper type to test if two types are equal
+type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
+	? 1
+	: 2
+	? A
+	: B;
+
+// Usage
+export type WritableSpiritDataKeys = WritableKeys<SpiritData>; // "volume" | "abv" | "locked"
+export type WritableWaterDataKeys = WritableKeys<WaterData>; // "volume" | "locked"
+export type WritableSugarDataKeys = WritableKeys<SugarData>; // "mass" | "locked"
+export type WritableSyrupDataKeys = WritableKeys<SyrupData>; // "volume" | "brix" | "locked"
+export type AnyLockedValue =
 	| SpiritData['locked']
 	| WaterData['locked']
 	| SugarData['locked']
 	| SyrupData['locked'];
 
 export function isSpiritLocked(input: unknown): input is SpiritData['locked'] {
-	return typeof input === 'string' && ['volume', 'abv', 'volume+abv', 'none'].includes(input);
+	return Array.isArray(input) && input.every((item) => ['volume', 'abv'].includes(item));
 }
 export function isWaterLocked(input: unknown): input is WaterData['locked'] {
-	return typeof input === 'string' && ['volume', 'none'].includes(input);
+	return Array.isArray(input) && input.every((item) => ['volume'].includes(item));
 }
 export function isSugarLocked(input: unknown): input is SugarData['locked'] {
-	return typeof input === 'string' && ['mass', 'none'].includes(input);
+	return Array.isArray(input) && input.every((item) => ['mass'].includes(item));
 }
 export function isSyrupLocked(input: unknown): input is SyrupData['locked'] {
-	return typeof input === 'string' && ['volume', 'brix', 'volume+brix', 'none'].includes(input);
+	return Array.isArray(input) && input.every((item) => ['volume', 'brix'].includes(item));
 }
-export function isLockedString(input: unknown): input is LockedString {
+export function isLockedValue(input: unknown): input is AnyLockedValue {
 	return (
 		isSpiritLocked(input) || isWaterLocked(input) || isSugarLocked(input) || isSyrupLocked(input)
 	);

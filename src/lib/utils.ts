@@ -17,12 +17,14 @@ export function computeSg(brix: number) {
 	);
 }
 
+export type Analysis = Target & {
+	mass: number;
+};
+
 export function analyze(
 	item: Pick<ComponentData, 'volume' | 'mass' | 'abv' | 'brix'>,
 	precision = 0
-): Target & {
-	mass: number;
-} {
+): Analysis {
 	return {
 		volume: round(item.volume, precision),
 		mass: round(item.mass, precision),

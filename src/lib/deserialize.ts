@@ -6,11 +6,12 @@ import {
 	type WaterData,
 	type SugarData,
 	type SyrupData,
-	isLockedString,
+	isLockedValue,
 	isSpiritLocked,
 	isWaterLocked,
 	isSugarLocked,
-	isSyrupLocked
+	isSyrupLocked,
+	type AnyLockedValue
 } from './component.js';
 import { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
@@ -22,6 +23,7 @@ export function deserialize(qs: string | URLSearchParams) {
 	const liqueur = params.get('liqueur') ?? 'mixture';
 	const components: Array<{
 		name: string;
+		id: string;
 		data: SpiritData | WaterData | SugarData | SyrupData;
 	}> = [];
 	const working: Partial<BaseComponentData & { name: string; type: string }>[] = [];
@@ -36,8 +38,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				current[key] = parseFloat(value);
 			} else if (key === 'type' && isComponentType(value)) {
 				current.type = value;
-			} else if (key === 'locked' && isLockedString(value)) {
-				current.locked = value;
+			} else if (key === 'locked' && isLockedValue(value)) {
+				current.locked = value === 'none' ? [] : (value.split('+') as AnyLockedValue);
 			}
 		}
 	}
@@ -51,7 +53,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				if (name && undefined !== volume && undefined !== abv) {
 					components.push({
 						name,
-						data: new Spirit(volume, abv, isSpiritLocked(locked) ? locked : 'none').data
+						id: `${type}-${components.length}`,
+						data: new Spirit(volume, abv, isSpiritLocked(locked) ? locked : []).data
 					});
 				}
 				break;
@@ -61,7 +64,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				if (name && undefined !== volume) {
 					components.push({
 						name,
-						data: new Water(volume, isWaterLocked(locked) ? locked : 'none').data
+						id: `${type}-${components.length}`,
+						data: new Water(volume, isWaterLocked(locked) ? locked : []).data
 					});
 				}
 				break;
@@ -71,7 +75,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				if (name && undefined !== mass) {
 					components.push({
 						name,
-						data: new Sugar(mass, isSugarLocked(locked) ? locked : 'none').data
+						id: `${type}-${components.length}`,
+						data: new Sugar(mass, isSugarLocked(locked) ? locked : []).data
 					});
 				}
 				break;
@@ -81,7 +86,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				if (name && undefined !== volume && undefined !== brix) {
 					components.push({
 						name,
-						data: new Syrup(volume, brix, isSyrupLocked(locked) ? locked : 'none').data
+						id: `${type}-${components.length}`,
+						data: new Syrup(volume, brix, isSyrupLocked(locked) ? locked : []).data
 					});
 				}
 				break;

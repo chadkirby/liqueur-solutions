@@ -5,12 +5,13 @@ import { redirect } from '@sveltejs/kit';
 export function load() {
     /** @type {{
      * name: string,
+    * id: string,
      * component: import('$lib').Spirit | import('$lib').Water | import('$lib').Sugar
      * }[] } */
     const components = [
-        { name: 'spirit', component: new Spirit(100, 40, 'none') },
-        { name: 'water', component: new Water(100, 'none') },
-        { name: 'sugar', component: new Sugar(50, 'none') }
+        { name: 'spirit', id: 'spirit', component: new Spirit(100, 40) },
+        { name: 'water', id: 'water', component: new Water(100) },
+        { name: 'sugar', id: 'sugar', component: new Sugar(50) }
     ];
     const mixture = new Mixture(components);
 

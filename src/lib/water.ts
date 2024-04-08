@@ -19,7 +19,7 @@ export class Water implements Component {
 
 	constructor(
 		public volume: number,
-		public locked: WaterData['locked']
+		public locked: WaterData['locked'] = []
 	) {}
 	get data(): WaterData {
 		const { type, volume } = this;
@@ -29,9 +29,12 @@ export class Water implements Component {
 		this.volume = data.volume;
 		this.locked = data.locked;
 	}
+	get componentObjects() {
+		return [this];
+	}
 
 	canEdit(key: ComponentNumberKeys): boolean {
-		return ['volume', 'waterVolume'].includes(key) ? this.locked === 'none' : false;
+		return ['volume', 'waterVolume'].includes(key) ? this.locked.length === 0 : false;
 	}
 
 	clone() {

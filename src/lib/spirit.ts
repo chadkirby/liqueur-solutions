@@ -16,11 +16,11 @@ export class Spirit extends Mixture {
 	constructor(
 		volume: number,
 		abv: number,
-		public locked: SpiritData['locked']
+		public locked: SpiritData['locked'] = []
 	) {
 		super([
-			{ name: 'water', component: new Water(0, 'none') },
-			{ name: 'ethanol', component: new Ethanol(0, 'none') }
+			{ name: 'water', id: 'water', component: new Water(0, []) },
+			{ name: 'ethanol', id: 'ethanol', component: new Ethanol(0, []) }
 		]);
 		this._volume = volume;
 		this._abv = abv;
@@ -55,10 +55,10 @@ export class Spirit extends Mixture {
 	}
 
 	canEdit(key: ComponentNumberKeys): boolean {
-		return ['volume', 'abv'].includes(key)
+		return key === 'volume' || key === 'abv'
 			? !this.locked.includes(key)
 			: ['alcoholVolume', 'waterVolume'].includes(key)
-			? this.locked === 'none'
+			? this.locked.length === 0
 			: false;
 	}
 
