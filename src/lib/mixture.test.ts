@@ -20,7 +20,7 @@ describe('Mixture', () => {
 
 	it('should solve for volume', () => {
 		// Act
-		mixture.solveTotal('volume', 200);
+		mixture.solveTotal('volume', 200, []);
 
 		// Assert
 		expect(mixture.get('volume')).toBeCloseTo(200, 0);
@@ -30,7 +30,7 @@ describe('Mixture', () => {
 
 	it('should solve for abv', () => {
 		// Act
-		mixture.solveTotal('abv', 50);
+		mixture.solveTotal('abv', 50, []);
 
 		// Assert
 		expect(mixture.get('volume')).toBeCloseTo(initialAnalysis.volume, 1);
@@ -40,7 +40,7 @@ describe('Mixture', () => {
 
 	it('should solve for brix', () => {
 		// Act
-		mixture.solveTotal('brix', 25);
+		mixture.solveTotal('brix', 25, []);
 
 		// Assert
 		expect(mixture.get('volume')).toBeCloseTo(initialAnalysis.volume, 1);
@@ -50,6 +50,6 @@ describe('Mixture', () => {
 
 	it('should throw an error for unable to solve', () => {
 		// Act & Assert
-		expect(() => mixture.solveTotal('abv', 0)).toThrowError('Unable to solve for abv = 0');
+		expect(() => mixture.solveTotal('abv', 0, [])).toThrowError('Unable to solve for abv = 0');
 	});
 });

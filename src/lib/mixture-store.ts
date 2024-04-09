@@ -245,7 +245,7 @@ export function createMixtureStore() {
 				// remove any totals errors
 				data.errors = data.errors.filter((e) => `${e.componentId}-${e.key}` !== `totals-${key}`);
 				const mixture = this.getMixture().clone();
-				mixture.solveTotal(key, requestedValue);
+				mixture.solveTotal(key, requestedValue, data.totalsLock);
 				if (!roundEq(mixture[key], requestedValue)) {
 					data.errors.push({ componentId: 'totals', key });
 					return data;

@@ -1,5 +1,6 @@
 import type { Component, ComponentNumberKeys } from './component.js';
 import { Ethanol } from './ethanol.js';
+import type { ComponentValueKey } from './mixture-store.js';
 import { solver } from './solver.js';
 import type { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
@@ -265,20 +266,32 @@ export class Mixture {
 		}
 	}
 
-	solveTotal(key: keyof Analysis, targetValue: number) {
+	solveTotal(key: keyof Analysis, targetValue: number, locked: ComponentValueKey[]): void {
 		if (!this.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
 		let working: Mixture | undefined;
-		if (key === 'volume') {
-			working = this.clone();
-			working.set('volume', targetValue);
-		} else if (key === 'abv') {
-			working = solver(this, targetValue, this.brix);
-			working.set('volume', this.volume);
-		} else if (key === 'brix') {
-			working = solver(this, this.abv, targetValue);
-			working.set('volume', this.volume);
+		switch (key) {
+			case 'volume':
+				working = this.clone();
+				working.set('volume', targetValue);
+				break;
+			case 'abv':
+				working = locked.includes('brix')
+					? solver(this, targetValue, this.brix)
+					: solver(this, targetValue, null);
+				if (locked.includes('volume')) {
+					working.set('volume', this.volume);
+				}
+				break;
+			case 'brix':
+				working = locked.includes('abv')
+					? solver(this, this.abv, targetValue)
+					: solver(this, null, targetValue);
+				if (locked.includes('volume')) {
+					working.set('volume', this.volume);
+				}
+				break;
 		}
 		if (!working) {
 			throw new Error(`Unable to solve for ${key} = ${targetValue}`);
