@@ -21,6 +21,10 @@ export class Water implements Component {
 		public volume: number,
 		public locked: WaterData['locked'] = []
 	) {}
+	get rawData(): WaterData {
+		const { type, volume, locked } = this;
+		return { type, volume, locked };
+	}
 	get data(): WaterData {
 		const { type, volume } = this;
 		return { type, volume: round(volume, 1), locked: this.locked };
@@ -28,6 +32,9 @@ export class Water implements Component {
 	set data(data: WaterData) {
 		this.volume = data.volume;
 		this.locked = data.locked;
+	}
+	static fromData(data: WaterData) {
+		return new Water(data.volume, data.locked);
 	}
 	get componentObjects() {
 		return [this];

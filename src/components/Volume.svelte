@@ -13,6 +13,7 @@
 	label="Volume"
 	suffix="ml"
 	{storeId}
+	readonly={/sugar/.test(storeId)}
 	valueType="volume"
 	/>
 </div>

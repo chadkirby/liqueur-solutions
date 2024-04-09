@@ -1,15 +1,14 @@
 <script lang="ts">
 	import Textfield from '@smui/textfield';
 	import Button, { Icon, Label } from '@smui/button';
-	import { goto } from '$app/navigation';
 	import {
 		Sugar as SugarObject,
 		Water as WaterObject,
 		Spirit as SpiritObject,
 		Syrup as SyrupObject,
-		isSugarData,
-		isWaterData,
-		mixtureStore
+		mixtureStore,
+		updateUrl,
+		type SerializedComponent,
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
@@ -17,34 +16,28 @@
 	import BrixComponent from './Brix.svelte';
 	import debounce from 'lodash.debounce';
 
-	export let liqueurName: string;
+	export let data: {liqueur: string, components: SerializedComponent[]};
 
-	function updateUrl() {
-		const mixture = mixtureStore.getMixture();
-		if (mixture.isValid) {
-			goto(`/${encodeURIComponent(liqueurName)}?${mixture.serialize(1)}`, {
-				replaceState: true,
-				noScroll: true,
-				keepFocus: true
-			});
-		}
-	}
+	// Initialize the store with the data from the load function
+	mixtureStore.deserialize(data);
 
-	const changeName = debounce((newName: string, id: string) => {
+
+	const handleNameInput = (id: string) => debounce((event: CustomEvent) => {
+		const newName = (event.target as HTMLInputElement).value;
 		mixtureStore.updateComponentName(id, newName);
 	}, 100);
 
 	function addSpirit() {
-		mixtureStore.addComponents([{name: 'spirit', id: 'spirit', data: new SpiritObject(100, 40).data}]);
+		mixtureStore.addComponents([{name: 'spirit', id: 'spirit', component: new SpiritObject(100, 40)}]);
 	}
 	function addWater() {
-		mixtureStore.addComponents([{name: "water", id: "water", data: new WaterObject(100).data}]);
+		mixtureStore.addComponents([{name: "water", id: "water", component: new WaterObject(100)}]);
 	}
 	function addSugar() {
-		mixtureStore.addComponents([{name: "sugar", id: "sugar", data: new SugarObject(100).data}]);
+		mixtureStore.addComponents([{name: "sugar", id: "sugar", component: new SugarObject(100)}]);
 	}
 	function addSyrup() {
-		mixtureStore.addComponents([{name: "syrup", id: "syrup", data: new SyrupObject(100, 50).data}]);
+		mixtureStore.addComponents([{name: "syrup", id: "syrup", component: new SyrupObject(100, 50)}]);
 	}
 
 	function removeComponent(id: string) {
@@ -57,12 +50,12 @@
 	<Textfield
 		class="col-span-4"
 		input$class="font-sans text-2xl font-bold"
-		bind:value={liqueurName}
+		value={$mixtureStore.title}
 		on:input={() => updateUrl()}
 		required
 	/>
 
-	{#each $mixtureStore.components.entries() as [index, { name, id, data: entry }] (index)}
+	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 		<div class="flex flex-col items-stretch mt-2">
 			<div class="relative">
 				<Textfield
@@ -71,8 +64,7 @@
 					variant="outlined"
 					value={name}
 					label={entry.type}
-					on:input={(event) =>
-						event.target instanceof HTMLInputElement && changeName(event.target.value, id)}
+					on:input={handleNameInput(id)}
 					required
 				/>
 				<Button class="absolute -top-1 -right-5" color="secondary"  on:click={() => removeComponent(id)}>
@@ -106,7 +98,7 @@
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">spirit</Label>
 	</Button>
-	{#if !Object.values($mixtureStore.components).some((c) => isSugarData(c.data))}
+	{#if !$mixtureStore.mixture.findByType(SugarObject.is)}
 		<Button color="secondary" class="scale-75" on:click={addSugar}>
 			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 			<Label class="scale-125 p-2">sugar</Label>
@@ -116,7 +108,7 @@
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">syrup</Label>
 	</Button>
-	{#if !Object.values($mixtureStore.components).some((c) => isWaterData(c.data))}
+	{#if !$mixtureStore.mixture.findByType(WaterObject.is)}
 		<Button color="secondary" class="scale-75" on:click={addWater}>
 			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 			<Label class="scale-125 p-2">water</Label>

@@ -43,6 +43,10 @@ export class Syrup extends Mixture {
 		return component;
 	}
 
+	get rawData(): SyrupData {
+		const { type, volume, brix, locked } = this;
+		return { type, volume, brix, locked };
+	}
 	get data(): SyrupData {
 		const { type, volume, brix } = this;
 		return { type, volume: round(volume, 1), brix: round(brix, 1), locked: this.locked };
@@ -52,6 +56,10 @@ export class Syrup extends Mixture {
 		this._brix = data.brix;
 		this.locked = data.locked;
 		this.updateComponents();
+	}
+
+	static fromData(data: SyrupData) {
+		return new Syrup(data.volume, data.brix, data.locked);
 	}
 
 	canEdit(key: ComponentNumberKeys): boolean {

@@ -22,6 +22,10 @@ export class Sugar implements Component {
 		public locked: SugarData['locked'] = []
 	) {}
 
+	get rawData(): SugarData {
+		const { type, mass, locked } = this;
+		return { type, mass, locked };
+	}
 	get data(): SugarData {
 		const { type, mass } = this;
 		return { type, mass: round(mass, 1), locked: this.locked };
@@ -30,12 +34,15 @@ export class Sugar implements Component {
 		this.mass = data.mass;
 		this.locked = data.locked;
 	}
+	static fromData(data: SugarData) {
+		return new Sugar(data.mass, data.locked);
+	}
 
 	get isLocked() {
-		return this.locked.length;
+		return Boolean(this.locked.length);
 	}
 	canEdit(key: ComponentNumberKeys): boolean {
-		return ['sugarMass', 'volume'].includes(key) ? this.locked.length > 0 : false;
+		return ['sugarMass', 'mass', 'volume'].includes(key) ? !this.isLocked : false;
 	}
 
 	clone() {
@@ -68,6 +75,7 @@ export class Sugar implements Component {
 				case 'volume':
 					this.mass = value * Sugar.density;
 					break;
+				case 'mass':
 				case 'sugarMass':
 					this.mass = value;
 					break;

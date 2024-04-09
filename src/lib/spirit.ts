@@ -25,7 +25,7 @@ export class Spirit extends Mixture {
 		this._volume = volume;
 		this._abv = abv;
 		this.updateComponents();
-	}
+ 	}
 
 	get componentObjects() {
 		return this.components.map(({ component }) => component);
@@ -43,6 +43,10 @@ export class Spirit extends Mixture {
 		return component;
 	}
 
+	get rawData(): SpiritData {
+		const { type, volume, abv, locked } = this;
+		return { type, volume, abv, locked };
+	}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
 		return { type, volume: round(volume, 1), abv: round(abv, 1), locked: this.locked };
@@ -53,11 +57,14 @@ export class Spirit extends Mixture {
 		this.locked = data.locked;
 		this.updateComponents();
 	}
+	static fromData(data: SpiritData) {
+		return new Spirit(data.volume, data.abv, data.locked);
+	}
 
 	canEdit(key: ComponentNumberKeys): boolean {
 		return key === 'volume' || key === 'abv'
 			? !this.locked.includes(key)
-			: ['alcoholVolume', 'waterVolume'].includes(key)
+			: ['alcoholVolume'].includes(key)
 			? this.locked.length === 0
 			: false;
 	}

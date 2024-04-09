@@ -153,3 +153,9 @@ export function isSugarData(data: unknown): data is SugarData {
 export function isSyrupData(data: unknown): data is SyrupData {
 	return checkData('syrup', data);
 }
+
+export type SerializedComponent = {
+	name: string;
+	id: string;
+	data: SpiritData | WaterData | SugarData | SyrupData;
+};

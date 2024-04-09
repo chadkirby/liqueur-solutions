@@ -1,22 +1,42 @@
-import type { PageData } from '../routes/[liqueur]/$types.js';
-type Components = PageData['components'];
 import { writable, get, derived } from 'svelte/store';
-import { isSpiritData, isSugarData, isSyrupData, isWaterData } from './component.js';
+import { isSugarData, type SerializedComponent } from './component.js';
 import { dataToMixture } from './data-to-mixture.js';
-function createMixtureStore() {
-	const store = writable({
-		components: [] as Components,
-		totalsLock: [] as Array<'brix' | 'volume' | 'mass' | 'abv'>,
-		totals: recalculateTotals([])
-	});
-	const { subscribe, set, update } = store;
+import { Syrup } from './syrup.js';
+import { Sugar } from './sugar.js';
+import { Spirit } from './spirit.js';
+import { Water } from './water.js';
+import type { Analysis } from './utils.js';
+import { Mixture } from './mixture.js';
+import { goto } from '$app/navigation';
 
-	function recalculateTotals(components: Components) {
-		const mixture = dataToMixture({ components });
+export type ComponentValueKey = 'volume' | 'abv' | 'mass' | 'brix';
+
+export function createMixtureStore() {
+	const store = writable({
+		title: 'mixture',
+		mixture: new Mixture([]),
+		totalsLock: [] as Array<ComponentValueKey>,
+		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
+		totals: getTotals(new Mixture([]))
+	});
+	const { subscribe, set } = store;
+
+	function getTotals(mixture: Mixture) {
 		if (!mixture.isValid) {
 			throw new Error('Invalid mixture');
 		}
 		return mixture.analyze(1);
+	}
+
+	function update(updater: Parameters<typeof store.update>[0]) {
+		store.update((data) => {
+			const newData = updater(data);
+			if (newData.mixture.isValid) {
+				newData.totals = getTotals(newData.mixture);
+				updateUrl(newData.mixture);
+			}
+			return newData;
+		});
 	}
 
 	return {
@@ -25,139 +45,172 @@ function createMixtureStore() {
 		},
 		subscribe,
 		getMixture() {
-			return dataToMixture(get(store));
+			return get(store).mixture;
 		},
 		findComponent(componentId: string) {
-			const component = get(store).components.find((c) => c.id === componentId);
+			const component = this.getMixture().components.find((c) => c.id === componentId);
 			if (!component) {
 				throw new Error(`Unable to find component ${componentId}`);
 			}
 			return component;
 		},
-		componentValueStore(componentId: string, key: 'brix' | 'volume' | 'mass' | 'abv') {
+		errorStore(componentId: string, key: ComponentValueKey) {
 			return derived(store, ($store) => {
-				if (componentId === 'totals') return $store.totals[key];
-				const component = $store.components.find((c) => c.id === componentId);
-				if (!component) {
-					throw new Error(`Unable to find component ${componentId}`);
-				}
-				if (isSpiritData(component.data) && (key === 'abv' || key === 'volume')) {
-					return component.data[key];
-				} else if (isSugarData(component.data) && key === 'mass') {
-					return component.data[key];
-				} else if (isSyrupData(component.data) && (key === 'brix' || key === 'volume')) {
-					return component.data[key];
-				} else if (isWaterData(component.data) && key === 'volume') {
-					return component.data[key];
-				} else {
-					console.log(component.data);
-					throw new Error(`Unable to get ${key} of component ${componentId}`);
-				}
+				return $store.errors.some((e) => e.componentId === componentId && e.key === key);
 			});
 		},
-		lockedStore(componentId: string, key: 'brix' | 'volume' | 'mass' | 'abv') {
-			return derived(store, ($store) => {
-				if (componentId === 'totals') return $store.totalsLock.includes(key);
-				const component = $store.components.find((c) => c.id === componentId);
-				if (!component) {
-					throw new Error(`Unable to find component ${componentId}`);
-				}
-				return component.data.locked.includes(key as never);
+		resetError(componentId: string, key: ComponentValueKey) {
+			update((data) => {
+				data.errors = data.errors.filter((e) => e.componentId !== componentId || e.key !== key);
+				return data;
 			});
 		},
-		addComponents(components: Components) {
+		addComponents(components: Mixture['components']) {
 			update((data) => {
 				for (const component of components) {
-					const origId = component.id ?? component.name;
-					let inc = 0;
-					let id = origId;
-					while (data.components.some((c) => c.id === id)) {
-						id = `${origId}-${++inc}`;
-					}
-					data.components.push({ ...component, id });
+					data.mixture.addComponent({ ...component });
 				}
-				data.totals = recalculateTotals(data.components);
 				return data;
 			});
 		},
 		removeComponent(componentId: string) {
 			update((data) => {
-				data.components = data.components.filter((c) => c.id !== componentId);
-				data.totals = recalculateTotals(data.components);
+				data.mixture.removeComponent(componentId);
 				return data;
 			});
 		},
-		updateComponentVolume(componentId: string, newVolume: number): void {
+		setVolume(componentId: string, newVolume: number): void {
+			if (componentId === 'totals') {
+				this.solveTotal('volume', newVolume);
+				return;
+			}
 			update((data) => {
-				const component = data.components.find((c) => c.id === componentId);
-				if (!component) {
-					throw new Error(`Unable to find component ${componentId}`);
-				}
-				if (!isSugarData(component.data)) {
-					component.data.volume = newVolume;
-				} else {
+				const component = data.mixture.findById(componentId);
+				// clear any errors
+				data.errors = data.errors.filter(
+					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
+				);
+				if (Spirit.is(component)) {
+					const spirit = component.clone();
+					spirit.set('volume', newVolume);
+					if (!roundEq(spirit.volume, newVolume)) {
+						data.errors.push({ componentId, key: 'volume' });
+						return data;
+					}
+					component.data = spirit.data;
+				} else if (Water.is(component)) {
+					const water = component.clone();
+					water.set('volume', newVolume);
+					if (!roundEq(water.volume, newVolume)) {
+						data.errors.push({ componentId, key: 'volume' });
+						return data;
+					}
+					component.data = water.data;
+				} else if (Syrup.is(component)) {
+					const syrup = component.clone();
+					syrup.set('volume', newVolume);
+					if (!roundEq(syrup.volume, newVolume)) {
+						data.errors.push({ componentId, key: 'volume' });
+						return data;
+					}
+					component.data = syrup.data;
+				} else if (Sugar.is(component)) {
 					throw new Error(`Unable to set volume of component ${componentId}`);
 				}
 
-				data.totals = recalculateTotals(data.components);
-
 				return data;
 			});
 		},
-		updateComponentAbv(componentId: string, newAbv: number): void {
+		setAbv(componentId: string, newAbv: number): void {
+			if (componentId === 'totals') {
+				this.solveTotal('abv', newAbv);
+				return;
+			}
 			update((data) => {
-				const component = data.components.find((c) => c.id === componentId);
+				const component = data.mixture.findById(componentId);
 				if (!component) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				if (isSpiritData(component.data)) {
-					component.data.abv = newAbv;
+				// clear any errors
+				data.errors = data.errors.filter(
+					(e) => `${e.componentId}-${e.key}` !== `${componentId}-abv`
+				);
+				if (Spirit.is(component)) {
+					const spirit = component.clone();
+					spirit.set('abv', newAbv);
+					if (!roundEq(spirit.abv, newAbv)) {
+						data.errors.push({ componentId, key: 'abv' });
+						return data;
+					}
+					component.data = spirit.data;
 				} else {
 					throw new Error(`Unable to set abv of component ${componentId}`);
 				}
 
-				data.totals = recalculateTotals(data.components);
-
 				return data;
 			});
 		},
-		updateComponentMass(componentId: string, newMass: number): void {
+		setMass(componentId: string, newMass: number): void {
+			if (componentId === 'totals') {
+				throw new Error('Cannot set mass of totals');
+			}
 			update((data) => {
-				const component = data.components.find((c) => c.id === componentId);
+				const component = data.mixture.findById(componentId);
 				if (!component) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
+				// clear any errors
+				data.errors = data.errors.filter(
+					(e) => `${e.componentId}-${e.key}` !== `${componentId}-mass`
+				);
 				if (isSugarData(component.data)) {
-					component.data.mass = newMass;
+					const sugar = Sugar.fromData(component.data);
+					sugar.set('mass', newMass);
+					if (!roundEq(sugar.mass, newMass)) {
+						data.errors.push({ componentId, key: 'mass' });
+						return data;
+					}
+					component.data = sugar.data;
 				} else {
 					throw new Error(`Unable to set mass of component ${componentId}`);
 				}
 
-				data.totals = recalculateTotals(data.components);
-
 				return data;
 			});
 		},
-		updateComponentBrix(componentId: string, newBrix: number): void {
+		setBrix(componentId: string, newBrix: number): void {
+			if (componentId === 'totals') {
+				this.solveTotal('brix', newBrix);
+				return;
+			}
 			update((data) => {
-				const component = data.components.find((c) => c.id === componentId);
+				const component = data.mixture.findById(componentId);
 				if (!component) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				if (isSyrupData(component.data)) {
-					component.data.brix = newBrix;
+				// clear any errors
+				data.errors = data.errors.filter(
+					(e) => `${e.componentId}-${e.key}` !== `${componentId}-brix`
+				);
+
+				if (Syrup.is(component)) {
+					const syrup = component.clone();
+					syrup.set('brix', newBrix);
+					if (!roundEq(syrup.brix, newBrix)) {
+						data.errors.push({ componentId, key: 'brix' });
+						return data;
+					}
+					component.data = syrup.data;
 				} else {
 					throw new Error(`Unable to set brix of component ${componentId}`);
 				}
-
-				data.totals = recalculateTotals(data.components);
 
 				return data;
 			});
 		},
 		updateComponentName(componentId: string, newName: string): void {
 			update((data) => {
-				const component = data.components.find((c) => c.id === componentId);
+				const component = data.mixture.components.find((c) => c.id === componentId);
 				if (!component) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
@@ -165,7 +218,7 @@ function createMixtureStore() {
 				return data;
 			});
 		},
-		toggleLock(componentId: string, key: 'brix' | 'volume' | 'mass' | 'abv') {
+		toggleLock(componentId: string, key: ComponentValueKey) {
 			update((data) => {
 				if (componentId === 'totals') {
 					const index = data.totalsLock.indexOf(key);
@@ -176,70 +229,66 @@ function createMixtureStore() {
 					}
 					return data;
 				}
-				const component = data.components.find((c) => c.id === componentId);
+				const component = data.mixture.findById(componentId);
 				if (!component) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
+				const componentData = component.data;
 				// using indexOf on a union type requires a bit of a hack
-				const locked = component.data.locked as Array<'brix' | 'volume' | 'mass' | 'abv'>;
+				const locked = componentData.locked as Array<'brix' | 'volume' | 'mass' | 'abv'>;
 				const index = locked.indexOf(key);
 				if (index === -1) {
 					locked.push(key);
 				} else {
 					locked.splice(index, 1);
 				}
+				component.data = componentData;
 
 				return data;
 			});
 		},
-		solveForVolume(totalVolume: number): void {
+		solveTotal(key: keyof Analysis, requestedValue: number): void {
 			update((data) => {
-				const mixture = dataToMixture(data);
-				const delta = (totalVolume - mixture.lockedVolume) / (mixture.unlockedVolume || 1);
-				for (const item of mixture.componentObjects) {
-					item.set('volume', (item.volume || 1) * delta);
+				// remove any totals errors
+				data.errors = data.errors.filter((e) => `${e.componentId}-${e.key}` !== `totals-${key}`);
+				const mixture = this.getMixture().clone();
+				mixture.solveTotal(key, requestedValue);
+				if (!roundEq(mixture[key], requestedValue)) {
+					data.errors.push({ componentId: 'totals', key });
+					return data;
 				}
 
-				data.components = mixture.components.map(({ name, id, component }) => ({
-					name,
-					id,
-					data: component.data
-				}));
-				data.totals = recalculateTotals(data.components);
-				return data;
-			});
-		},
-		solveForAbv(totalAbv: number): void {
-			update((data) => {
-				const mixture = dataToMixture(data);
-				mixture.setAbv(totalAbv);
-				data.components = mixture.components.map(({ name, id, component }) => ({
-					name,
-					id,
-					data: component.data
-				}));
-				data.totals = recalculateTotals(data.components);
-				return data;
-			});
-		},
-		solveForBrix(totalBrix: number): void {
-			update((data) => {
-				const mixture = dataToMixture(data);
-				mixture.setBrix(totalBrix);
-				data.components = mixture.components.map(({ name, id, component }) => ({
-					name,
-					id,
-					data: component.data
-				}));
-				data.totals = recalculateTotals(data.components);
+				data.mixture = mixture;
 				return data;
 			});
 		},
 		/** reset the store */
-		setData(components: Components) {
-			set({ components, totalsLock: get(store).totalsLock, totals: recalculateTotals(components) });
+		deserialize(data: { liqueur: string; components: SerializedComponent[] }) {
+			console.log('deserialize', data);
+			const mixture = dataToMixture(data);
+			set({
+				title: data.liqueur,
+				mixture,
+				totalsLock: [],
+				totals: getTotals(mixture),
+				errors: []
+			});
 		}
 	};
 }
 
+function roundEq(a: number, b: number) {
+	return Math.round(a) === Math.round(b);
+}
+
 export const mixtureStore = createMixtureStore();
+
+export function updateUrl(mixture = mixtureStore.getMixture()) {
+	if (mixture.isValid) {
+		goto(`/${encodeURIComponent(mixtureStore.get().title)}?${mixture.serialize(1)}`, {
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
+	}
+}

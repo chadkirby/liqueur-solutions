@@ -34,12 +34,13 @@ export function deserialize(qs: string | URLSearchParams) {
 		} else {
 			const current = working.at(-1);
 			if (!current) throw new Error('Keys must be preceded by a component name');
+			const locked = value.split('+') as AnyLockedValue;
 			if (isComponentValueKey(key)) {
 				current[key] = parseFloat(value);
 			} else if (key === 'type' && isComponentType(value)) {
 				current.type = value;
-			} else if (key === 'locked' && isLockedValue(value)) {
-				current.locked = value === 'none' ? [] : (value.split('+') as AnyLockedValue);
+			} else if (key === 'locked' && isLockedValue(locked)) {
+				current.locked = value === 'none' ? [] : locked;
 			}
 		}
 	}

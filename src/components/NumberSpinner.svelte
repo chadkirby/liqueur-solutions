@@ -5,10 +5,12 @@
 	import {
 		mixtureStore
 	} from '$lib';
+	import type { ComponentValueKey } from '$lib/mixture-store.js';
+	import type { AnyComponent } from '$lib/mixture.js';
 
-	export let onInput: ((event: CustomEvent) => number | undefined) | null = null;
 	export let storeId: 'totals' | string; // static
-	export let valueType: 'brix' | 'volume' | 'mass' | 'abv'; // static
+	export let valueType: ComponentValueKey; // static
+	export let readonly: boolean = false;
 	export let label: string;
 	export let suffix: string;
 	export let max = Infinity
@@ -16,25 +18,29 @@
 	export let keyStepSlow = 1;
 	export let keyStepFast = 100;
 
-	const valueStore = mixtureStore.componentValueStore(storeId, valueType);
-	const lockedStore = mixtureStore.lockedStore(storeId, valueType);
+	const errorStore = mixtureStore.errorStore(storeId, valueType);
+
+	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
+
+	let component: AnyComponent | null;
+	$: component = storeId  === 'totals' ? null :  mixtureStore.findComponent(storeId)?.component ?? {} as AnyComponent;
 
 	let value: number;
-  // Use a reactive statement to assign the value
-  $: $valueStore; // This creates a subscription to the derived store
-  $: value = $valueStore; // This will update whenever the derived store updates
+  $: value = (component ? component[valueType] : mixtureStoreData.totals[valueType] ) ?? 0;
 
 	let isLocked: boolean;
-	$: $lockedStore; // This creates a subscription to the derived store
-	$: isLocked = $lockedStore; // This will update whenever the derived store updates
 
-	let displayValue: number;
+	$: isLocked = (component ?  !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType))?? false;
+
 	let validState: boolean = value >= 0;
 
-	// recompute displayValue when value changes
-	$: displayValue = value, Number(value.toFixed(1));
+	// This creates a subscription to the derived store
+	$: $errorStore;
+	// This will update whenever the derived store updates
+	$: validState = !$errorStore;
 
-	$: validState = value >= 0 && (requestedValue === null || roundEq(requestedValue, value));
+	let canEdit: boolean;
+	$: canEdit = !readonly;
 
 	const id = Math.random().toString(36).substring(2);
 
@@ -43,24 +49,36 @@
 	}
 
 	function reset() {
-		if (requestedValue === null) return;
-		value = requestedValue;
+		mixtureStore.resetError(storeId, valueType);
+	}
+
+	let isFocused = false;
+
+	function onFocus() {
+		isFocused = true;
+	}
+	function onBlur() {
+		isFocused = false;
 	}
 
 	function doInput(event: CustomEvent) {
 		if (isLocked) return;
-		requestedValue = event.detail;
-		if (event.detail === displayValue) return;
-		requestedValue = event.detail;
-		const newValue = onInput?.(event);
-		if (newValue !== undefined) {
-			value = newValue;
-			console.log({label, requestedValue, newValue});
+		if (event.detail === Number(value.toFixed(1))) return;
+		if (!isFocused) return;
+		switch (valueType) {
+			case 'volume':
+				mixtureStore.setVolume(storeId, event.detail);
+				break;
+			case 'mass':
+				mixtureStore.setMass(storeId, event.detail);
+				break;
+			case 'brix':
+				mixtureStore.setBrix(storeId, event.detail);
+				break;
+			case 'abv':
+				mixtureStore.setAbv(storeId, event.detail);
+				break;
 		}
-	}
-
-	function roundEq(a: number, b: number) {
-		return Math.round(a) === Math.round(b);
 	}
 
 	const buttonClasses = "absolute top-0 -right-1 scale-75 cursor-pointer z-10";
@@ -68,7 +86,7 @@
 </script>
 
 <div class="mx-1 relative">
-	{#if onInput}
+	{#if canEdit}
 		{#if isLocked}
 			<button class={buttonClasses} on:click={() => toggleLock()}>
 				<span class="material-icons mdc-fab__icon">lock</span>
@@ -83,17 +101,18 @@
 			</button>
 		{/if}
 	{/if}
-	{#if onInput && !isLocked}
+	{#if canEdit && !isLocked}
 		<label
-				for="volume-{id}"
+				for="{valueType}-{id}"
 				class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-18 p-1 {validState ? "border-b border-slate-300" : "border-b-2 border-red-400 text-red-600"}"
 			>
 			<span class="mdc-floating-label mdc-floating-label--float-above " style="">{label}</span>
 			<NumberSpinner
-				id="volume-{id}"
 				class="mdc-text-field__input"
-				value={displayValue}
+				value={value.toFixed(1)}
 				on:input={doInput}
+				on:focus={onFocus}
+				on:blur={onBlur}
 				min="0"
 				max={max}
 				step="1"
@@ -110,7 +129,7 @@
 	{:else}
 		<Textfield
 			class="w-18 p-1"
-			bind:value={displayValue}
+			value={value.toFixed(1)}
 			label={label}
 			type="number"
 			input$inputmode="numeric"

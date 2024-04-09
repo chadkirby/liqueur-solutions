@@ -21,6 +21,10 @@ export class Ethanol implements Component {
 		public volume: number,
 		public locked: SpiritData['locked'] = []
 	) {}
+	get rawData(): SpiritData {
+		const { type, volume, abv, locked } = this;
+		return { type, volume, abv, locked };
+	}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
 		return { type, volume: round(volume, 1), abv: round(abv, 1), locked: this.locked };

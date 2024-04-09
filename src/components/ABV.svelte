@@ -10,6 +10,7 @@
 		label="ABV"
 		suffix="%"
 		{storeId}
+		readonly={!/spirit|totals/.test(storeId)}
 		valueType="abv"
 		max={100}
 		keyStep={1}

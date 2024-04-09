@@ -1,19 +1,8 @@
-import {
-	type SpiritData,
-	type WaterData,
-	type SugarData,
-	type SyrupData,
-	dataToMixture,
-	deserialize
-} from '$lib';
+import { dataToMixture, deserialize, type SerializedComponent } from '$lib';
 
 export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
 	liqueur: string;
-	components: Array<{
-		name: string;
-		id: string;
-		data: SpiritData | WaterData | SugarData | SyrupData;
-	}>;
+	components: Array<SerializedComponent>;
 } {
 	try {
 		const { components } = deserialize(url.searchParams);

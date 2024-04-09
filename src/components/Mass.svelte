@@ -6,5 +6,5 @@
 </script>
 
 <div class="mx-1 grow">
-	<NumberSpinner label="Mass" suffix="g" {storeId} valueType="mass" />
+	<NumberSpinner label="Mass" suffix="g" {storeId} valueType="mass" readonly={!/sugar/.test(storeId)} />
 </div>

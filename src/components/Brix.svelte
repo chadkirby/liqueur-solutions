@@ -10,6 +10,7 @@
 	<NumberSpinner
 	{storeId}
 	valueType="brix"
+	readonly={!/syrup|totals/.test(storeId)}
 	label="ºBrix"
 	suffix="%"
 	keyStep={1}

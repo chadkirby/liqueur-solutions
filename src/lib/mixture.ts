@@ -7,7 +7,7 @@ import type { Syrup } from './syrup.js';
 import { analyze, type Analysis } from './utils.js';
 import { Water } from './water.js';
 
-type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
+export type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
 
 export class Mixture {
 	constructor(
@@ -51,6 +51,26 @@ export class Mixture {
 
 	findByType<X extends Component>(is: (x: unknown) => x is X): X | undefined {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
+	}
+
+	findById(id: string): AnyComponent | undefined {
+		return this.components.find((c) => c.id === id)?.component;
+	}
+
+	addComponent({ name, component }: { name: string; component: AnyComponent }) {
+		let inc = 0;
+		let id = `${component.type}-${inc}`;
+		while (this.findById(id)) {
+			id = `${component.type}-${++inc}`;
+		}
+		this.components.push({ id, name, component });
+	}
+
+	removeComponent(id: string) {
+		const index = this.components.findIndex((c) => c.id === id);
+		if (index >= 0) {
+			this.components.splice(index, 1);
+		}
 	}
 
 	// iterator to iterate over components
@@ -112,7 +132,7 @@ export class Mixture {
 	}
 	setVolume(newVolume: number) {
 		const originalVolume = this.volume;
-		if (isClose(originalVolume, newVolume)) return;
+		if (isClose(originalVolume, newVolume, 0.001)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
 			component.set('volume', component.volume * factor);
@@ -149,7 +169,9 @@ export class Mixture {
 		if (isClose(originalVolume, newVolume)) return;
 		const factor = newVolume / originalVolume;
 		for (const { component } of this) {
-			component.set('volume', component.volume * factor);
+			if (component.canEdit('alcoholVolume')) {
+				component.set('alcoholVolume', component.alcoholVolume * factor);
+			}
 		}
 	}
 	get alcoholMass() {
@@ -172,7 +194,7 @@ export class Mixture {
 
 		const factor = newMass / this.sugarMass;
 		for (const { component } of this) {
-			if (component.canEdit('sugarMass') && component !== sugarComponent) {
+			if (component.canEdit('sugarMass')) {
 				component.set('sugarMass', component.sugarMass * factor);
 			}
 		}
@@ -219,8 +241,62 @@ export class Mixture {
 			}
 		}
 	}
+
+	get(key: ComponentNumberKeys): number {
+		switch (key) {
+			case 'volume':
+				return this.volume;
+			case 'waterVolume':
+				return this.waterVolume;
+			case 'alcoholVolume':
+				return this.alcoholVolume;
+			case 'sugarVolume':
+				return this.sugarVolume;
+			case 'sugarMass':
+				return this.sugarMass;
+			case 'mass':
+				return this.mass;
+			case 'abv':
+				return this.abv;
+			case 'brix':
+				return this.brix;
+			default:
+				return NaN;
+		}
+	}
+
+	solveTotal(key: keyof Analysis, targetValue: number) {
+		if (!this.canEdit(key)) {
+			throw new Error(`${key} is not editable`);
+		}
+		let working: Mixture | undefined;
+		if (key === 'volume') {
+			working = this.clone();
+			working.set('volume', targetValue);
+		} else if (key === 'abv') {
+			working = solver(this, targetValue, this.brix);
+			working.set('volume', this.volume);
+		} else if (key === 'brix') {
+			working = solver(this, this.abv, targetValue);
+			working.set('volume', this.volume);
+		}
+		if (!working) {
+			throw new Error(`Unable to solve for ${key} = ${targetValue}`);
+		}
+		// test that the solution is valid
+		if (!working.isValid) {
+			throw new Error(`Invalid solution for ${key} = ${targetValue}`);
+		}
+		if (working[key].toFixed(1) !== targetValue.toFixed(1)) {
+			throw new Error(`Unable to solve for ${key} = ${targetValue}`);
+		}
+
+		for (const [i, obj] of this.componentObjects.entries()) {
+			obj.data = working.componentObjects[i].rawData;
+		}
+	}
 }
 
-function isClose(a: number, b: number) {
-	return Math.abs(a - b) < 0.01;
+function isClose(a: number, b: number, delta = 0.01) {
+	return Math.abs(a - b) < delta;
 }
