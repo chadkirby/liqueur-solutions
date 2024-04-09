@@ -47,13 +47,6 @@ export function createMixtureStore() {
 		getMixture() {
 			return get(store).mixture;
 		},
-		findComponent(componentId: string) {
-			const component = this.getMixture().components.find((c) => c.id === componentId);
-			if (!component) {
-				throw new Error(`Unable to find component ${componentId}`);
-			}
-			return component;
-		},
 		errorStore(componentId: string, key: ComponentValueKey) {
 			return derived(store, ($store) => {
 				return $store.errors.some((e) => e.componentId === componentId && e.key === key);

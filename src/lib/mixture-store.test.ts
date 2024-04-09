@@ -11,7 +11,6 @@ describe('Mixture Store', () => {
 		expect(state.title).toBe('mixture');
 		expect(state.mixture).toBeDefined();
 		expect(state.totalsLock).toEqual([]);
-		expect(state.readonlyComponents).toEqual([]);
 		expect(state.errors).toEqual([]);
 		expect(state.totals).toBeDefined();
 	});
@@ -62,11 +61,11 @@ describe('Mixture Store', () => {
 			components
 		});
 
-		const foundComponent = store.findComponent('spirit-0');
+		const foundComponent = store.getMixture().components.find((c) => c.id === 'spirit-0');
 		expect({
-			name: foundComponent.name,
-			id: foundComponent.id,
-			data: foundComponent.component.data
+			name: foundComponent?.name,
+			id: foundComponent?.id,
+			data: foundComponent?.component.data
 		}).toStrictEqual(components[0]);
 
 		const state = store.get();

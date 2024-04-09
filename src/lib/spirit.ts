@@ -65,7 +65,7 @@ export class Spirit extends Mixture {
 		return key === 'volume' || key === 'abv'
 			? !this.locked.includes(key)
 			: ['alcoholVolume'].includes(key)
-			? this.locked.length === 0
+			? this.locked.length < 2
 			: false;
 	}
 
@@ -108,8 +108,15 @@ export class Spirit extends Mixture {
 					this._abv = value;
 					break;
 				case 'alcoholVolume':
-					// maintain the same abv
-					this._volume = value / (this._abv / 100);
+					{
+						if (this.locked.includes('volume')) {
+							// maintain the same volume, adjust the abv
+							this._abv = (value / this._volume) * 100;
+						} else {
+							// maintain the same abv, adjust the volume
+							this._volume = value / (this._abv / 100);
+						}
+					}
 					break;
 				default:
 					return;

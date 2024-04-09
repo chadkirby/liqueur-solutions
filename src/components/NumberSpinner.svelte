@@ -23,14 +23,14 @@
 	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
 
 	let component: AnyComponent | null;
-	$: component = storeId  === 'totals' ? null :  mixtureStore.findComponent(storeId)?.component ?? {} as AnyComponent;
+	$: component = storeId  !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null;
 
 	let value: number;
-  $: value = (component ? component[valueType] : mixtureStoreData.totals[valueType] ) ?? 0;
+  $: value = (component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0;
 
 	let isLocked: boolean;
 
-	$: isLocked = (component ?  !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType))?? false;
+	$: isLocked = (component ?  !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType)) ?? false;
 
 	let validState: boolean = value >= 0;
 
