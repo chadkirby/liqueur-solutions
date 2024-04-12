@@ -100,7 +100,7 @@ export class Mixture {
 	}
 	setAbv(targetAbv: number) {
 		if (targetAbv === this.abv) return;
-		const working = solver(this, targetAbv, this.brix);
+		const working = solver(this, { abv: targetAbv, brix: this.brix, volume: null });
 		for (const [i, obj] of this.componentObjects.entries()) {
 			obj.data = working.componentObjects[i].data;
 		}
@@ -110,7 +110,7 @@ export class Mixture {
 	}
 	setBrix(newBrix: number) {
 		if (isClose(newBrix, this.brix)) return;
-		const working = solver(this, this.abv, newBrix);
+		const working = solver(this, { abv: this.abv, brix: newBrix, volume: null });
 		for (const [i, obj] of this.componentObjects.entries()) {
 			obj.data = working.componentObjects[i].data;
 		}
@@ -277,19 +277,15 @@ export class Mixture {
 				working.set('volume', targetValue);
 				break;
 			case 'abv':
-				working = locked.includes('brix')
-					? solver(this, targetValue, this.brix)
-					: solver(this, targetValue, null);
-				if (locked.includes('volume')) {
-					working.set('volume', this.volume);
-				}
-				break;
 			case 'brix':
-				working = locked.includes('abv')
-					? solver(this, this.abv, targetValue)
-					: solver(this, null, targetValue);
-				if (locked.includes('volume')) {
-					working.set('volume', this.volume);
+				{
+					const targetAbv = key === 'abv' ? targetValue : locked.includes('abv') ? this.abv : null;
+					const targetBrix =
+						key === 'brix' ? targetValue : locked.includes('brix') ? this.brix : null;
+					working = solver(this, { abv: targetAbv, brix: targetBrix, volume: null });
+					if (locked.includes('volume')) {
+						working.set('volume', this.volume);
+					}
 				}
 				break;
 		}
@@ -300,7 +296,7 @@ export class Mixture {
 		if (!working.isValid) {
 			throw new Error(`Invalid solution for ${key} = ${targetValue}`);
 		}
-		if (working[key].toFixed(1) !== targetValue.toFixed(1)) {
+		if (working[key].toFixed() !== targetValue.toFixed()) {
 			throw new Error(`Unable to solve for ${key} = ${targetValue}`);
 		}
 

@@ -8,32 +8,52 @@ export interface Target {
 
 const { sqrt } = Math;
 
-export function solver(mixture: Mixture, targetAbv: number | null, targetBrix: number | null) {
-	if (targetAbv !== null && (targetAbv < 0 || targetAbv > 100))
+export function solver(
+	mixture: Mixture,
+	targets: { abv: number | null; brix: number | null; volume: number | null }
+) {
+	if (targets.abv !== null && (targets.abv < 0 || targets.abv > 100))
 		throw new Error('Target ABV must be between 0 and 100');
-	if (targetBrix !== null && (targetBrix < 0 || targetBrix > 100))
+	if (targets.brix !== null && (targets.brix < 0 || targets.brix > 100))
 		throw new Error('Target Brix must be between 0 and 100');
 
 	let error = 1;
 	let iterations = 1000;
 	const working = mixture.clone();
 	while (error > 0.01 && --iterations > 0) {
-		if (targetAbv !== null) {
-			working.set('alcoholVolume', working.volume * (targetAbv / 100));
+		if (targets.abv !== null) {
+			const targetVolume = working.volume * (targets.abv / 100);
+			working.set('alcoholVolume', targetVolume);
+			const actualAlcohol = working.alcoholVolume;
+			if (actualAlcohol.toFixed(1) !== targetVolume.toFixed(1)) {
+				// instead set water volume
+				const waterComponents = working.componentObjects.filter((c) => c.abv === 0);
+				const alcComponents = working.componentObjects.filter((c) => c.abv > 0);
+				const alcWaterVolume = alcComponents.reduce((sum, c) => sum + c.waterVolume, 0);
+				const targetWaterVolume = working.volume - targetVolume - alcWaterVolume;
+				const startingWaterVolume = waterComponents.reduce((sum, c) => sum + c.waterVolume, 0);
+				for (const component of waterComponents) {
+					const ratio = component.waterVolume / startingWaterVolume;
+					component.set('volume', targetWaterVolume * ratio);
+				}
+			}
 		}
-		if (targetBrix !== null) {
-			working.set('sugarMass', working.mass * (targetBrix / 100));
+		if (targets.brix !== null) {
+			working.set('sugarMass', working.mass * (targets.brix / 100));
 		}
 
 		error = 0;
-		if (targetAbv !== null) {
-			error += (working.abv - targetAbv) ** 2;
+		if (targets.abv !== null) {
+			error += (working.abv - targets.abv) ** 2;
 		}
-		if (targetBrix !== null) {
-			error += (working.brix - targetBrix) ** 2;
+		if (targets.brix !== null) {
+			error += (working.brix - targets.brix) ** 2;
 		}
 
 		error = sqrt(error);
+	}
+	if (targets.volume !== null) {
+		working.set('volume', targets.volume);
 	}
 	return working;
 }

@@ -4,7 +4,7 @@ import { Spirit, Syrup, Water } from '$lib';
 import { solver } from '$lib/solver.js';
 
 test('solve solves 80ABV', () => {
-	const mixture = solver(new Spirit(250, 80), 30, 20);
+	const mixture = solver(new Spirit(250, 80), { abv: 30, brix: 20, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 30,
 		brix: 20,
@@ -17,7 +17,7 @@ test('solve solves 80ABV', () => {
 });
 
 test('solve solves 40ABV', () => {
-	const mixture = solver(new Spirit(250, 40), 30, 30);
+	const mixture = solver(new Spirit(250, 40), { abv: 30, brix: 30, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 30,
 		brix: 30,
@@ -31,7 +31,7 @@ test('solve solves 40ABV', () => {
 });
 
 test('solve solves 10brix', () => {
-	const mixture = solver(new Spirit(250, 40), 25, 10);
+	const mixture = solver(new Spirit(250, 40), { abv: 25, brix: 10, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 25,
 		brix: 10,
@@ -44,7 +44,7 @@ test('solve solves 10brix', () => {
 });
 
 test('solve solves with syrup', () => {
-	const mixture = solver(new Spirit(250, 40), 25, 20);
+	const mixture = solver(new Spirit(250, 40), { abv: 25, brix: 20, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 25,
 		brix: 20,
@@ -59,7 +59,7 @@ test('solve solves with syrup', () => {
 });
 
 test('grapefruit', () => {
-	const mixture = solver(new Spirit(900, 80), 40, 10);
+	const mixture = solver(new Spirit(900, 80), { abv: 40, brix: 10, volume: null });
 	assert.deepEqual(
 		{
 			abv: Math.round(mixture.abv),

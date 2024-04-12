@@ -78,11 +78,13 @@ export function createMixtureStore() {
 				return;
 			}
 			update((data) => {
-				const component = data.mixture.findById(componentId);
+				const working = data.mixture.clone();
+				const component = working.findById(componentId);
 				// clear any errors
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
 				);
+
 				if (Spirit.is(component)) {
 					const spirit = component.clone();
 					spirit.set('volume', newVolume);
@@ -110,6 +112,12 @@ export function createMixtureStore() {
 				} else if (Sugar.is(component)) {
 					throw new Error(`Unable to set volume of component ${componentId}`);
 				}
+
+				if (data.totalsLock.some((key) => key === 'brix' || key === 'abv')) {
+					working.solveTotal('volume', newVolume, data.totalsLock);
+				}
+
+				data.mixture = working;
 
 				return data;
 			});
@@ -245,7 +253,12 @@ export function createMixtureStore() {
 				// remove any totals errors
 				data.errors = data.errors.filter((e) => `${e.componentId}-${e.key}` !== `totals-${key}`);
 				const mixture = this.getMixture().clone();
-				mixture.solveTotal(key, requestedValue, data.totalsLock);
+				try {
+					mixture.solveTotal(key, requestedValue, data.totalsLock);
+				} catch (error) {
+					data.errors.push({ componentId: 'totals', key });
+					return data;
+				}
 				if (!roundEq(mixture[key], requestedValue)) {
 					data.errors.push({ componentId: 'totals', key });
 					return data;
