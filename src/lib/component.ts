@@ -1,4 +1,4 @@
-import type { Target } from './solver.js';
+import { getKcal, analyze, type Analysis } from './utils.js';
 
 const ComponentValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
 export type ComponentValueKeys = (typeof ComponentValueKeys)[number];
@@ -15,7 +15,6 @@ export interface BaseComponentData {
 	brix: number;
 	volume: number;
 	mass: number;
-	locked: AnyLockedValue;
 }
 
 export function isComponentType(type: string): type is ComponentTypes {
@@ -33,12 +32,31 @@ export interface ComponentData extends BaseComponentData {
 
 export interface Component extends ComponentData {
 	clone(): Component;
-	analyze(precision?: number): Target & {
-		mass: number;
-	};
+	analyze(precision?: number): Analysis;
 	data: SpiritData | WaterData | SugarData | SyrupData;
 	isValid: boolean;
-	canEdit(key: ComponentNumberKeys): boolean;
+	canEdit(key: ComponentNumberKeys | string): boolean;
+	kcal: number;
+}
+
+export abstract class BaseComponent {
+	abstract sugarMass: number;
+	abstract alcoholMass: number;
+	abstract abv: number;
+	abstract brix: number;
+	abstract volume: number;
+	abstract mass: number;
+	get kcal() {
+		return getKcal(this);
+	}
+
+	get proof() {
+		return this.abv * 2;
+	}
+
+	analyze(precision = 0): Analysis {
+		return analyze(this, precision);
+	}
 }
 
 export type NumberKeys<T> = {
@@ -52,23 +70,19 @@ export type SpiritData = {
 	readonly type: 'spirit';
 	volume: number;
 	abv: number;
-	locked: Array<'volume' | 'abv'>;
 };
 export type WaterData = {
 	readonly type: 'water';
 	volume: number;
-	locked: Array<'volume'>;
 };
 export type SugarData = {
 	readonly type: 'sugar';
 	mass: number;
-	locked: Array<'mass'>;
 };
 export type SyrupData = {
 	readonly type: 'syrup';
 	volume: number;
 	brix: number;
-	locked: Array<'volume' | 'brix'>;
 };
 
 // Utility type to get writable keys
@@ -77,40 +91,14 @@ type WritableKeys<T> = {
 }[keyof T];
 
 // Helper type to test if two types are equal
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y
-	? 1
-	: 2
-	? A
-	: B;
+type IfEquals<X, Y, A = X, B = never> =
+	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? A : B;
 
 // Usage
-export type WritableSpiritDataKeys = WritableKeys<SpiritData>; // "volume" | "abv" | "locked"
-export type WritableWaterDataKeys = WritableKeys<WaterData>; // "volume" | "locked"
-export type WritableSugarDataKeys = WritableKeys<SugarData>; // "mass" | "locked"
-export type WritableSyrupDataKeys = WritableKeys<SyrupData>; // "volume" | "brix" | "locked"
-export type AnyLockedValue =
-	| SpiritData['locked']
-	| WaterData['locked']
-	| SugarData['locked']
-	| SyrupData['locked'];
-
-export function isSpiritLocked(input: unknown): input is SpiritData['locked'] {
-	return Array.isArray(input) && input.every((item) => ['volume', 'abv'].includes(item));
-}
-export function isWaterLocked(input: unknown): input is WaterData['locked'] {
-	return Array.isArray(input) && input.every((item) => ['volume'].includes(item));
-}
-export function isSugarLocked(input: unknown): input is SugarData['locked'] {
-	return Array.isArray(input) && input.every((item) => ['mass'].includes(item));
-}
-export function isSyrupLocked(input: unknown): input is SyrupData['locked'] {
-	return Array.isArray(input) && input.every((item) => ['volume', 'brix'].includes(item));
-}
-export function isLockedValue(input: unknown): input is AnyLockedValue {
-	return (
-		isSpiritLocked(input) || isWaterLocked(input) || isSugarLocked(input) || isSyrupLocked(input)
-	);
-}
+export type WritableSpiritDataKeys = WritableKeys<SpiritData>; // "volume" | "abv"
+export type WritableWaterDataKeys = WritableKeys<WaterData>; // "volume"
+export type WritableSugarDataKeys = WritableKeys<SugarData>; // "mass"
+export type WritableSyrupDataKeys = WritableKeys<SyrupData>; // "volume" | "brix"
 
 export function checkData(type: 'spirit', input: unknown): input is SpiritData;
 export function checkData(type: 'water', input: unknown): input is WaterData;

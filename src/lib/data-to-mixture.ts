@@ -9,12 +9,11 @@ export function dataToMixture(d: {
 	components: Array<{ name: string; id: string; data: unknown }>;
 }) {
 	const ingredients = (d.components || []).map(({ name, id, data }) => {
-		if (isSpiritData(data))
-			return { name, id, component: new Spirit(data.volume, data.abv, data.locked) };
-		if (isWaterData(data)) return { name, id, component: new Water(data.volume, data.locked) };
-		if (isSugarData(data)) return { name, id, component: new Sugar(data.mass, data.locked) };
+		if (isSpiritData(data)) return { name, id, component: new Spirit(data.volume, data.abv) };
+		if (isWaterData(data)) return { name, id, component: new Water(data.volume) };
+		if (isSugarData(data)) return { name, id, component: new Sugar(data.mass) };
 		if (isSyrupData(data))
-			return { name, id, component: new Syrup(data.volume, data.brix, data.locked) };
+			return { name, id, component: new Syrup(data.volume, data.brix) };
 		throw new Error('Unknown mixture type');
 	});
 	return new Mixture(ingredients);

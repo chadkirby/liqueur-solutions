@@ -9,7 +9,7 @@ import type { Analysis } from './utils.js';
 import { Mixture } from './mixture.js';
 import { goto } from '$app/navigation';
 
-export type ComponentValueKey = 'volume' | 'abv' | 'mass' | 'brix';
+export type ComponentValueKey = 'volume' | 'abv' | 'mass' | 'brix' | 'kcal' | 'proof';
 
 export function createMixtureStore() {
 	const store = writable({
@@ -228,23 +228,7 @@ export function createMixtureStore() {
 					} else {
 						data.totalsLock.splice(index, 1);
 					}
-					return data;
 				}
-				const component = data.mixture.findById(componentId);
-				if (!component) {
-					throw new Error(`Unable to find component ${componentId}`);
-				}
-				const componentData = component.data;
-				// using indexOf on a union type requires a bit of a hack
-				const locked = componentData.locked as Array<'brix' | 'volume' | 'mass' | 'abv'>;
-				const index = locked.indexOf(key);
-				if (index === -1) {
-					locked.push(key);
-				} else {
-					locked.splice(index, 1);
-				}
-				component.data = componentData;
-
 				return data;
 			});
 		},

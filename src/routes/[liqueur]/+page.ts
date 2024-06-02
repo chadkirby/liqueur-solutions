@@ -22,10 +22,10 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 				{
 					name: 'spirit',
 					id: 'spirit-0',
-					data: { volume: 100, abv: 40, type: 'spirit', locked: [] }
+					data: { volume: 100, abv: 40, type: 'spirit' }
 				},
-				{ name: 'water', id: 'water-0', data: { volume: 100, type: 'water', locked: [] } },
-				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sugar', locked: [] } }
+				{ name: 'water', id: 'water-0', data: { volume: 100, type: 'water' } },
+				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sugar' } }
 			]
 		};
 	}

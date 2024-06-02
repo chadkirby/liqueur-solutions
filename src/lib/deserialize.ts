@@ -5,13 +5,7 @@ import {
 	type SpiritData,
 	type WaterData,
 	type SugarData,
-	type SyrupData,
-	isLockedValue,
-	isSpiritLocked,
-	isWaterLocked,
-	isSugarLocked,
-	isSyrupLocked,
-	type AnyLockedValue
+	type SyrupData
 } from './component.js';
 import { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
@@ -34,13 +28,10 @@ export function deserialize(qs: string | URLSearchParams) {
 		} else {
 			const current = working.at(-1);
 			if (!current) throw new Error('Keys must be preceded by a component name');
-			const locked = value.split('+') as AnyLockedValue;
 			if (isComponentValueKey(key)) {
 				current[key] = parseFloat(value);
 			} else if (key === 'type' && isComponentType(value)) {
 				current.type = value;
-			} else if (key === 'locked' && isLockedValue(locked)) {
-				current.locked = value === 'none' ? [] : locked;
 			}
 		}
 	}
@@ -50,45 +41,45 @@ export function deserialize(qs: string | URLSearchParams) {
 				break;
 			}
 			case 'spirit': {
-				const { volume, abv, name, locked } = values;
+				const { volume, abv, name } = values;
 				if (name && undefined !== volume && undefined !== abv) {
 					components.push({
 						name,
 						id: `${type}-${components.length}`,
-						data: new Spirit(volume, abv, isSpiritLocked(locked) ? locked : []).data
+						data: new Spirit(volume, abv).data
 					});
 				}
 				break;
 			}
 			case 'water': {
-				const { volume, name, locked } = values;
+				const { volume, name } = values;
 				if (name && undefined !== volume) {
 					components.push({
 						name,
 						id: `${type}-${components.length}`,
-						data: new Water(volume, isWaterLocked(locked) ? locked : []).data
+						data: new Water(volume).data
 					});
 				}
 				break;
 			}
 			case 'sugar': {
-				const { mass, name, locked } = values;
+				const { mass, name } = values;
 				if (name && undefined !== mass) {
 					components.push({
 						name,
 						id: `${type}-${components.length}`,
-						data: new Sugar(mass, isSugarLocked(locked) ? locked : []).data
+						data: new Sugar(mass).data
 					});
 				}
 				break;
 			}
 			case 'syrup': {
-				const { volume, brix, name, locked } = values;
+				const { volume, brix, name } = values;
 				if (name && undefined !== volume && undefined !== brix) {
 					components.push({
 						name,
 						id: `${type}-${components.length}`,
-						data: new Syrup(volume, brix, isSyrupLocked(locked) ? locked : []).data
+						data: new Syrup(volume, brix).data
 					});
 				}
 				break;

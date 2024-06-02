@@ -15,6 +15,7 @@
 	import MassComponent from './Mass.svelte';
 	import BrixComponent from './Brix.svelte';
 	import debounce from 'lodash.debounce';
+	import CalComponent from './Cal.svelte';
 
 	export let data: {liqueur: string, components: SerializedComponent[]};
 
@@ -73,10 +74,14 @@
 			</div>
 
 			<div class="flex flex-row grow my-1">
-				<VolumeComponent storeId={id} />
-				<MassComponent storeId={id} />
+				{#if entry.type === 'sugar'}
+					<MassComponent storeId={id} />
+				{:else}
+					<VolumeComponent storeId={id} />
+				{/if}
 				<ABVComponent storeId={id} />
 				<BrixComponent storeId={id} />
+				<CalComponent storeId={id} />
 			</div>
 		</div>
 	{/each}
@@ -86,9 +91,9 @@
 	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
 	<div class="flex flex-row">
 		<VolumeComponent storeId="totals" />
-		<MassComponent storeId="totals" />
 		<ABVComponent storeId="totals" />
 		<BrixComponent storeId="totals" />
+		<CalComponent storeId="totals" />
 	</div>
 </div>
 

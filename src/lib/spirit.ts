@@ -13,19 +13,15 @@ export class Spirit extends Mixture {
 		return component instanceof Spirit;
 	}
 
-	constructor(
-		volume: number,
-		abv: number,
-		public locked: SpiritData['locked'] = []
-	) {
+	constructor(volume: number, abv: number) {
 		super([
-			{ name: 'water', id: 'water', component: new Water(0, []) },
-			{ name: 'ethanol', id: 'ethanol', component: new Ethanol(0, []) }
+			{ name: 'water', id: 'water', component: new Water(0) },
+			{ name: 'ethanol', id: 'ethanol', component: new Ethanol(0) }
 		]);
 		this._volume = volume;
 		this._abv = abv;
 		this.updateComponents();
- 	}
+	}
 
 	get componentObjects() {
 		return this.components.map(({ component }) => component);
@@ -44,33 +40,28 @@ export class Spirit extends Mixture {
 	}
 
 	get rawData(): SpiritData {
-		const { type, volume, abv, locked } = this;
-		return { type, volume, abv, locked };
+		const { type, volume, abv } = this;
+		return { type, volume, abv };
 	}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
-		return { type, volume: round(volume, 1), abv: round(abv, 1), locked: this.locked };
+		return { type, volume: round(volume, 1), abv: round(abv, 1) };
 	}
 	set data(data: SpiritData) {
 		this._volume = data.volume;
 		this._abv = data.abv;
-		this.locked = data.locked;
 		this.updateComponents();
 	}
 	static fromData(data: SpiritData) {
-		return new Spirit(data.volume, data.abv, data.locked);
+		return new Spirit(data.volume, data.abv);
 	}
 
-	canEdit(key: ComponentNumberKeys): boolean {
-		return key === 'volume' || key === 'abv'
-			? !this.locked.includes(key)
-			: ['alcoholVolume'].includes(key)
-			? this.locked.length < 2
-			: false;
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['alcoholVolume', 'volume', 'abv'].includes(key);
 	}
 
 	clone() {
-		return new Spirit(this._volume, this._abv, this.locked);
+		return new Spirit(this._volume, this._abv);
 	}
 
 	updateComponents() {
@@ -109,13 +100,8 @@ export class Spirit extends Mixture {
 					break;
 				case 'alcoholVolume':
 					{
-						if (this.locked.includes('volume')) {
-							// maintain the same volume, adjust the abv
-							this._abv = (value / this._volume) * 100;
-						} else {
-							// maintain the same abv, adjust the volume
-							this._volume = value / (this._abv / 100);
-						}
+						// maintain the same abv, adjust the volume
+						this._volume = value / (this._abv / 100);
 					}
 					break;
 				default:

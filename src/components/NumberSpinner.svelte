@@ -18,6 +18,15 @@
 	export let keyStepSlow = 1;
 	export let keyStepFast = 100;
 
+	const secondaryValueType: 'mass' | 'volume' | 'proof' | null =
+		valueType === 'volume'
+		? 'mass'
+		: valueType === 'mass'
+		? 'volume'
+		: valueType === 'abv'
+		? 'proof'
+		: null;
+
 	const errorStore = mixtureStore.errorStore(storeId, valueType);
 
 	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
@@ -30,7 +39,7 @@
 
 	let isLocked: boolean;
 
-	$: isLocked = (component ?  !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType)) ?? false;
+	$: isLocked = (component ? !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType)) ?? false;
 
 	let validState: boolean = value >= 0;
 
@@ -41,6 +50,11 @@
 
 	let canEdit: boolean;
 	$: canEdit = !readonly;
+
+	$: secondaryValue = secondaryValueType ? {
+		value: component ? (component[secondaryValueType] ?? 0).toFixed() : mixtureStoreData.totals[secondaryValueType] ?? 0,
+		unit: secondaryValueType === 'mass' ? 'g' : secondaryValueType === 'volume' ? 'ml' : 'proof'
+	} : {value: 0, unit: ''};
 
 	const id = Math.random().toString(36).substring(2);
 
@@ -83,6 +97,8 @@
 
 	const buttonClasses = "absolute top-0 -right-1 scale-75 cursor-pointer z-10";
 
+	const isTotals = storeId === 'totals';
+
 </script>
 
 <div class="mx-1 relative">
@@ -92,9 +108,11 @@
 				<span class="material-icons mdc-fab__icon">lock</span>
 			</button>
 		{:else if validState}
+		  {#if isTotals}
 			<button class={buttonClasses} on:click={() => toggleLock()}>
 				<span class="material-icons mdc-fab__icon">lock_open</span>
 			</button>
+			{/if}
 		{:else}
 			<button class={buttonClasses} on:click={() => reset()}>
 				<span class="material-icons mdc-fab__icon">refresh</span>
@@ -139,9 +157,18 @@
 		/>
 	{/if}
 </div>
+<div>
+	{#if secondaryValueType}
+		<p class="secondary-value w-18 px-1 text-sm italic text-center">{secondaryValue.value} {secondaryValue.unit}</p>
+	{/if}
+</div>
 
 <style>
 	:global(.mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input) {
     color: unset;
+	}
+
+	.secondary-value {
+		color: var(--screenGray);
 	}
 </style>

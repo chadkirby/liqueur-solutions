@@ -13,14 +13,10 @@ export class Syrup extends Mixture {
 		return component instanceof Syrup;
 	}
 
-	constructor(
-		volume: number,
-		brix: number,
-		public locked: SyrupData['locked'] = []
-	) {
+	constructor(volume: number, brix: number) {
 		super([
-			{ name: 'water', id: 'water', component: new Water(0, []) },
-			{ name: 'sugar', id: 'sugar', component: new Sugar(0, []) }
+			{ name: 'water', id: 'water', component: new Water(0) },
+			{ name: 'sugar', id: 'sugar', component: new Sugar(0) }
 		]);
 		this._volume = volume;
 		this._brix = brix;
@@ -44,34 +40,29 @@ export class Syrup extends Mixture {
 	}
 
 	get rawData(): SyrupData {
-		const { type, volume, brix, locked } = this;
-		return { type, volume, brix, locked };
+		const { type, volume, brix } = this;
+		return { type, volume, brix };
 	}
 	get data(): SyrupData {
 		const { type, volume, brix } = this;
-		return { type, volume: round(volume, 1), brix: round(brix, 1), locked: this.locked };
+		return { type, volume: round(volume, 1), brix: round(brix, 1) };
 	}
 	set data(data: SyrupData) {
 		this._volume = data.volume;
 		this._brix = data.brix;
-		this.locked = data.locked;
 		this.updateComponents();
 	}
 
 	static fromData(data: SyrupData) {
-		return new Syrup(data.volume, data.brix, data.locked);
+		return new Syrup(data.volume, data.brix);
 	}
 
-	canEdit(key: ComponentNumberKeys): boolean {
-		return key === 'volume' || key === 'brix'
-			? !this.locked.includes(key)
-			: ['sugarMass', 'waterVolume'].includes(key)
-			? this.locked.length === 0
-			: false;
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['sugarMass', 'waterVolume', 'volume', 'brix'].includes(key);
 	}
 
 	clone() {
-		return new Syrup(this._volume, this._brix, this.locked);
+		return new Syrup(this._volume, this._brix);
 	}
 
 	updateComponents() {

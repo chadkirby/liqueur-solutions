@@ -1,8 +1,12 @@
-import type { Component, ComponentNumberKeys, WaterData } from './component.js';
-import type { Target } from './solver.js';
-import { round, analyze } from './utils.js';
+import {
+	BaseComponent,
+	type Component,
+	type ComponentNumberKeys,
+	type WaterData
+} from './component.js';
+import { round } from './utils.js';
 
-export class Water implements Component {
+export class Water extends BaseComponent implements Component {
 	readonly type = 'water';
 	static density = 1;
 
@@ -17,40 +21,34 @@ export class Water implements Component {
 		return component instanceof Water;
 	}
 
-	constructor(
-		public volume: number,
-		public locked: WaterData['locked'] = []
-	) {}
+	constructor(public volume: number) {
+		super();
+	}
 	get rawData(): WaterData {
-		const { type, volume, locked } = this;
-		return { type, volume, locked };
+		const { type, volume } = this;
+		return { type, volume };
 	}
 	get data(): WaterData {
 		const { type, volume } = this;
-		return { type, volume: round(volume, 1), locked: this.locked };
+		return { type, volume: round(volume, 1) };
 	}
 	set data(data: WaterData) {
 		this.volume = data.volume;
-		this.locked = data.locked;
 	}
 	static fromData(data: WaterData) {
-		return new Water(data.volume, data.locked);
+		return new Water(data.volume);
 	}
 	get componentObjects() {
 		return [this];
 	}
 
-	canEdit(key: ComponentNumberKeys): boolean {
-		return ['volume', 'waterVolume'].includes(key) ? this.locked.length === 0 : false;
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['volume', 'waterVolume'].includes(key);
 	}
 
 	clone() {
-		return new Water(this.volume, this.locked);
+		return new Water(this.volume);
 	}
-	analyze(precision = 0): Target & { mass: number } {
-		return analyze(this, precision);
-	}
-
 	get isValid() {
 		return this.volume >= 0;
 	}

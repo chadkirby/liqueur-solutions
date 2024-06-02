@@ -1,19 +1,21 @@
-import type { Component, ComponentNumberKeys } from './component.js';
+import { BaseComponent, type Component, type ComponentNumberKeys } from './component.js';
 import { Ethanol } from './ethanol.js';
 import type { ComponentValueKey } from './mixture-store.js';
 import { solver } from './solver.js';
 import type { Spirit } from './spirit.js';
 import { Sugar } from './sugar.js';
 import type { Syrup } from './syrup.js';
-import { analyze, type Analysis } from './utils.js';
+import type { Analysis } from './utils.js';
 import { Water } from './water.js';
 
 export type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
 
-export class Mixture {
+export class Mixture extends BaseComponent {
 	constructor(
 		readonly components: Array<{ name: string; id: string; component: AnyComponent }> = []
-	) {}
+	) {
+		super();
+	}
 
 	clone() {
 		return new Mixture(
@@ -32,8 +34,6 @@ export class Mixture {
 			for (const [k, v] of Object.entries(component.data)) {
 				if (typeof v === 'number') {
 					params.append(k, v.toFixed(precision));
-				} else if (k === 'locked') {
-					params.append(k, v.length ? v.join('+') : 'none');
 				} else {
 					params.append(k, v);
 				}
@@ -79,7 +79,7 @@ export class Mixture {
 		return this.components[Symbol.iterator]();
 	}
 
-	canEdit(key: ComponentNumberKeys): boolean {
+	canEdit(key: ComponentNumberKeys | string): boolean {
 		if (key === 'abv') {
 			return (
 				this.components.some(({ component }) => component.componentObjects.some(Ethanol.is)) &&
@@ -204,12 +204,12 @@ export class Mixture {
 		return this.sumComponents('mass');
 	}
 
-	private sumComponents(key: ComponentNumberKeys, components = this.components): number {
-		return components.reduce((sum, { component }) => sum + component[key], 0);
+	get kcal() {
+		return this.sumComponents('kcal');
 	}
 
-	analyze(precision = 0): Analysis {
-		return analyze(this, precision);
+	private sumComponents(key: ComponentNumberKeys | 'kcal', components = this.components): number {
+		return components.reduce((sum, { component }) => sum + component[key], 0);
 	}
 
 	get isValid(): boolean {

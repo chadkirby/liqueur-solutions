@@ -19,16 +19,24 @@ export function computeSg(brix: number) {
 
 export type Analysis = Target & {
 	mass: number;
+	kcal: number;
+	proof: number;
 };
 
+export function getKcal(item: Pick<ComponentData, 'alcoholMass' | 'sugarMass'>) {
+	return item.sugarMass * 3.87 + item.alcoholMass * 7.1;
+}
+
 export function analyze(
-	item: Pick<ComponentData, 'volume' | 'mass' | 'abv' | 'brix'>,
+	item: Pick<ComponentData, 'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'sugarMass'>,
 	precision = 0
 ): Analysis {
 	return {
 		volume: round(item.volume, precision),
 		mass: round(item.mass, precision),
 		abv: round(item.abv, precision),
-		brix: round(item.brix, precision)
+		brix: round(item.brix, precision),
+		kcal: round(getKcal(item), precision),
+		proof: round(item.abv * 2, precision)
 	};
 }

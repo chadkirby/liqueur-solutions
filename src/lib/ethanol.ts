@@ -1,8 +1,12 @@
-import type { Component, ComponentNumberKeys, SpiritData } from './component.js';
-import type { Target } from './solver.js';
-import { round, analyze } from './utils.js';
+import {
+	BaseComponent,
+	type Component,
+	type ComponentNumberKeys,
+	type SpiritData
+} from './component.js';
+import { round } from './utils.js';
 
-export class Ethanol implements Component {
+export class Ethanol extends BaseComponent implements Component {
 	readonly type = 'spirit';
 	static density = 0.79;
 
@@ -17,28 +21,26 @@ export class Ethanol implements Component {
 		return component instanceof Ethanol;
 	}
 
-	constructor(
-		public volume: number,
-		public locked: SpiritData['locked'] = []
-	) {}
+	constructor(public volume: number) {
+		super();
+	}
 	get rawData(): SpiritData {
-		const { type, volume, abv, locked } = this;
-		return { type, volume, abv, locked };
+		const { type, volume, abv } = this;
+		return { type, volume, abv };
 	}
 	get data(): SpiritData {
 		const { type, volume, abv } = this;
-		return { type, volume: round(volume, 1), abv: round(abv, 1), locked: this.locked };
+		return { type, volume: round(volume, 1), abv: round(abv, 1) };
 	}
 	set data(data: SpiritData) {
 		this.volume = data.volume;
-		this.locked = data.locked;
 	}
 	get componentObjects() {
 		return [this];
 	}
 
 	clone() {
-		return new Ethanol(this.volume, this.locked);
+		return new Ethanol(this.volume);
 	}
 
 	get isValid() {
@@ -54,12 +56,9 @@ export class Ethanol implements Component {
 	get mass() {
 		return this.alcoholMass;
 	}
-	analyze(precision = 0): Target & { mass: number } {
-		return analyze(this, precision);
-	}
 
-	canEdit(key: ComponentNumberKeys): boolean {
-		return ['volume', 'alcoholVolume'].includes(key) ? !this.locked.includes('volume') : false;
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['volume', 'alcoholVolume'].includes(key);
 	}
 	set(key: ComponentNumberKeys, value: number) {
 		if (this.canEdit(key)) {
