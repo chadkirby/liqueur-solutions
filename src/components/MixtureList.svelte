@@ -1,14 +1,16 @@
 <script lang="ts">
 	import Textfield from '@smui/textfield';
 	import Button, { Icon, Label } from '@smui/button';
+  import Select, { Option } from '@smui/select';
 	import {
-		Sugar as SugarObject,
+		Sweetener as SweetenerObject,
 		Water as WaterObject,
-		Spirit as SpiritObject,
-		Syrup as SyrupObject,
 		mixtureStore,
 		updateUrl,
 		type SerializedComponent,
+		SweetenerTypes,
+		newSyrup,
+		newSpirit
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
@@ -23,22 +25,28 @@
 	mixtureStore.deserialize(data);
 
 
+
+
 	const handleNameInput = (id: string) => debounce((event: CustomEvent) => {
 		const newName = (event.target as HTMLInputElement).value;
 		mixtureStore.updateComponentName(id, newName);
 	}, 100);
 
 	function addSpirit() {
-		mixtureStore.addComponents([{name: 'spirit', id: 'spirit', component: new SpiritObject(100, 40)}]);
+		mixtureStore.addComponents([{name: 'spirit', id: 'spirit', component: newSpirit(100, 40)}]);
 	}
 	function addWater() {
 		mixtureStore.addComponents([{name: "water", id: "water", component: new WaterObject(100)}]);
 	}
 	function addSugar() {
-		mixtureStore.addComponents([{name: "sugar", id: "sugar", component: new SugarObject(100)}]);
+		mixtureStore.addComponents([{
+			name: "sugar",
+			id: "sweetener-sucrose",
+			component: new SweetenerObject('sucrose', 100)
+		}]);
 	}
 	function addSyrup() {
-		mixtureStore.addComponents([{name: "syrup", id: "syrup", component: new SyrupObject(100, 50)}]);
+		mixtureStore.addComponents([{name: "syrup", id: "mixture", component: newSyrup(100, 50)}]);
 	}
 
 	function removeComponent(id: string) {
@@ -58,22 +66,37 @@
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 		<div class="flex flex-col items-stretch mt-2">
 			<div class="relative">
-				<Textfield
-					class="w-full"
-					input$class="font-sans text-lg font-bold"
-					variant="outlined"
-					value={name}
-					label={entry.type}
-					on:input={handleNameInput(id)}
-					required
-				/>
+				{#if entry instanceof SweetenerObject}
+					<Select
+						class="w-full"
+						selectedText$class="font-sans text-lg font-bold"
+						variant="outlined"
+						bind:value={entry.subType}
+						label={entry.type}
+						required
+					>
+						{#each SweetenerTypes as type}
+							<Option value={type}>{type}</Option>
+						{/each}
+					</Select>
+				{:else}
+					<Textfield
+						class="w-full"
+						input$class="font-sans text-lg font-bold"
+						variant="outlined"
+						value={name}
+						label={entry.type}
+						on:input={handleNameInput(id)}
+						required
+					/>
+				{/if}
 				<Button class="absolute -top-1 -right-5" color="secondary"  on:click={() => removeComponent(id)}>
 					<Icon class="material-icons">cancel</Icon>
 				</Button>
 			</div>
 
 			<div class="flex flex-row grow my-1">
-				{#if entry.type === 'sweetener'}
+				{#if entry.type.startsWith('sweetener')}
 					<MassComponent storeId={id} />
 				{:else}
 					<VolumeComponent storeId={id} />
@@ -86,28 +109,15 @@
 	{/each}
 </div>
 
-<div class="mt-2 items-center gap-x-2 gap-y-2">
-	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
-	<div class="flex flex-row">
-		<VolumeComponent storeId="totals" />
-		<ABVComponent storeId="totals" />
-		<BrixComponent storeId="totals" />
-		<CalComponent storeId="totals" />
-	</div>
-</div>
-
-
-<div class="mt-4 grid grid-cols-4 border-t-2 pt-2 no-print">
+<div class="mt-4 grid grid-cols-4 no-print">
 	<Button color="secondary" class="scale-75" on:click={addSpirit}>
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">spirit</Label>
 	</Button>
-	{#if !$mixtureStore.mixture.findByType(o => o instanceof SugarObject)}
-		<Button color="secondary" class="scale-75" on:click={addSugar}>
-			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
-			<Label class="scale-125 p-2">sugar</Label>
-		</Button>
-	{/if}
+	<Button color="secondary" class="scale-75" on:click={addSugar}>
+		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
+		<Label class="scale-125 p-2">sweetener</Label>
+	</Button>
 	<Button color="secondary" class="scale-75" on:click={addSyrup}>
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">syrup</Label>
@@ -120,6 +130,16 @@
 	{/if}
 </div>
 
+<div class="mt-2 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
+	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
+	<div class="flex flex-row">
+		<VolumeComponent storeId="totals" />
+		<ABVComponent storeId="totals" />
+		<BrixComponent storeId="totals" />
+		<CalComponent storeId="totals" />
+	</div>
+</div>
+
 <style>
 	:root {
 		--screenGray: rgb(0 0 0 / 50%);
@@ -128,7 +148,7 @@
 		--mdc-theme-secondary: #676778;
 	}
 
-	:global(.mdc-text-field--focused .mdc-notched-outline__notch) {
+	:global(.mdc-notched-outline__notch) {
 		border-left: none;
 		border-right: none;
 	}
@@ -146,6 +166,11 @@
 		padding-left: 4px;
 	}
 
+	:global(.mdc-select__dropdown-icon) {
+		/* position the sweetener dropdown caret */
+		margin-right: calc(100% - 10em);
+	}
+
 
 	@media print {
     .no-print {
@@ -157,6 +182,8 @@
 		:global(.mdc-text-field--disabled .mdc-floating-label) {
 			color: var(--printGray)
 		}
-
+		:global(.mdc-select__dropdown-icon) {
+			display: none;
+		}
 }
 </style>

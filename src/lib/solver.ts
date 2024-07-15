@@ -23,23 +23,23 @@ export function solver(
 	while (error > 0.01 && --iterations > 0) {
 		if (targets.abv !== null) {
 			const targetVolume = working.volume * (targets.abv / 100);
-			working.set('alcoholVolume', targetVolume);
+			working.adjustVolumeForEthanolTarget(targetVolume);
 			const actualAlcohol = working.alcoholVolume;
 			if (actualAlcohol.toFixed(1) !== targetVolume.toFixed(1)) {
 				// instead set water volume
-				const waterComponents = working.componentObjects.filter((c) => c.abv === 0);
+				const waterComponents = working.componentObjects.filter((c) => c.abv === 0 && c.brix === 0);
 				const alcComponents = working.componentObjects.filter((c) => c.abv > 0);
 				const alcWaterVolume = alcComponents.reduce((sum, c) => sum + c.waterVolume, 0);
 				const targetWaterVolume = working.volume - targetVolume - alcWaterVolume;
 				const startingWaterVolume = waterComponents.reduce((sum, c) => sum + c.waterVolume, 0);
 				for (const component of waterComponents) {
 					const ratio = component.waterVolume / startingWaterVolume;
-					component.set('volume', targetWaterVolume * ratio);
+					component.setVolume(targetWaterVolume * ratio);
 				}
 			}
 		}
 		if (targets.brix !== null) {
-			working.set('sugarMass', working.mass * (targets.brix / 100));
+			working.setEquivalentSugarMass(working.mass * (targets.brix / 100));
 		}
 
 		error = 0;
@@ -53,7 +53,7 @@ export function solver(
 		error = sqrt(error);
 	}
 	if (targets.volume !== null) {
-		working.set('volume', targets.volume);
+		working.setVolume(targets.volume);
 	}
 	return working;
 }

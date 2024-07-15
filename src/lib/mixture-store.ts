@@ -1,21 +1,18 @@
 import { writable, get, derived } from 'svelte/store';
 import { isSweetenerData, type SerializedComponent } from './component.js';
-import { dataToMixture } from './data-to-mixture.js';
-import { SugarSyrup } from './syrup.js';
-import { getSweetenerComponent, Sugar } from './sweetener.js';
-import { Spirit } from './spirit.js';
+import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
 import type { Analysis } from './utils.js';
-import { Mixture } from './mixture.js';
+import { Mixture, dataToMixture } from './mixture.js';
 import { goto } from '$app/navigation';
+import { solver } from './solver.js';
 
-export type ComponentValueKey = 'volume' | 'abv' | 'mass' | 'brix' | 'kcal' | 'proof';
+export type ComponentValueKey = keyof Analysis;
 
 export function createMixtureStore() {
 	const store = writable({
 		title: 'mixture',
 		mixture: new Mixture([]),
-		totalsLock: [] as Array<ComponentValueKey>,
 		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
 		totals: getTotals(new Mixture([]))
 	});
@@ -42,6 +39,14 @@ export function createMixtureStore() {
 	return {
 		get() {
 			return get(store);
+		},
+		set(...args: Parameters<typeof store.set>) {
+			store.set(...args);
+			store.update((data) => {
+				data.totals = getTotals(data.mixture);
+				updateUrl(data.mixture);
+				return data;
+			});
 		},
 		subscribe,
 		getMixture() {
@@ -72,6 +77,15 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		replaceComponent(
+			componentId: string,
+			{ name, component }: Pick<Mixture['components'][0], 'name' | 'component'>
+		) {
+			update((data) => {
+				data.mixture.replaceComponent(componentId, { name, component });
+				return data;
+			});
+		},
 		setVolume(componentId: string, newVolume: number): void {
 			if (componentId === 'totals') {
 				this.solveTotal('volume', newVolume);
@@ -85,36 +99,30 @@ export function createMixtureStore() {
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
 				);
 
-				if (component instanceof Spirit) {
-					const spirit = component.clone();
-					spirit.set('volume', newVolume);
-					if (!roundEq(spirit.volume, newVolume)) {
-						data.errors.push({ componentId, key: 'volume' });
-						return data;
-					}
-					component.data = spirit.data;
-				} else if (component instanceof Water) {
+				if (component instanceof Water) {
 					const water = component.clone();
-					water.set('volume', newVolume);
+					water.setVolume(newVolume);
 					if (!roundEq(water.volume, newVolume)) {
 						data.errors.push({ componentId, key: 'volume' });
 						return data;
 					}
 					component.data = water.data;
-				} else if (component instanceof SugarSyrup) {
-					const syrup = component.clone();
-					syrup.set('volume', newVolume);
-					if (!roundEq(syrup.volume, newVolume)) {
+				} else if (component instanceof Mixture) {
+					const mx = component.clone();
+					mx.setVolume(newVolume);
+					if (!roundEq(mx.volume, newVolume)) {
 						data.errors.push({ componentId, key: 'volume' });
 						return data;
 					}
-					component.data = syrup.data;
-				} else if (component instanceof Sugar) {
-					throw new Error(`Unable to set volume of component ${componentId}`);
-				}
-
-				if (data.totalsLock.some((key) => key === 'brix' || key === 'abv')) {
-					working.solveTotal('volume', newVolume, data.totalsLock);
+					component.data = mx.data;
+				} else if (component instanceof Sweetener) {
+					const sweetener = component.clone();
+					sweetener.setVolume(newVolume);
+					if (!roundEq(sweetener.volume, newVolume)) {
+						data.errors.push({ componentId, key: 'volume' });
+						return data;
+					}
+					component.data = sweetener.data;
 				}
 
 				data.mixture = working;
@@ -136,9 +144,9 @@ export function createMixtureStore() {
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-abv`
 				);
-				if (component instanceof Spirit) {
+				if (component instanceof Mixture && component.findComponent((c) => c.abv > 0)) {
 					const spirit = component.clone();
-					spirit.set('abv', newAbv);
+					spirit.setAbv(newAbv);
 					if (!roundEq(spirit.abv, newAbv)) {
 						data.errors.push({ componentId, key: 'abv' });
 						return data;
@@ -165,12 +173,7 @@ export function createMixtureStore() {
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-mass`
 				);
 				if (isSweetenerData(component.data)) {
-					const sweetener = getSweetenerComponent(component.data.subType, component.data.mass);
-					sweetener.set('mass', newMass);
-					if (!roundEq(sweetener.mass, newMass)) {
-						data.errors.push({ componentId, key: 'mass' });
-						return data;
-					}
+					const sweetener = new Sweetener(component.data.subType, newMass);
 					component.data = sweetener.data;
 				} else {
 					throw new Error(`Unable to set mass of component ${componentId}`);
@@ -194,9 +197,9 @@ export function createMixtureStore() {
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-brix`
 				);
 
-				if (component instanceof SugarSyrup) {
+				if (component instanceof Mixture) {
 					const syrup = component.clone();
-					syrup.set('brix', newBrix);
+					syrup.setBrix(newBrix);
 					if (!roundEq(syrup.brix, newBrix)) {
 						data.errors.push({ componentId, key: 'brix' });
 						return data;
@@ -219,26 +222,13 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
-		toggleLock(componentId: string, key: ComponentValueKey) {
-			update((data) => {
-				if (componentId === 'totals') {
-					const index = data.totalsLock.indexOf(key);
-					if (index === -1) {
-						data.totalsLock.push(key);
-					} else {
-						data.totalsLock.splice(index, 1);
-					}
-				}
-				return data;
-			});
-		},
 		solveTotal(key: keyof Analysis, requestedValue: number): void {
 			update((data) => {
 				// remove any totals errors
 				data.errors = data.errors.filter((e) => `${e.componentId}-${e.key}` !== `totals-${key}`);
 				const mixture = this.getMixture().clone();
 				try {
-					mixture.solveTotal(key, requestedValue, data.totalsLock);
+					solveTotal(mixture, key, requestedValue);
 				} catch (error) {
 					data.errors.push({ componentId: 'totals', key });
 					return data;
@@ -259,7 +249,6 @@ export function createMixtureStore() {
 			set({
 				title: data.liqueur,
 				mixture,
-				totalsLock: [],
 				totals: getTotals(mixture),
 				errors: []
 			});
@@ -275,10 +264,46 @@ export const mixtureStore = createMixtureStore();
 
 export function updateUrl(mixture = mixtureStore.getMixture()) {
 	if (mixture.isValid) {
-		goto(`/${encodeURIComponent(mixtureStore.get().title)}?${mixture.serialize(1)}`, {
+		goto(`/${encodeURIComponent(mixtureStore.get().title)}?${mixture.serialize()}`, {
 			replaceState: true,
 			noScroll: true,
 			keepFocus: true
 		});
+	}
+}
+
+function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number): void {
+	if (!mixture.canEdit(key)) {
+		throw new Error(`${key} is not editable`);
+	}
+
+	let working: Mixture | undefined;
+	switch (key) {
+		case 'volume':
+			working = mixture.clone();
+			working.setVolume(targetValue);
+			break;
+		case 'abv':
+			working = solver(mixture, { abv: targetValue, brix: mixture.brix, volume: null });
+			working.setVolume(mixture.volume);
+			break;
+		case 'brix':
+			working = solver(mixture, { abv: mixture.abv, brix: targetValue, volume: null });
+			working.setVolume(mixture.volume);
+			break;
+	}
+	if (!working) {
+		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
+	}
+	// test that the solution is valid
+	if (!working.isValid) {
+		throw new Error(`Invalid solution for ${key} = ${targetValue}`);
+	}
+	if (working[key].toFixed() !== targetValue.toFixed()) {
+		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
+	}
+
+	for (const [i, obj] of mixture.componentObjects.entries()) {
+		obj.data = working.componentObjects[i].rawData;
 	}
 }

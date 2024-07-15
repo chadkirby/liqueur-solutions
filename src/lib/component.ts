@@ -14,17 +14,17 @@ export const SweetenerTypes = [
 	'erythritol',
 	'sucralose'
 ] as const;
+export type SweetenerTypes = (typeof SweetenerTypes)[number];
 
-const ComponentTypes = ['spirit', 'water', 'sugar-syrup', 'sweetener'] as const;
+const ComponentTypes = ['water', 'ethanol', 'sweetener', 'mixture'] as const;
 
 interface Data {
 	readonly type: ComponentTypes;
 }
 
-export interface SpiritData extends Data {
-	readonly type: 'spirit';
+export interface EthanolData extends Data {
+	readonly type: 'ethanol';
 	volume: number;
-	abv: number;
 }
 export interface WaterData extends Data {
 	readonly type: 'water';
@@ -32,13 +32,12 @@ export interface WaterData extends Data {
 }
 export interface SweetenerData extends Data {
 	readonly type: 'sweetener';
-	readonly subType: (typeof SweetenerTypes)[number];
+	readonly subType: SweetenerTypes;
 	mass: number;
 }
-export interface SyrupData extends Data {
-	readonly type: 'sugar-syrup';
-	volume: number;
-	brix: number;
+export interface MixtureData extends Data {
+	readonly type: 'mixture';
+	components: Array<{ name: string; id: string; data: AnyData }>;
 }
 
 export interface SugarData extends SweetenerData {
@@ -58,7 +57,7 @@ export interface SucraloseData extends SweetenerData {
 }
 
 type ComponentTypes = (typeof ComponentTypes)[number];
-export type AnyData = SpiritData | WaterData | SweetenerData | SyrupData;
+export type AnyData = EthanolData | WaterData | SweetenerData | MixtureData;
 
 export function isComponentType(type: string): type is ComponentTypes {
 	return ComponentTypes.includes(type as ComponentTypes);
@@ -67,7 +66,7 @@ export function isComponentType(type: string): type is ComponentTypes {
 export interface Component {
 	clone(): Component;
 	analyze(precision?: number): Analysis;
-	data: SpiritData | WaterData | SweetenerData | SyrupData;
+	data: AnyData;
 	isValid: boolean;
 	canEdit(key: ComponentNumberKeys | string): boolean;
 	kcal: number;
@@ -83,18 +82,20 @@ export interface Component {
 	alcoholVolume: number;
 	alcoholMass: number;
 
-	sugarVolume: number;
-	sugarMass: number;
+	equivalentSugarMass: number;
 }
 
 export abstract class BaseComponent {
-	abstract sugarMass: number;
+	abstract equivalentSugarMass: number;
 	abstract alcoholMass: number;
 	abstract abv: number;
 	abstract brix: number;
 	abstract volume: number;
 	abstract mass: number;
 	abstract kcal: number;
+
+	abstract setVolume(volume: number): void;
+	abstract setEquivalentSugarMass(mass: number): void;
 
 	get proof() {
 		return this.abv * 2;
@@ -103,6 +104,10 @@ export abstract class BaseComponent {
 	analyze(precision = 0): Analysis {
 		return analyze(this, precision);
 	}
+
+	abstract canEdit(key: ComponentNumberKeys | string): boolean;
+	abstract data: AnyData;
+	abstract rawData: AnyData;
 }
 
 export type NumberKeys<T> = {
@@ -111,38 +116,17 @@ export type NumberKeys<T> = {
 
 export type ComponentNumberKeys = NumberKeys<Component>;
 
-// Utility type to get writable keys
-type WritableKeys<T> = {
-	[P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>;
-}[keyof T];
-
-// Helper type to test if two types are equal
-type IfEquals<X, Y, A = X, B = never> =
-	(<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? A : B;
-
-// Usage
-export type WritableSpiritDataKeys = WritableKeys<SpiritData>; // "volume" | "abv"
-export type WritableWaterDataKeys = WritableKeys<WaterData>; // "volume"
-export type WritableSugarDataKeys = WritableKeys<SweetenerData>; // "mass"
-export type WritableSyrupDataKeys = WritableKeys<SyrupData>; // "volume" | "brix"
-
-export function checkData(type: 'spirit', input: unknown): input is SpiritData;
 export function checkData(type: 'water', input: unknown): input is WaterData;
 export function checkData(type: 'sweetener', input: unknown): input is SweetenerData;
-export function checkData(type: 'sugar-syrup', input: unknown): input is SyrupData;
-export function checkData(
-	type: ComponentTypes,
-	input: unknown
-): input is SpiritData | WaterData | SweetenerData | SyrupData {
+export function checkData(type: 'mixture', input: unknown): input is MixtureData;
+export function checkData(type: ComponentTypes, input: unknown): input is AnyData;
+export function checkData(type: ComponentTypes, input: unknown): input is AnyData {
 	if (typeof input !== 'object' || input === null) return false;
-	const data = input as SpiritData | WaterData | SweetenerData | SyrupData;
+	const data = input as AnyData;
 	if (data.type !== type) return false;
 	switch (type) {
-		case 'spirit':
-			return (
-				typeof (data as SpiritData).volume === 'number' &&
-				typeof (data as SpiritData).abv === 'number'
-			);
+		case 'ethanol':
+			return typeof (data as EthanolData).volume === 'number';
 		case 'water':
 			return typeof (data as WaterData).volume === 'number';
 		case 'sweetener':
@@ -150,16 +134,18 @@ export function checkData(
 				typeof (data as SweetenerData).mass === 'number' &&
 				SweetenerTypes.includes((data as SweetenerData).subType)
 			);
-		case 'sugar-syrup':
+		case 'mixture': {
+			const mixtureData = data as MixtureData;
 			return (
-				typeof (data as SyrupData).volume === 'number' &&
-				typeof (data as SyrupData).brix === 'number'
+				Array.isArray(mixtureData.components) &&
+				mixtureData.components.every(({ data }) => checkData(data.type, data))
 			);
+		}
 	}
 }
 
-export function isSpiritData(data: unknown): data is SpiritData {
-	return checkData('spirit', data);
+export function isEthanolData(data: unknown): data is EthanolData {
+	return checkData('ethanol', data);
 }
 export function isWaterData(data: unknown): data is WaterData {
 	return checkData('water', data);
@@ -167,12 +153,12 @@ export function isWaterData(data: unknown): data is WaterData {
 export function isSweetenerData(data: unknown): data is SweetenerData {
 	return checkData('sweetener', data);
 }
-export function isSyrupData(data: unknown): data is SyrupData {
-	return checkData('sugar-syrup', data);
+export function isMixtureData(data: unknown): data is MixtureData {
+	return checkData('mixture', data);
 }
 
 export type SerializedComponent = {
 	name: string;
 	id: string;
-	data: SpiritData | WaterData | SweetenerData | SyrupData;
+	data: AnyData;
 };

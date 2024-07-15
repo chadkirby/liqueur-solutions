@@ -1,12 +1,13 @@
 <script lang="ts">
 	// @ts-expect-error no types
-	import NumberSpinner from 'svelte-number-spinner';
+	import SvNumberSpinner from 'svelte-number-spinner';
 	import Textfield from '@smui/textfield';
 	import {
-		mixtureStore
+		mixtureStore,
+		Sweetener
 	} from '$lib';
 	import type { ComponentValueKey } from '$lib/mixture-store.js';
-	import type { AnyComponent } from '$lib/mixture.js';
+	import { BaseComponent, SweetenerTypes } from '$lib/component.js';
 
 	export let storeId: 'totals' | string; // static
 	export let valueType: ComponentValueKey; // static
@@ -18,28 +19,30 @@
 	export let keyStepSlow = 1;
 	export let keyStepFast = 100;
 
-	const secondaryValueType: 'mass' | 'volume' | 'proof' | null =
+	const secondaryValueType: 'mass' | 'volume' | 'proof' | 'equivalentSugarMass' | null =
 		valueType === 'volume'
 		? 'mass'
 		: valueType === 'mass'
 		? 'volume'
 		: valueType === 'abv'
 		? 'proof'
+		: valueType === 'brix'
+		? 'equivalentSugarMass'
 		: null;
 
 	const errorStore = mixtureStore.errorStore(storeId, valueType);
 
 	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
 
-	let component: AnyComponent | null;
-	$: component = storeId  !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null;
+	let component: BaseComponent | null;
+	$: component = storeId !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null;
 
 	let value: number;
   $: value = (component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0;
 
 	let isLocked: boolean;
 
-	$: isLocked = (component ? !component.canEdit(valueType) : mixtureStoreData.totalsLock.includes(valueType)) ?? false;
+	$: isLocked = component ? !component.canEdit(valueType) : false;
 
 	let validState: boolean = value >= 0;
 
@@ -51,16 +54,15 @@
 	let canEdit: boolean;
 	$: canEdit = !readonly;
 
+	let subtype: SweetenerTypes | null;
+	$: subtype = component instanceof Sweetener ? component.subType : null;
+
 	$: secondaryValue = secondaryValueType ? {
-		value: component ? (component[secondaryValueType] ?? 0).toFixed() : mixtureStoreData.totals[secondaryValueType] ?? 0,
-		unit: secondaryValueType === 'mass' ? 'g' : secondaryValueType === 'volume' ? 'ml' : 'proof'
+		value: component ? (component[secondaryValueType] ?? 0).toFixed(1) : mixtureStoreData.totals[secondaryValueType] ?? 0,
+		unit: secondaryValueType === 'mass' ? 'g' : secondaryValueType === 'volume' ? 'ml' : secondaryValueType === 'equivalentSugarMass' ? '≍g sug' : 'proof'
 	} : {value: 0, unit: ''};
 
 	const id = Math.random().toString(36).substring(2);
-
-	function toggleLock() {
-		mixtureStore.toggleLock(storeId, valueType);
-	}
 
 	function reset() {
 		mixtureStore.resetError(storeId, valueType);
@@ -103,16 +105,12 @@
 
 <div class="mx-1 relative">
 	{#if canEdit}
-		{#if isLocked}
-			<button class={buttonClasses} on:click={() => toggleLock()}>
-				<span class="material-icons mdc-fab__icon">lock</span>
-			</button>
-		{:else if validState}
-		  {#if isTotals}
+		{#if validState}
+		  <!-- {#if isTotals}
 			<button class={buttonClasses} on:click={() => toggleLock()}>
 				<span class="material-icons mdc-fab__icon">lock_open</span>
 			</button>
-			{/if}
+			{/if} -->
 		{:else}
 			<button class={buttonClasses} on:click={() => reset()}>
 				<span class="material-icons mdc-fab__icon">refresh</span>
@@ -125,7 +123,7 @@
 				class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-18 p-1 {validState ? "border-b border-slate-300" : "border-b-2 border-red-400 text-red-600"}"
 			>
 			<span class="mdc-floating-label mdc-floating-label--float-above " style="">{label}</span>
-			<NumberSpinner
+			<SvNumberSpinner
 				class="mdc-text-field__input"
 				value={value.toFixed(1)}
 				on:input={doInput}
@@ -134,7 +132,7 @@
 				min="0"
 				max={max}
 				step="1"
-				decimals="0"
+				decimals={(valueType === 'mass' && subtype === 'sucralose') ? 1 : 0}
 				editOnClick={true}
 				vertical={true}
 				horizontal={false}
@@ -147,7 +145,7 @@
 	{:else}
 		<Textfield
 			class="w-18 p-1"
-			value={value.toFixed(1)}
+			value={value.toFixed((valueType === 'mass' || valueType === 'volume') ? 1 : 0)}
 			label={label}
 			type="number"
 			input$inputmode="numeric"
@@ -159,7 +157,10 @@
 </div>
 <div>
 	{#if secondaryValueType}
-		<p class="secondary-value w-18 px-1 text-sm italic text-center">{secondaryValue.value} {secondaryValue.unit}</p>
+		<div class="secondary-value w-18 px-1 text-sm italic flex flex-row m-1 gap-x-2 justify-between">
+			<span>{secondaryValue.value}</span> <span>{secondaryValue.unit}</span>
+		</div>
+
 	{/if}
 </div>
 

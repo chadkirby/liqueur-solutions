@@ -11,9 +11,9 @@ test('solve solves 80ABV', () => {
 		mass: 675,
 		volume: 667
 	});
-	assert.deepEqual(mixture.findByType(Spirit.is)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType(Water.is)?.volume, 332, 'water volume');
-	assert.deepEqual(mixture.findByType(Syrup.is)?.sugarMass, 135, 'sugar mass');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 332, 'water volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Syrup)?.sweetenerMass, 135, 'sugar mass');
 });
 
 test('solve solves 40ABV', () => {
@@ -25,9 +25,9 @@ test('solve solves 40ABV', () => {
 		volume: 333
 	});
 
-	assert.deepEqual(mixture.findByType(Spirit.is)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType(Water.is)?.volume, 17, 'water volume');
-	assert.deepEqual(mixture.findByType(Syrup.is)?.sugarMass, 105, 'sugar mass');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 17, 'water volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Syrup)?.sweetenerMass, 105, 'sugar mass');
 });
 
 test('solve solves 10brix', () => {
@@ -38,9 +38,9 @@ test('solve solves 10brix', () => {
 		mass: 393,
 		volume: 400
 	});
-	assert.deepEqual(mixture.findByType(Spirit.is)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType(Water.is)?.volume, 125, 'water volume');
-	assert.deepEqual(mixture.findByType(Syrup.is)?.mass, 39, 'sugar mass');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 125, 'water volume');
+	assert.deepEqual(mixture.findByType((o) => o instanceof Syrup)?.mass, 39, 'sugar mass');
 });
 
 test('solve solves with syrup', () => {
@@ -55,7 +55,7 @@ test('solve solves with syrup', () => {
 	assert.deepEqual(mixture.alcoholVolume, 100, 'alcohol volume');
 	assert.equal(mixture.volume, 400, 'total volume');
 	assert.deepEqual(mixture.mass, 410, 'mass');
-	assert.deepEqual(mixture.sugarMass, 82, 'sugar mass');
+	assert.deepEqual(mixture.sweetenerMass, 82, 'sugar mass');
 });
 
 test('grapefruit', () => {
@@ -65,9 +65,9 @@ test('grapefruit', () => {
 			abv: Math.round(mixture.abv),
 			brix: Math.round(mixture.brix),
 			totalVolume: Math.round(mixture.volume),
-			sugar: mixture.findByType(Syrup.is)?.sugarMass,
-			water: mixture.findByType(Water.is)?.volume,
-			spirit: mixture.findByType(Spirit.is)?.volume
+			sugar: mixture.findByType((o) => o instanceof Syrup)?.sweetenerMass,
+			water: mixture.findByType((o) => o instanceof Water)?.volume,
+			spirit: mixture.findByType((o) => o instanceof Spirit)?.volume
 		},
 		{
 			abv: 30,

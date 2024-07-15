@@ -1,34 +1,33 @@
 import {
 	BaseComponent,
+	type EthanolData,
 	type Component,
-	type ComponentNumberKeys,
-	type SpiritData
+	type ComponentNumberKeys
 } from './component.js';
 import { round } from './utils.js';
 
 export class Ethanol extends BaseComponent implements Component {
-	readonly type = 'spirit';
+	readonly type = 'ethanol';
 	static density = 0.79;
 
 	readonly abv = 100;
 	readonly brix = 0;
-	readonly sugarVolume = 0;
-	readonly sugarMass = 0;
+	readonly equivalentSugarMass = 0;
 	readonly waterVolume = 0;
 	readonly waterMass = 0;
 
 	constructor(public volume: number) {
 		super();
 	}
-	get rawData(): SpiritData {
-		const { type, volume, abv } = this;
-		return { type, volume, abv };
+	get rawData(): EthanolData {
+		const { type, volume } = this;
+		return { type, volume };
 	}
-	get data(): SpiritData {
-		const { type, volume, abv } = this;
-		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+	get data(): EthanolData {
+		const { type, volume } = this;
+		return { type, volume: round(volume, 1) };
 	}
-	set data(data: SpiritData) {
+	set data(data: EthanolData) {
 		this.volume = data.volume;
 	}
 	get componentObjects() {
@@ -57,19 +56,15 @@ export class Ethanol extends BaseComponent implements Component {
 		return this.mass * 7.1;
 	}
 
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
+
+	setEquivalentSugarMass(): void {
+		// do nothing
+	}
+
 	canEdit(key: ComponentNumberKeys | string): boolean {
 		return ['volume', 'alcoholVolume'].includes(key);
-	}
-	set(key: ComponentNumberKeys, value: number) {
-		if (this.canEdit(key)) {
-			switch (key) {
-				case 'volume':
-				case 'alcoholVolume':
-					this.volume = value;
-					break;
-				default:
-					return;
-			}
-		}
 	}
 }

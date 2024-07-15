@@ -10,10 +10,14 @@ export type Analysis = Target & {
 	mass: number;
 	kcal: number;
 	proof: number;
+	equivalentSugarMass: number;
 };
 
 export function analyze(
-	item: Pick<Component, 'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'sugarMass' | 'kcal'>,
+	item: Pick<
+		Component,
+		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal'
+	>,
 	precision = 0
 ): Analysis {
 	return {
@@ -22,6 +26,7 @@ export function analyze(
 		abv: round(item.abv, precision),
 		brix: round(item.brix, precision),
 		kcal: round(item.kcal, precision),
-		proof: round(item.abv * 2, precision)
+		proof: round(item.abv * 2, precision),
+		equivalentSugarMass: round(item.equivalentSugarMass, precision)
 	};
 }

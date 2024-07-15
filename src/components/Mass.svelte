@@ -11,6 +11,6 @@
 		suffix="g"
 		{storeId}
 		valueType="mass"
-		readonly={!/sugar/.test(storeId)}
+		readonly={!/sweetener/.test(storeId)}
 	/>
 </div>

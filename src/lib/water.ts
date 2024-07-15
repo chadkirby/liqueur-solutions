@@ -12,8 +12,7 @@ export class Water extends BaseComponent implements Component {
 
 	readonly abv = 0;
 	readonly brix = 0;
-	readonly sugarVolume = 0;
-	readonly sugarMass = 0;
+	readonly equivalentSugarMass = 0;
 	readonly alcoholVolume = 0;
 	readonly alcoholMass = 0;
 
@@ -59,16 +58,11 @@ export class Water extends BaseComponent implements Component {
 		return 0;
 	}
 
-	set(key: ComponentNumberKeys, value: number) {
-		if (this.canEdit(key)) {
-			switch (key) {
-				case 'volume':
-				case 'waterVolume':
-					this.volume = value;
-					break;
-				default:
-					return;
-			}
-		}
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
+
+	setEquivalentSugarMass(): void {
+		// do nothing
 	}
 }

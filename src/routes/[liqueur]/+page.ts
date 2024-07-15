@@ -1,9 +1,10 @@
-import { dataToMixture, deserialize, type SerializedComponent } from '$lib';
+import { dataToMixture, deserialize, type SerializedComponent, newSpirit, Sweetener } from '$lib';
 
 export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
 	liqueur: string;
 	components: Array<SerializedComponent>;
 } {
+	if (url.pathname.startsWith('/favicon')) return;
 	try {
 		const { components } = deserialize(url.searchParams);
 		// decode params.liqueur
@@ -22,10 +23,18 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 				{
 					name: 'spirit',
 					id: 'spirit-0',
-					data: { volume: 100, abv: 40, type: 'spirit' }
+					data: newSpirit(100, 40).data
 				},
-				{ name: 'water', id: 'water-0', data: { volume: 100, type: 'water' } },
-				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sweetener', subType: 'sucrose' } }
+				{
+					name: 'water',
+					id: 'water-0',
+					data: { volume: 100, type: 'water' }
+				},
+				{
+					name: 'sugar',
+					id: 'sweetener-0',
+					data: new Sweetener('sucrose', 50).data
+				}
 			]
 		};
 	}

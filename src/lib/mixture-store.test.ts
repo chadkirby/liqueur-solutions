@@ -99,7 +99,8 @@ describe('Mixture Store', () => {
 				name: 'sugar' as const,
 				id: 'sugar-2',
 				data: {
-					type: 'sugar' as const,
+					type: 'sweetener' as const,
+					subType: 'sucrose' as const,
 					mass: 50 * Sugar.density,
 					locked: []
 				}
