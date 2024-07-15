@@ -1,15 +1,15 @@
 import {
-	isComponentValueKey,
-	type BaseComponentData,
+	isNumericDataValueKey,
+	type AnyData,
 	isComponentType,
 	type SpiritData,
 	type WaterData,
-	type SugarData,
+	type SweetenerData,
 	type SyrupData
 } from './component.js';
 import { Spirit } from './spirit.js';
-import { Sugar } from './sugar.js';
-import { Syrup } from './syrup.js';
+import { getSweetenerComponent } from './sweetener.js';
+import { SugarSyrup } from './syrup.js';
 import { Water } from './water.js';
 
 export function deserialize(qs: string | URLSearchParams) {
@@ -18,30 +18,31 @@ export function deserialize(qs: string | URLSearchParams) {
 	const components: Array<{
 		name: string;
 		id: string;
-		data: SpiritData | WaterData | SugarData | SyrupData;
+		data: SpiritData | WaterData | SweetenerData | SyrupData;
 	}> = [];
-	const working: Partial<BaseComponentData & { name: string; type: string }>[] = [];
+	const working: Partial<AnyData & { name: string }>[] = [];
 	for (const [key, value] of params) {
 		if (key === 'liqueur') continue;
 		if (key === 'name') {
 			working.push({ name: value });
 		} else {
-			const current = working.at(-1);
+			const current = working.at(-1) as unknown as Record<string, unknown> | undefined;
 			if (!current) throw new Error('Keys must be preceded by a component name');
-			if (isComponentValueKey(key)) {
+			if (isNumericDataValueKey(key)) {
 				current[key] = parseFloat(value);
 			} else if (key === 'type' && isComponentType(value)) {
 				current.type = value;
 			}
 		}
 	}
-	for (const { type, ...values } of working) {
-		switch (type) {
+	for (const { name, ...data } of working) {
+		switch (data.type) {
 			case undefined: {
 				break;
 			}
 			case 'spirit': {
-				const { volume, abv, name } = values;
+				const spiritData = data as SpiritData;
+				const { volume, abv, type } = spiritData;
 				if (name && undefined !== volume && undefined !== abv) {
 					components.push({
 						name,
@@ -52,7 +53,8 @@ export function deserialize(qs: string | URLSearchParams) {
 				break;
 			}
 			case 'water': {
-				const { volume, name } = values;
+				const waterData = data as WaterData;
+				const { volume, type } = waterData;
 				if (name && undefined !== volume) {
 					components.push({
 						name,
@@ -62,30 +64,33 @@ export function deserialize(qs: string | URLSearchParams) {
 				}
 				break;
 			}
-			case 'sugar': {
-				const { mass, name } = values;
+			case 'sweetener': {
+				const sweetenerData = data as SweetenerData;
+				const { mass, type, subType } = sweetenerData;
 				if (name && undefined !== mass) {
 					components.push({
 						name,
-						id: `${type}-${components.length}`,
-						data: new Sugar(mass).data
+						id: `${type}-${subType}-${components.length}`,
+						data: getSweetenerComponent(subType, mass).data
 					});
 				}
 				break;
 			}
-			case 'syrup': {
-				const { volume, brix, name } = values;
+			case 'sugar-syrup': {
+				const syrupData = data as SyrupData;
+				const { volume, brix, type } = syrupData;
 				if (name && undefined !== volume && undefined !== brix) {
 					components.push({
 						name,
 						id: `${type}-${components.length}`,
-						data: new Syrup(volume, brix).data
+						data: new SugarSyrup(volume, brix).data
 					});
 				}
 				break;
 			}
 			default:
-				throw new Error(`Unknown component type: ${type}`);
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				throw new Error(`Unknown component type: ${(data as any).type}`);
 		}
 	}
 

@@ -9,10 +9,6 @@ export class Spirit extends Mixture {
 	private _volume: number;
 	private _abv: number;
 
-	static is(component: unknown): component is Spirit {
-		return component instanceof Spirit;
-	}
-
 	constructor(volume: number, abv: number) {
 		super([
 			{ name: 'water', id: 'water', component: new Water(0) },
@@ -28,13 +24,13 @@ export class Spirit extends Mixture {
 	}
 
 	get waterComponent() {
-		const component = this.componentObjects.find(Water.is);
+		const component = this.componentObjects.find((o) => o instanceof Water);
 		if (!component) throw new Error('Water component not found');
 		return component;
 	}
 
 	get ethanolComponent() {
-		const component = this.componentObjects.find(Ethanol.is);
+		const component = this.componentObjects.find((o) => o instanceof Ethanol);
 		if (!component) throw new Error('Ethanol component not found');
 		return component;
 	}
@@ -52,9 +48,6 @@ export class Spirit extends Mixture {
 		this._abv = data.abv;
 		this.updateComponents();
 	}
-	static fromData(data: SpiritData) {
-		return new Spirit(data.volume, data.abv);
-	}
 
 	canEdit(key: ComponentNumberKeys | string): boolean {
 		return ['alcoholVolume', 'volume', 'abv'].includes(key);
@@ -64,7 +57,7 @@ export class Spirit extends Mixture {
 		return new Spirit(this._volume, this._abv);
 	}
 
-	updateComponents() {
+	private updateComponents() {
 		this.waterComponent.volume = this._volume * (1 - this._abv / 100);
 		this.ethanolComponent.volume = this._volume * (this._abv / 100);
 	}

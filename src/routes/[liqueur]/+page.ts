@@ -25,7 +25,7 @@ export function load({ url, params }: { url: URL; params: { liqueur: string } })
 					data: { volume: 100, abv: 40, type: 'spirit' }
 				},
 				{ name: 'water', id: 'water-0', data: { volume: 100, type: 'water' } },
-				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sugar' } }
+				{ name: 'sugar', id: 'sugar-0', data: { mass: 50, type: 'sweetener', subType: 'sucrose' } }
 			]
 		};
 	}

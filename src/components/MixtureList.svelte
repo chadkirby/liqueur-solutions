@@ -14,8 +14,8 @@
 	import ABVComponent from './ABV.svelte';
 	import MassComponent from './Mass.svelte';
 	import BrixComponent from './Brix.svelte';
-	import debounce from 'lodash.debounce';
 	import CalComponent from './Cal.svelte';
+	import debounce from 'lodash.debounce';
 
 	export let data: {liqueur: string, components: SerializedComponent[]};
 
@@ -55,7 +55,6 @@
 		on:input={() => updateUrl()}
 		required
 	/>
-
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 		<div class="flex flex-col items-stretch mt-2">
 			<div class="relative">
@@ -74,7 +73,7 @@
 			</div>
 
 			<div class="flex flex-row grow my-1">
-				{#if entry.type === 'sugar'}
+				{#if entry.type === 'sweetener'}
 					<MassComponent storeId={id} />
 				{:else}
 					<VolumeComponent storeId={id} />
@@ -103,7 +102,7 @@
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">spirit</Label>
 	</Button>
-	{#if !$mixtureStore.mixture.findByType(SugarObject.is)}
+	{#if !$mixtureStore.mixture.findByType(o => o instanceof SugarObject)}
 		<Button color="secondary" class="scale-75" on:click={addSugar}>
 			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 			<Label class="scale-125 p-2">sugar</Label>
@@ -113,7 +112,7 @@
 		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 		<Label class="scale-125 p-2">syrup</Label>
 	</Button>
-	{#if !$mixtureStore.mixture.findByType(WaterObject.is)}
+	{#if !$mixtureStore.mixture.findByType(o => o instanceof WaterObject)}
 		<Button color="secondary" class="scale-75" on:click={addWater}>
 			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
 			<Label class="scale-125 p-2">water</Label>

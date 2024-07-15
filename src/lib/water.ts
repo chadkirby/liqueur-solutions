@@ -17,10 +17,6 @@ export class Water extends BaseComponent implements Component {
 	readonly alcoholVolume = 0;
 	readonly alcoholMass = 0;
 
-	static is(component: unknown): component is Water {
-		return component instanceof Water;
-	}
-
 	constructor(public volume: number) {
 		super();
 	}
@@ -34,9 +30,6 @@ export class Water extends BaseComponent implements Component {
 	}
 	set data(data: WaterData) {
 		this.volume = data.volume;
-	}
-	static fromData(data: WaterData) {
-		return new Water(data.volume);
 	}
 	get componentObjects() {
 		return [this];
@@ -61,6 +54,9 @@ export class Water extends BaseComponent implements Component {
 	}
 	get mass() {
 		return this.waterMass;
+	}
+	get kcal() {
+		return 0;
 	}
 
 	set(key: ComponentNumberKeys, value: number) {

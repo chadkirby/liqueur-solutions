@@ -1,9 +1,6 @@
 <script lang="ts">
-	// import { computeSg } from '$lib/utils.js';
 	import NumberSpinner from './NumberSpinner.svelte';
 	export let storeId: string;
-	// let gravity: number;
-	// $: gravity = computeSg(brix);
 </script>
 
 <div class="mx-1 grow">

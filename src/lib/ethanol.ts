@@ -17,10 +17,6 @@ export class Ethanol extends BaseComponent implements Component {
 	readonly waterVolume = 0;
 	readonly waterMass = 0;
 
-	static is(component: unknown): component is Ethanol {
-		return component instanceof Ethanol;
-	}
-
 	constructor(public volume: number) {
 		super();
 	}
@@ -55,6 +51,10 @@ export class Ethanol extends BaseComponent implements Component {
 	}
 	get mass() {
 		return this.alcoholMass;
+	}
+
+	get kcal() {
+		return this.mass * 7.1;
 	}
 
 	canEdit(key: ComponentNumberKeys | string): boolean {

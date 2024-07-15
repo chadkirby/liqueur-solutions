@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Mixture } from './mixture.js';
 import { Water } from './water.js';
-import { Sugar } from './sugar.js';
+import { Sugar } from './sweetener.js';
 import type { Analysis } from './utils.js';
 import { Spirit } from './spirit.js';
 

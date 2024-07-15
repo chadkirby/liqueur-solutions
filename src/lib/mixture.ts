@@ -3,12 +3,12 @@ import { Ethanol } from './ethanol.js';
 import type { ComponentValueKey } from './mixture-store.js';
 import { solver } from './solver.js';
 import type { Spirit } from './spirit.js';
-import { Sugar } from './sugar.js';
-import type { Syrup } from './syrup.js';
+import { Sugar, type Sweetener } from './sweetener.js';
+import type { SugarSyrup } from './syrup.js';
 import type { Analysis } from './utils.js';
 import { Water } from './water.js';
 
-export type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
+export type AnyComponent = Spirit | Water | Sweetener | SugarSyrup | Ethanol;
 
 export class Mixture extends BaseComponent {
 	constructor(
@@ -82,14 +82,16 @@ export class Mixture extends BaseComponent {
 	canEdit(key: ComponentNumberKeys | string): boolean {
 		if (key === 'abv') {
 			return (
-				this.components.some(({ component }) => component.componentObjects.some(Ethanol.is)) &&
-				this.canEdit('volume')
+				this.components.some(({ component }) =>
+					component.componentObjects.some((o) => o instanceof Ethanol)
+				) && this.canEdit('volume')
 			);
 		}
 		if (key === 'brix') {
 			return (
-				this.components.some(({ component }) => component.componentObjects.some(Sugar.is)) &&
-				this.canEdit('volume')
+				this.components.some(({ component }) =>
+					component.componentObjects.some((o) => o instanceof Sugar)
+				) && this.canEdit('volume')
 			);
 		}
 		return this.components.some(({ component }) => component.canEdit(key));
@@ -145,7 +147,7 @@ export class Mixture extends BaseComponent {
 	setWaterVolume(newVolume: number) {
 		if (isClose(this.waterVolume, newVolume)) return;
 		// try to effect the change using a water component
-		const waterComponent = this.findByType(Water.is);
+		const waterComponent = this.findByType((o) => o instanceof Water);
 		if (waterComponent) {
 			waterComponent.volume += newVolume - this.waterVolume;
 			return;
@@ -187,7 +189,7 @@ export class Mixture extends BaseComponent {
 	setSugarMass(newMass: number) {
 		if (isClose(this.sugarMass, newMass)) return;
 		// try to effect the change using a sugar component
-		const sugarComponent = this.findByType(Sugar.is);
+		const sugarComponent = this.findByType((o) => o instanceof Sugar);
 		if (sugarComponent) {
 			sugarComponent.mass += newMass - this.sugarMass;
 			return;

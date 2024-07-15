@@ -1,8 +1,8 @@
 import { writable, get, derived } from 'svelte/store';
-import { isSugarData, type SerializedComponent } from './component.js';
+import { isSweetenerData, type SerializedComponent } from './component.js';
 import { dataToMixture } from './data-to-mixture.js';
-import { Syrup } from './syrup.js';
-import { Sugar } from './sugar.js';
+import { SugarSyrup } from './syrup.js';
+import { getSweetenerComponent, Sugar } from './sweetener.js';
 import { Spirit } from './spirit.js';
 import { Water } from './water.js';
 import type { Analysis } from './utils.js';
@@ -85,7 +85,7 @@ export function createMixtureStore() {
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
 				);
 
-				if (Spirit.is(component)) {
+				if (component instanceof Spirit) {
 					const spirit = component.clone();
 					spirit.set('volume', newVolume);
 					if (!roundEq(spirit.volume, newVolume)) {
@@ -93,7 +93,7 @@ export function createMixtureStore() {
 						return data;
 					}
 					component.data = spirit.data;
-				} else if (Water.is(component)) {
+				} else if (component instanceof Water) {
 					const water = component.clone();
 					water.set('volume', newVolume);
 					if (!roundEq(water.volume, newVolume)) {
@@ -101,7 +101,7 @@ export function createMixtureStore() {
 						return data;
 					}
 					component.data = water.data;
-				} else if (Syrup.is(component)) {
+				} else if (component instanceof SugarSyrup) {
 					const syrup = component.clone();
 					syrup.set('volume', newVolume);
 					if (!roundEq(syrup.volume, newVolume)) {
@@ -109,7 +109,7 @@ export function createMixtureStore() {
 						return data;
 					}
 					component.data = syrup.data;
-				} else if (Sugar.is(component)) {
+				} else if (component instanceof Sugar) {
 					throw new Error(`Unable to set volume of component ${componentId}`);
 				}
 
@@ -136,7 +136,7 @@ export function createMixtureStore() {
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-abv`
 				);
-				if (Spirit.is(component)) {
+				if (component instanceof Spirit) {
 					const spirit = component.clone();
 					spirit.set('abv', newAbv);
 					if (!roundEq(spirit.abv, newAbv)) {
@@ -164,14 +164,14 @@ export function createMixtureStore() {
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-mass`
 				);
-				if (isSugarData(component.data)) {
-					const sugar = Sugar.fromData(component.data);
-					sugar.set('mass', newMass);
-					if (!roundEq(sugar.mass, newMass)) {
+				if (isSweetenerData(component.data)) {
+					const sweetener = getSweetenerComponent(component.data.subType, component.data.mass);
+					sweetener.set('mass', newMass);
+					if (!roundEq(sweetener.mass, newMass)) {
 						data.errors.push({ componentId, key: 'mass' });
 						return data;
 					}
-					component.data = sugar.data;
+					component.data = sweetener.data;
 				} else {
 					throw new Error(`Unable to set mass of component ${componentId}`);
 				}
@@ -194,7 +194,7 @@ export function createMixtureStore() {
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-brix`
 				);
 
-				if (Syrup.is(component)) {
+				if (component instanceof SugarSyrup) {
 					const syrup = component.clone();
 					syrup.set('brix', newBrix);
 					if (!roundEq(syrup.brix, newBrix)) {

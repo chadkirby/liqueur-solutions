@@ -1,17 +1,24 @@
 import type { ComponentNumberKeys, SyrupData } from './component.js';
 import { Mixture } from './mixture.js';
-import { Sugar } from './sugar.js';
-import { computeSg, round } from './utils.js';
+import { Sugar } from './sweetener.js';
+import { round } from './utils.js';
 import { Water } from './water.js';
 
-export class Syrup extends Mixture {
-	readonly type = 'syrup';
+// see https://www.vinolab.hr/calculator/gravity-density-sugar-conversions-en19
+
+function computeSg(brix: number) {
+	return (
+		0.00000005785037196 * brix ** 3 +
+		0.00001261831344 * brix ** 2 +
+		0.003873042366 * brix +
+		0.9999994636
+	);
+}
+
+export class SugarSyrup extends Mixture {
+	readonly type = 'sugar-syrup';
 	private _volume: number;
 	private _brix: number;
-
-	static is(component: unknown): component is Syrup {
-		return component instanceof Syrup;
-	}
 
 	constructor(volume: number, brix: number) {
 		super([
@@ -28,13 +35,13 @@ export class Syrup extends Mixture {
 	}
 
 	get waterComponent() {
-		const component = this.componentObjects.find(Water.is);
+		const component = this.componentObjects.find((o) => o instanceof Water);
 		if (!component) throw new Error('Water component not found');
 		return component;
 	}
 
 	get sugarComponent() {
-		const component = this.componentObjects.find(Sugar.is);
+		const component = this.componentObjects.find((obj) => obj instanceof Sugar);
 		if (!component) throw new Error('Sugar component not found');
 		return component;
 	}
@@ -53,19 +60,15 @@ export class Syrup extends Mixture {
 		this.updateComponents();
 	}
 
-	static fromData(data: SyrupData) {
-		return new Syrup(data.volume, data.brix);
-	}
-
 	canEdit(key: ComponentNumberKeys | string): boolean {
 		return ['sugarMass', 'waterVolume', 'volume', 'brix'].includes(key);
 	}
 
 	clone() {
-		return new Syrup(this._volume, this._brix);
+		return new SugarSyrup(this._volume, this._brix);
 	}
 
-	updateComponents() {
+	private updateComponents() {
 		const desiredVolume = this._volume;
 		const brix = this._brix;
 

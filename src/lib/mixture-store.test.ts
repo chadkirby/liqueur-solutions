@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createMixtureStore } from './mixture-store';
 import { deserialize } from './deserialize.js';
-import { Sugar } from './sugar.js';
+import { Sugar } from './sweetener.js';
 
 describe('Mixture Store', () => {
 	it('should initialize with default values', () => {
