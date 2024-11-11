@@ -1,8 +1,12 @@
 <script lang="ts">
 	import NumberSpinner from './NumberSpinner.svelte';
 
-	export let storeId: string;
-	// let flOz: number;
+	interface Props {
+		storeId: string; // let flOz: number;
+	}
+
+	let { storeId }: Props = $props();
+	
 	// let cups: number;
 	// $: flOz = volume * 0.033814;
 	// $: cups = flOz / 8;

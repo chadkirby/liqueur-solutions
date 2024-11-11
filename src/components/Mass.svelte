@@ -1,18 +1,24 @@
 <script lang="ts">
-	import NumberSpinner from './NumberSpinner.svelte';
-	export let storeId: string;
-	import { mixtureStore, Sweetener } from '$lib';
-	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
+	import { run } from 'svelte/legacy';
 
-	let decimals = 0;
-	$: {
+	import NumberSpinner from './NumberSpinner.svelte';
+	import { mixtureStore, Sweetener } from '$lib';
+	interface Props {
+		storeId: string;
+	}
+
+	let { storeId }: Props = $props();
+	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
+
+	let decimals = $state(0);
+	run(() => {
 		if (storeId !== 'totals') {
 			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
 			const subtype = (component instanceof Sweetener) ? component.subType : '';
 			decimals = (subtype === 'sucralose') ? 1 : 0
 			console.log(subtype, decimals);
 		}
-	}
+	});
 </script>
 
 <div class="mx-1 grow">

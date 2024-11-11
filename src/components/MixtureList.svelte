@@ -28,7 +28,11 @@
 	import CalComponent from './Cal.svelte';
 	import debounce from 'lodash.debounce';
 
-	export let data: {liqueur: string, components: SerializedComponent[]};
+	interface Props {
+		data: {liqueur: string, components: SerializedComponent[]};
+	}
+
+	let { data }: Props = $props();
 
 	// Initialize the store with the data from the load function
 	mixtureStore.deserialize(data);

@@ -1,8 +1,13 @@
-<script>
+<script lang="ts">
   import MixtureList from '../../components/MixtureList.svelte';
 
-  // This prop is populated with the returned data from the load function
-  export let data;
+  
+  interface Props {
+    // This prop is populated with the returned data from the load function
+    data: any;
+  }
+
+  let { data }: Props = $props();
 
 </script>
 

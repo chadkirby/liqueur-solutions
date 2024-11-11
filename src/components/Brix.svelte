@@ -1,47 +1,27 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import NumberSpinner from './NumberSpinner.svelte';
 	import Textfield from '@smui/textfield';
-	export let storeId: string;
 	import { mixtureStore } from '$lib';
-	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
-
-	let readonly = false;
-	$: {
-		if (storeId === 'totals') {
-			readonly = !mixtureStoreData.mixture.canEdit('brix');
-		} else {
-			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
-			readonly = !component?.canEdit('equivalentSugarMass');
-		}
+	interface Props {
+		storeId: string;
 	}
 
-	let showProportion = false;
+	let { storeId }: Props = $props();
+
+	let readonly = $state(false);
+
+	let showProportion = $state(false);
 
 	let labelClickHandler = () => {
 		showProportion = !showProportion;
 	};
 
-	let value: number;
-  $:{
-		if (storeId === 'totals') {
-			value = mixtureStoreData.totals.brix ?? 0;
-		} else {
-			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
-		 value = component?.brix ?? 0;
-		}
-	}
+	let value: number = $state();
 
 
-	let parts = '';
-	$: {
-		if (value < 100) {
-			// convert 50 brix to 1/1
-			// convert 66.666 brix to 2/1
-			// convert 75 brix to 3/1
-			parts = closestRatio(value)
-			console.log(parts);
-		}
-	}
+	let parts = $state('');
 
 	const candidates = [
 			...Array.from({length: 7}, (_, i) => ({ratio: `${i+1}:1`, decimal: xToY(i+1, 1)})),
@@ -62,13 +42,39 @@
 		return x / (x + y);
 	}
 
+	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
+	run(() => {
+		if (storeId === 'totals') {
+			readonly = !mixtureStoreData.mixture.canEdit('brix');
+		} else {
+			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
+			readonly = !component?.canEdit('equivalentSugarMass');
+		}
+	});
+  run(() => {
+		if (storeId === 'totals') {
+			value = mixtureStoreData.totals.brix ?? 0;
+		} else {
+			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
+		 value = component?.brix ?? 0;
+		}
+	});
+	run(() => {
+		if (value < 100) {
+			// convert 50 brix to 1/1
+			// convert 66.666 brix to 2/1
+			// convert 75 brix to 3/1
+			parts = closestRatio(value)
+			console.log(parts);
+		}
+	});
 </script>
 
 <div class="mx-1 grow">
 	<div
 		class="mdc-floating-label mdc-floating-label--float-above cursor-pointer"
-		on:click={labelClickHandler}
-		on:keypress={labelClickHandler}
+		onclick={labelClickHandler}
+		onkeypress={labelClickHandler}
 		role="button"
 		tabindex="0"
 		>foo</div>

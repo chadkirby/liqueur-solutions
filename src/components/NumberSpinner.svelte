@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	// @ts-expect-error no types
 	import SvNumberSpinner from 'svelte-number-spinner';
 	import Textfield from '@smui/textfield';
@@ -9,16 +11,31 @@
 	import type { ComponentValueKey } from '$lib/mixture-store.js';
 	import { BaseComponent, SweetenerTypes } from '$lib/component.js';
 
-	export let storeId: 'totals' | string; // static
-	export let valueType: ComponentValueKey; // static
-	export let readonly = false;
-	export let label: string;
-	export let suffix: string;
-	export let max = Infinity
-	export let keyStep = 10;
-	export let keyStepSlow = 1;
-	export let keyStepFast = 100;
-	export let decimals = 0;
+	interface Props {
+		storeId: 'totals' | string; // static
+		valueType: ComponentValueKey; // static
+		readonly?: boolean;
+		label: string;
+		suffix: string;
+		max?: any;
+		keyStep?: number;
+		keyStepSlow?: number;
+		keyStepFast?: number;
+		decimals?: number;
+	}
+
+	let {
+		storeId,
+		valueType,
+		readonly = false,
+		label,
+		suffix,
+		max = Infinity,
+		keyStep = 10,
+		keyStepSlow = 1,
+		keyStepFast = 100,
+		decimals = 0
+	}: Props = $props();
 
 	const secondaryValueType: 'mass' | 'volume' | 'proof' | 'equivalentSugarMass' | null =
 		valueType === 'volume'
@@ -33,32 +50,36 @@
 
 	const errorStore = mixtureStore.errorStore(storeId, valueType);
 
-	$: mixtureStoreData = $mixtureStore; // Subscribe to mixtureStore directly
+	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
 
-	let component: BaseComponent | null;
-	$: component = storeId !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null;
+	let component: BaseComponent | null = $derived(storeId !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null);
+	
 
-	let value: number;
-  $: value = (component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0;
+	let value: number = $derived((component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0);
+  
 
-	let isLocked: boolean;
+	let isLocked: boolean = $derived(component ? !component.canEdit(valueType) : false);
 
-	$: isLocked = component ? !component.canEdit(valueType) : false;
+	
 
-	let validState: boolean = value >= 0;
+	let validState: boolean = $state(value >= 0);
 
 	// This creates a subscription to the derived store
-	$: $errorStore;
+	run(() => {
+		$errorStore;
+	});
 	// This will update whenever the derived store updates
-	$: validState = !$errorStore;
+	run(() => {
+		validState = !$errorStore;
+	});
 
-	let canEdit: boolean;
-	$: canEdit = !readonly;
+	let canEdit: boolean = $derived(!readonly);
+	
 
-	$: secondaryValue = secondaryValueType ? {
+	let secondaryValue = $derived(secondaryValueType ? {
 		value: component ? (component[secondaryValueType] ?? 0).toFixed(1) : mixtureStoreData.totals[secondaryValueType] ?? 0,
 		unit: secondaryValueType === 'mass' ? 'g' : secondaryValueType === 'volume' ? 'ml' : secondaryValueType === 'equivalentSugarMass' ? '≍g sug' : 'proof'
-	} : {value: 0, unit: ''};
+	} : {value: 0, unit: ''});
 
 	const id = Math.random().toString(36).substring(2);
 
@@ -108,7 +129,7 @@
 			</button>
 			{/if} -->
 		{:else}
-			<button class={buttonClasses} on:click={() => reset()}>
+			<button class={buttonClasses} onclick={() => reset()}>
 				<span class="material-icons mdc-fab__icon">refresh</span>
 			</button>
 		{/if}
