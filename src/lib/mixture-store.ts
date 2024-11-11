@@ -264,11 +264,14 @@ export const mixtureStore = createMixtureStore();
 
 export function updateUrl(mixture = mixtureStore.getMixture()) {
 	if (mixture.isValid) {
-		goto(`/${encodeURIComponent(mixtureStore.get().title)}?${mixture.serialize()}`, {
-			replaceState: true,
-			noScroll: true,
-			keepFocus: true
-		});
+		goto(
+			`/${encodeURIComponent(mixtureStore.get().title)}?gz=${encodeURIComponent(mixture.serialize())}`,
+			{
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true
+			}
+		);
 	}
 }
 

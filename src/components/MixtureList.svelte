@@ -10,7 +10,16 @@
 		type SerializedComponent,
 		SweetenerTypes,
 		newSyrup,
-		newSpirit
+		newSpirit,
+
+		Mixture,
+
+		type AnyComponent,
+
+		Sweetener
+
+
+
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
@@ -53,6 +62,10 @@
 		mixtureStore.removeComponent(id);
 	}
 
+	function isSyrup(mx: AnyComponent) {
+		return Boolean(mx instanceof Mixture && mx.components.length === 2 && mx.findByType(x => x instanceof WaterObject) && mx.findByType(x => x instanceof Sweetener));
+	}
+
 </script>
 
 <div class="flex flex-col gap-x-2 gap-y-2">
@@ -79,7 +92,20 @@
 							<Option value={type}>{type}</Option>
 						{/each}
 					</Select>
-				{:else}
+				{:else if isSyrup(entry)}
+					<Select
+					class="w-1/2"
+					selectedText$class="font-sans text-lg font-bold"
+					variant="outlined"
+					bind:value={entry.subType}
+					label={entry.type}
+					required
+				>
+					{#each SweetenerTypes as type}
+						<Option value={type}>{type}</Option>
+					{/each}
+				</Select>
+			{:else}
 					<Textfield
 						class="w-full"
 						input$class="font-sans text-lg font-bold"
@@ -166,9 +192,14 @@
 		padding-left: 4px;
 	}
 
+	/* position the sweetener dropdown caret to the left of the label */
+	:global(.mdc-select__anchor) {
+		flex-direction: row-reverse;
+	}
+	/* adjust the sweetener dropdown caret margins */
 	:global(.mdc-select__dropdown-icon) {
-		/* position the sweetener dropdown caret */
-		margin-right: calc(100% - 10em);
+		margin-left: -6px;
+		margin-right: 0px;
 	}
 
 

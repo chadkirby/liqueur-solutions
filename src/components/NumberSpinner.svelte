@@ -11,13 +11,14 @@
 
 	export let storeId: 'totals' | string; // static
 	export let valueType: ComponentValueKey; // static
-	export let readonly: boolean = false;
+	export let readonly = false;
 	export let label: string;
 	export let suffix: string;
 	export let max = Infinity
 	export let keyStep = 10;
 	export let keyStepSlow = 1;
 	export let keyStepFast = 100;
+	export let decimals = 0;
 
 	const secondaryValueType: 'mass' | 'volume' | 'proof' | 'equivalentSugarMass' | null =
 		valueType === 'volume'
@@ -53,9 +54,6 @@
 
 	let canEdit: boolean;
 	$: canEdit = !readonly;
-
-	let subtype: SweetenerTypes | null;
-	$: subtype = component instanceof Sweetener ? component.subType : null;
 
 	$: secondaryValue = secondaryValueType ? {
 		value: component ? (component[secondaryValueType] ?? 0).toFixed(1) : mixtureStoreData.totals[secondaryValueType] ?? 0,
@@ -99,8 +97,6 @@
 
 	const buttonClasses = "absolute top-0 -right-1 scale-75 cursor-pointer z-10";
 
-	const isTotals = storeId === 'totals';
-
 </script>
 
 <div class="mx-1 relative">
@@ -132,7 +128,7 @@
 				min="0"
 				max={max}
 				step="1"
-				decimals={(valueType === 'mass' && subtype === 'sucralose') ? 1 : 0}
+				decimals={decimals}
 				editOnClick={true}
 				vertical={true}
 				horizontal={false}

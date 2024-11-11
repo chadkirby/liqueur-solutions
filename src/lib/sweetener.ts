@@ -31,7 +31,7 @@ export class Sweetener extends BaseComponent implements Component {
 	readonly alcoholMass = 0;
 
 	constructor(
-		public subType: SweetenerTypes,
+		private _subType: SweetenerTypes,
 		public mass: number
 	) {
 		super();
@@ -60,6 +60,16 @@ export class Sweetener extends BaseComponent implements Component {
 		return this.mass >= 0;
 	}
 
+	get subType() {
+		return this._subType;
+	}
+
+	set subType(subType: SweetenerTypes) {
+		const { equivalentSugarMass } = this;
+		this._subType = subType;
+		this.setEquivalentSugarMass(equivalentSugarMass);
+	}
+
 	get rawData(): SweetenerData {
 		const { type, subType, mass } = this;
 		return { type, subType, mass };
@@ -69,12 +79,12 @@ export class Sweetener extends BaseComponent implements Component {
 		return { type, subType, mass: round(mass, 1) };
 	}
 	set data(data: SweetenerData) {
-		this.subType = data.subType;
+		this._subType = data.subType;
 		this.mass = data.mass;
 	}
 
 	clone(): Sweetener {
-		return new Sweetener(this.subType, this.mass);
+		return new Sweetener(this._subType, this.mass);
 	}
 
 	get volume() {
@@ -84,26 +94,26 @@ export class Sweetener extends BaseComponent implements Component {
 		this.mass = value * this.density;
 	}
 	get equivalentSugarMass() {
-		return this.mass * (SweetenerData[this.subType].sweetness / 100);
+		return this.mass * (SweetenerData[this._subType].sweetness / 100);
 	}
 	set equivalentSugarMass(value: number) {
 		this.setEquivalentSugarMass(value);
 	}
 
 	setEquivalentSugarMass(mass: number): void {
-		this.mass = mass / (SweetenerData[this.subType].sweetness / 100);
+		this.mass = mass / (SweetenerData[this._subType].sweetness / 100);
 	}
 
 	get density() {
-		return SweetenerData[this.subType].density;
+		return SweetenerData[this._subType].density;
 	}
 
 	get brix() {
-		return SweetenerData[this.subType].sweetness;
+		return SweetenerData[this._subType].sweetness;
 	}
 
 	get kcal() {
-		return this.mass * SweetenerData[this.subType].kcalPerGram;
+		return this.mass * SweetenerData[this._subType].kcalPerGram;
 	}
 }
 

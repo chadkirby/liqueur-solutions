@@ -1,5 +1,4 @@
-import { Mixture, Water, Sweetener } from '$lib';
-import { newSpirit } from '$lib/mixture.js';
+import { Mixture, Water, Sweetener, newSpirit } from '$lib';
 import { redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -16,5 +15,5 @@ export function load() {
     ];
     const mixture = new Mixture(components);
 
-    throw redirect(307, `/${encodeURIComponent('My Mixture')}?${mixture.serialize()}`);
+    throw redirect(307, `/${encodeURIComponent('My Mixture')}?gz=${mixture.serialize()}`);
 }

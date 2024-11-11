@@ -1,4 +1,4 @@
-import queryString from 'query-string';
+import { strToU8, strFromU8, compressSync } from 'fflate';
 import { isEthanolData, isSweetenerData, isMixtureData, isWaterData } from './component.js';
 import {
 	BaseComponent,
@@ -83,11 +83,9 @@ export class Mixture extends BaseComponent {
 	}
 
 	serialize(): string {
-		const { type, components } = this.data;
-		return queryString.stringify(
-			{ type, components: components.map((c) => JSON.stringify(c)) },
-			{ arrayFormat: 'index', sort: false }
-		);
+		const buf = strToU8(JSON.stringify(this.data), true);
+		const compressed = compressSync(buf);
+		return btoa(strFromU8(compressed, true));
 	}
 
 	get componentObjects() {
