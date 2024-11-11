@@ -15,5 +15,5 @@ export function load() {
     ];
     const mixture = new Mixture(components);
 
-    throw redirect(307, `/${encodeURIComponent('My Mixture')}?gz=${mixture.serialize()}`);
+    redirect(307, `/${encodeURIComponent('My Mixture')}?gz=${mixture.serialize()}`);
 }
