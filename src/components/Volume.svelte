@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { Sweetener, type AnyComponent } from '$lib';
 	import NumberSpinner from './NumberSpinner.svelte';
 
 	interface Props {
-		storeId: string; // let flOz: number;
+		componentId: string; // let flOz: number;
+		component: AnyComponent;
 	}
 
-	let { storeId }: Props = $props();
-	
+	let { componentId: storeId, component }: Props = $props();
+
 	// let cups: number;
 	// $: flOz = volume * 0.033814;
 	// $: cups = flOz / 8;
@@ -17,7 +19,7 @@
 	label="Volume"
 	suffix="ml"
 	{storeId}
-	readonly={/sugar/.test(storeId)}
+	readonly={component instanceof Sweetener}
 	valueType="volume"
 	/>
 </div>

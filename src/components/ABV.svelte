@@ -1,25 +1,15 @@
 <script lang="ts">
-	import { run } from 'svelte/legacy';
 
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { mixtureStore } from '$lib';
+	import { mixtureStore, type AnyComponent } from '$lib';
 	interface Props {
-		storeId: string;
+		componentId: string;
+		component: AnyComponent
 	}
 
-	let { storeId }: Props = $props();
-	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
+	let { componentId: storeId, component }: Props = $props();
 
-	let readonly = $state(false);
-	run(() => {
-		const components = mixtureStoreData.mixture.components;
-		if (storeId === 'totals') {
-			readonly = !components.some(c => c.component.canEdit('abv'));
-		} else {
-			const component = components.find(c => c.id === storeId)?.component;
-			readonly = !component?.canEdit('abv');
-		}
-	});
+	let readonly = $derived(!component.canEdit('abv'));
 </script>
 
 <div class="mx-1 grow">

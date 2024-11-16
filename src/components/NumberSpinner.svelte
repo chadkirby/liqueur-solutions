@@ -1,15 +1,13 @@
 <script lang="ts">
-	import { run } from 'svelte/legacy';
 
 	// @ts-expect-error no types
 	import SvNumberSpinner from 'svelte-number-spinner';
-	import Textfield from '@smui/textfield';
 	import {
 		mixtureStore,
-		Sweetener
 	} from '$lib';
 	import type { ComponentValueKey } from '$lib/mixture-store.js';
-	import { BaseComponent, SweetenerTypes } from '$lib/component.js';
+	import { BaseComponent } from '$lib/component.js';
+	import { Helper, Input } from 'svelte-5-ui-lib';
 
 	interface Props {
 		storeId: 'totals' | string; // static
@@ -50,31 +48,17 @@
 
 	const errorStore = mixtureStore.errorStore(storeId, valueType);
 
+	let validState = $derived(!errorStore)
+
 	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
 
 	let component: BaseComponent | null = $derived(storeId !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null);
-	
+
 
 	let value: number = $derived((component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0);
-  
-
-	let isLocked: boolean = $derived(component ? !component.canEdit(valueType) : false);
-
-	
-
-	let validState: boolean = $state(value >= 0);
-
-	// This creates a subscription to the derived store
-	run(() => {
-		$errorStore;
-	});
-	// This will update whenever the derived store updates
-	run(() => {
-		validState = !$errorStore;
-	});
 
 	let canEdit: boolean = $derived(!readonly);
-	
+
 
 	let secondaryValue = $derived(secondaryValueType ? {
 		value: component ? (component[secondaryValueType] ?? 0).toFixed(1) : mixtureStoreData.totals[secondaryValueType] ?? 0,
@@ -97,7 +81,6 @@
 	}
 
 	function doInput(event: CustomEvent) {
-		if (isLocked) return;
 		if (event.detail === Number(value.toFixed(1))) return;
 		if (!isFocused) return;
 		switch (valueType) {
@@ -134,12 +117,12 @@
 			</button>
 		{/if}
 	{/if}
-	{#if canEdit && !isLocked}
+	{#if canEdit }
 		<label
 				for="{valueType}-{id}"
 				class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-18 p-1 {validState ? "border-b border-slate-300" : "border-b-2 border-red-400 text-red-600"}"
 			>
-			<span class="mdc-floating-label mdc-floating-label--float-above " style="">{label}</span>
+			<Helper>{label}</Helper>
 			<SvNumberSpinner
 				class="mdc-text-field__input"
 				value={value.toFixed(1)}
@@ -160,13 +143,10 @@
 			<span class="mdc-text-field__affix mdc-text-field__affix--suffix">{suffix}</span>
 		</label>
 	{:else}
-		<Textfield
+		<Input
 			class="w-18 p-1"
 			value={value.toFixed((valueType === 'mass' || valueType === 'volume') ? 1 : 0)}
-			label={label}
 			type="number"
-			input$inputmode="numeric"
-			suffix={suffix}
 			invalid={value < 0}
 			disabled={true}
 		/>

@@ -36,6 +36,24 @@ export function dataToMixture(d: {
 	return new Mixture(ingredients);
 }
 
+export function getLabel(component: AnyComponent) {
+	if (component instanceof Water) {
+		return 'water';
+	}
+	if (component instanceof Sweetener) {
+		return 'sweetener';
+	}
+	if (component instanceof Ethanol) {
+		return 'ethanol';
+	}
+	if (component instanceof Mixture) {
+		if (isSpirit(component)) return 'spirit';
+		if (isSyrup(component)) return 'syrup';
+		return 'mixture';
+	}
+	throw new Error('Unknown component type');
+}
+
 export class Mixture extends BaseComponent {
 	constructor(readonly components: MixtureComponent[] = []) {
 		super();
@@ -264,6 +282,14 @@ export function newSpirit(volume: number, abv: number): Mixture {
 	return mx;
 }
 
+export function isSpirit(mixture: Mixture): boolean {
+	return Boolean(
+		mixture.components.length === 2 &&
+			mixture.findByType((x) => x instanceof Ethanol) &&
+			mixture.findByType((x) => x instanceof Water)
+	);
+}
+
 export function newSyrup(volume: number, brix: number): Mixture {
 	const mx = new Mixture([
 		{ name: 'sugar', id: 'sugar', component: new Sweetener('sucrose', 1) },
@@ -272,4 +298,12 @@ export function newSyrup(volume: number, brix: number): Mixture {
 	mx.setVolume(volume);
 	mx.setBrix(brix, true);
 	return mx;
+}
+
+export function isSyrup(mixture: Mixture): boolean {
+	return Boolean(
+		mixture.components.length === 2 &&
+			mixture.findByType((x) => x instanceof Sweetener) &&
+			mixture.findByType((x) => x instanceof Water)
+	);
 }

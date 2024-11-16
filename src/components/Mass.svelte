@@ -1,24 +1,16 @@
 <script lang="ts">
-	import { run } from 'svelte/legacy';
 
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { mixtureStore, Sweetener } from '$lib';
+	import { Sweetener, type AnyComponent } from '$lib';
 	interface Props {
-		storeId: string;
+		componentId: string;
+		component: AnyComponent
 	}
 
-	let { storeId }: Props = $props();
-	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
+	let { componentId: storeId, component }: Props = $props();
 
-	let decimals = $state(0);
-	run(() => {
-		if (storeId !== 'totals') {
-			const component = mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component;
-			const subtype = (component instanceof Sweetener) ? component.subType : '';
-			decimals = (subtype === 'sucralose') ? 1 : 0
-			console.log(subtype, decimals);
-		}
-	});
+	let decimals = $derived(component.mass > 10 ? 0 : component.mass > 1 ? 1 : 2);
+
 </script>
 
 <div class="mx-1 grow">
@@ -27,7 +19,7 @@
 		suffix="g"
 		{storeId}
 		valueType="mass"
-		readonly={!/sweetener/.test(storeId)}
+		readonly={!(component instanceof Sweetener)}
 		decimals={decimals}
 		/>
 </div>

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Textfield from '@smui/textfield';
-	import Button, { Icon, Label } from '@smui/button';
-  import Select, { Option } from '@smui/select';
+  import { Button, Select, Input, ButtonGroup } from 'svelte-5-ui-lib';
+	import { CirclePlusSolid, CloseCircleSolid} from "flowbite-svelte-icons";
+
 	import {
 		Sweetener as SweetenerObject,
 		Water as WaterObject,
@@ -11,14 +11,11 @@
 		SweetenerTypes,
 		newSyrup,
 		newSpirit,
-
 		Mixture,
-
 		type AnyComponent,
+		Sweetener,
 
-		Sweetener
-
-
+		getLabel
 
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
@@ -26,10 +23,11 @@
 	import MassComponent from './Mass.svelte';
 	import BrixComponent from './Brix.svelte';
 	import CalComponent from './Cal.svelte';
+	import TextEntry from './TextEntry.svelte';
 	import debounce from 'lodash.debounce';
 
 	interface Props {
-		data: {liqueur: string, components: SerializedComponent[]};
+		data: { liqueur: string; components: SerializedComponent[] };
 	}
 
 	let { data }: Props = $props();
@@ -37,45 +35,47 @@
 	// Initialize the store with the data from the load function
 	mixtureStore.deserialize(data);
 
-
-
-
-	const handleNameInput = (id: string) => debounce((event: CustomEvent) => {
-		const newName = (event.target as HTMLInputElement).value;
-		mixtureStore.updateComponentName(id, newName);
-	}, 100);
+	const handleNameInput = (id: string) =>
+		debounce((event: CustomEvent) => {
+			const newName = (event.target as HTMLInputElement).value;
+			mixtureStore.updateComponentName(id, newName);
+		}, 100);
 
 	function addSpirit() {
-		mixtureStore.addComponents([{name: 'spirit', id: 'spirit', component: newSpirit(100, 40)}]);
+		mixtureStore.addComponents([{ name: 'spirit', id: 'spirit', component: newSpirit(100, 40) }]);
 	}
 	function addWater() {
-		mixtureStore.addComponents([{name: "water", id: "water", component: new WaterObject(100)}]);
+		mixtureStore.addComponents([{ name: 'water', id: 'water', component: new WaterObject(100) }]);
 	}
 	function addSugar() {
-		mixtureStore.addComponents([{
-			name: "sugar",
-			id: "sweetener-sucrose",
-			component: new SweetenerObject('sucrose', 100)
-		}]);
+		mixtureStore.addComponents([
+			{
+				name: 'sugar',
+				id: 'sweetener-sucrose',
+				component: new SweetenerObject('sucrose', 100)
+			}
+		]);
 	}
 	function addSyrup() {
-		mixtureStore.addComponents([{name: "syrup", id: "mixture", component: newSyrup(100, 50)}]);
-	}
-
-	function removeComponent(id: string) {
-		mixtureStore.removeComponent(id);
+		mixtureStore.addComponents([{ name: 'syrup', id: 'mixture', component: newSyrup(100, 50) }]);
 	}
 
 	function isSyrup(mx: AnyComponent) {
-		return Boolean(mx instanceof Mixture && mx.components.length === 2 && mx.findByType(x => x instanceof WaterObject) && mx.findByType(x => x instanceof Sweetener));
+		return Boolean(
+			mx instanceof Mixture &&
+				mx.components.length === 2 &&
+				mx.findByType((x) => x instanceof WaterObject) &&
+				mx.findByType((x) => x instanceof Sweetener)
+		);
 	}
+
+
 
 </script>
 
 <div class="flex flex-col gap-x-2 gap-y-2">
-	<Textfield
+	<Input
 		class="col-span-4"
-		input$class="font-sans text-2xl font-bold"
 		value={$mixtureStore.title}
 		on:input={() => updateUrl()}
 		required
@@ -83,79 +83,40 @@
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 		<div class="flex flex-col items-stretch mt-2">
 			<div class="relative">
-				{#if entry instanceof SweetenerObject}
-					<Select
-						class="w-full"
-						selectedText$class="font-sans text-lg font-bold"
-						variant="outlined"
-						bind:value={entry.subType}
-						label={entry.type}
-						required
-					>
-						{#each SweetenerTypes as type}
-							<Option value={type}>{type}</Option>
-						{/each}
-					</Select>
-				{:else if isSyrup(entry)}
-					<Select
-					class="w-1/2"
-					selectedText$class="font-sans text-lg font-bold"
-					variant="outlined"
-					bind:value={entry.subType}
-					label={entry.type}
-					required
-				>
-					{#each SweetenerTypes as type}
-						<Option value={type}>{type}</Option>
-					{/each}
-				</Select>
-			{:else}
-					<Textfield
-						class="w-full"
-						input$class="font-sans text-lg font-bold"
-						variant="outlined"
-						value={name}
-						label={entry.type}
-						on:input={handleNameInput(id)}
-						required
-					/>
-				{/if}
-				<Button class="absolute -top-1 -right-5" color="secondary"  on:click={() => removeComponent(id)}>
-					<Icon class="material-icons">cancel</Icon>
-				</Button>
+				<TextEntry
+					value={name}
+					component={entry}
+					componentId={id}
+				/>
 			</div>
 
 			<div class="flex flex-row grow my-1">
 				{#if entry.type.startsWith('sweetener')}
-					<MassComponent storeId={id} />
+					<MassComponent componentId={id} component={entry} />
 				{:else}
-					<VolumeComponent storeId={id} />
+					<VolumeComponent componentId={id} component={entry} />
 				{/if}
-				<ABVComponent storeId={id} />
-				<BrixComponent storeId={id} />
-				<CalComponent storeId={id} />
+				<ABVComponent componentId={id} component={entry} />
+				<BrixComponent componentId={id} component={entry} />
+				<CalComponent componentId={id} />
 			</div>
 		</div>
 	{/each}
 </div>
 
 <div class="mt-4 grid grid-cols-4 no-print">
-	<Button color="secondary" class="scale-75" on:click={addSpirit}>
-		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
-		<Label class="scale-125 p-2">spirit</Label>
+	<Button color="secondary" class="scale-75" onclick={addSpirit}>
+		<CirclePlusSolid />spirit
 	</Button>
-	<Button color="secondary" class="scale-75" on:click={addSugar}>
-		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
-		<Label class="scale-125 p-2">sweetener</Label>
+	<Button color="secondary" class="scale-75" onclick={addSugar}>
+		<CirclePlusSolid />sweetener
 	</Button>
-	<Button color="secondary" class="scale-75" on:click={addSyrup}>
-		<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
-		<Label class="scale-125 p-2">syrup</Label>
+	<Button color="secondary" class="scale-75" onclick={addSyrup}>
+		<CirclePlusSolid />syrup
 	</Button>
-	{#if !$mixtureStore.mixture.findByType(o => o instanceof WaterObject)}
-		<Button color="secondary" class="scale-75" on:click={addWater}>
-			<Icon class="material-icons scale-150 mb-1">add_circle</Icon>
-			<Label class="scale-125 p-2">water</Label>
+	{#if !$mixtureStore.mixture.findByType((o) => o instanceof WaterObject)}
+		<Button color="secondary" class="scale-75" onclick={addWater}>
+			<CirclePlusSolid />water
 		</Button>
 	{/if}
 </div>
@@ -163,10 +124,10 @@
 <div class="mt-2 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
 	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
 	<div class="flex flex-row">
-		<VolumeComponent storeId="totals" />
-		<ABVComponent storeId="totals" />
-		<BrixComponent storeId="totals" />
-		<CalComponent storeId="totals" />
+		<VolumeComponent componentId="totals" component={$mixtureStore.mixture} />
+		<ABVComponent componentId="totals" component={$mixtureStore.mixture} />
+		<BrixComponent componentId="totals" component={$mixtureStore.mixture} />
+		<CalComponent componentId="totals" />
 	</div>
 </div>
 
@@ -183,13 +144,11 @@
 		border-right: none;
 	}
 
-
-
 	:global(.mdc-text-field--disabled .mdc-text-field__input) {
-    color: var(--screenGray)
+		color: var(--screenGray);
 	}
 	:global(.mdc-text-field--disabled .mdc-floating-label) {
-    color: var(--screenGray)
+		color: var(--screenGray);
 	}
 
 	:global(.mdc-text-field__affix--suffix) {
@@ -206,19 +165,18 @@
 		margin-right: 0px;
 	}
 
-
 	@media print {
-    .no-print {
-        display: none;
-    }
+		.no-print {
+			display: none;
+		}
 		:global(.mdc-text-field--disabled .mdc-text-field__input) {
 			color: var(--printGray);
 		}
 		:global(.mdc-text-field--disabled .mdc-floating-label) {
-			color: var(--printGray)
+			color: var(--printGray);
 		}
 		:global(.mdc-select__dropdown-icon) {
 			display: none;
 		}
-}
+	}
 </style>

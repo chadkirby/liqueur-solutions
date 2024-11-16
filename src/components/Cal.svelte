@@ -1,10 +1,12 @@
 <script lang="ts">
+	import type { AnyComponent } from '$lib';
 	import NumberSpinner from './NumberSpinner.svelte';
 	interface Props {
-		storeId: string;
+		componentId: string;
+		component: AnyComponent;
 	}
 
-	let { storeId }: Props = $props();
+	let { componentId: storeId, component }: Props = $props();
 </script>
 
 <div class="mx-1 grow">

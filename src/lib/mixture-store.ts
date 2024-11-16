@@ -1,5 +1,5 @@
 import { writable, get, derived } from 'svelte/store';
-import { isSweetenerData, type SerializedComponent } from './component.js';
+import { isSweetenerData, SweetenerTypes, type SerializedComponent } from './component.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
 import type { Analysis } from './utils.js';
@@ -222,6 +222,19 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		updateSweetenerSubType: (id: string, subType: SweetenerTypes) => {
+			store.update((data) => {
+				const component = data.mixture.components.find((c) => c.id === id);
+				if (component && component.component instanceof Sweetener) {
+					// This will trigger the mixture's recalculations since
+					// subType affects equivalentSugarMass and other derived
+					// values
+					component.component.subType = subType;
+				}
+				return data;
+			});
+		},
+
 		solveTotal(key: keyof Analysis, requestedValue: number): void {
 			update((data) => {
 				// remove any totals errors
