@@ -1,6 +1,6 @@
 <!-- NumberSpinner.svelte -->
 <script lang="ts">
-	import { digitsForDisplay } from "$lib/utils.js";
+	import { digitsForDisplay } from '$lib';
 
 	interface Props {
 		value: number;
@@ -91,42 +91,54 @@
 	}
 
 	// Handle touch events
-	function handleTouchStart(event: TouchEvent) {
-		touchStartY = event.touches[0].clientY;
-		touchStartTime = Date.now();
-	}
-
-	function handleTouchEnd(event: TouchEvent) {
-		// If the touch duration was very short and there was minimal movement,
-		// treat it as a tap and enable keyboard editing
-		const touchDuration = Date.now() - touchStartTime;
-		const touchMovement = Math.abs(event.changedTouches[0].clientY - touchStartY);
-
-		if (touchDuration < 200 && touchMovement < 10) {
-			isKeyboardEditing = true;
-			rawInputValue = value.toString();
-			input.focus();
+	// Define the action to handle touch events with passive: false
+	function touchHandler(node: HTMLElement) {
+		function start(event: TouchEvent) {
+			event.preventDefault();
+			touchStartY = event.touches[0].clientY;
+			touchStartTime = Date.now();
 		}
-	}
 
-	function handleTouchMove(event: TouchEvent) {
-		if (isKeyboardEditing) return;
+		function move(event: TouchEvent) {
+			event.preventDefault();
+			if (isKeyboardEditing) return;
 
-		event.preventDefault();
-		const touchY = event.touches[0].clientY;
-		const diff = touchStartY - touchY;
+			const touchY = event.touches[0].clientY;
+			const diff = touchStartY - touchY;
 
-		if (Math.abs(diff) > 10) {
-			// Add some threshold to prevent accidental changes
-			if (diff > 0) {
-				incrementValue();
-			} else {
-				decrementValue();
+			if (Math.abs(diff) > 10) {
+				if (diff > 0) {
+					incrementValue();
+				} else {
+					decrementValue();
+				}
+				touchStartY = touchY;
 			}
-			touchStartY = touchY;
 		}
-	}
 
+		function end(event: TouchEvent) {
+			event.preventDefault();
+			const touchDuration = Date.now() - touchStartTime;
+			const touchMovement = Math.abs(event.changedTouches[0].clientY - touchStartY);
+
+			if (touchDuration < 200 && touchMovement < 10) {
+				isKeyboardEditing = true;
+				rawInputValue = value.toString();
+				input.focus();
+			}
+		}
+
+		node.addEventListener('touchstart', start, { passive: false });
+		node.addEventListener('touchmove', move, { passive: false });
+		node.addEventListener('touchend', end, { passive: false });
+		return {
+			destroy() {
+				node.removeEventListener('touchstart', start);
+				node.removeEventListener('touchmove', move);
+				node.removeEventListener('touchend', end);
+			}
+		};
+	}
 	// Value manipulation functions
 	function incrementValue() {
 		setValue(increment(value));
@@ -157,15 +169,14 @@
 		// this value?
 		const digits = digitsForDisplay(value);
 		// increment by the least significant that is shown
-		const step = Math.max(1/(10 ** digits));
+		const step = Math.max(1 / 10 ** digits);
 		return value + step;
 	}
 	function decrement(value: number) {
 		const digits = digitsForDisplay(value);
-		const step = 1/(10 ** digits);
+		const step = 1 / 10 ** digits;
 		return value - step;
 	}
-
 
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
@@ -182,9 +193,7 @@
 		value={isKeyboardEditing ? rawInputValue : format(value)}
 		oninput={handleInput}
 		onkeydown={handleKeyDown}
-		ontouchstart={handleTouchStart}
-		ontouchmove={handleTouchMove}
-		ontouchend={handleTouchEnd}
+		use:touchHandler
 		onfocus={handleFocus}
 		onblur={handleBlur}
 		class="
@@ -193,6 +202,7 @@
 				focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
 				text-center
 				text-base
+				touch-none
 		"
 	/>
 </div>
