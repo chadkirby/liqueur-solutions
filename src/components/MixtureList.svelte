@@ -78,7 +78,7 @@
 	<Input
 		class="col-span-4"
 		value={$mixtureStore.title}
-		on:input={() => updateUrl()}
+		oninput={() => updateUrl()}
 		required
 	/>
 
@@ -87,17 +87,18 @@
 			<Button pill color="light" class="" onclick={addSpirit}>
 				<CirclePlusSolid size='lg' /> spirit
 			</Button>
+
 			<Button pill color="light" class="" onclick={addSugar}>
 				<CirclePlusSolid size='lg' /> sweetener
 			</Button>
+
 			<Button pill color="light" class="" onclick={addSyrup}>
 				<CirclePlusSolid size='lg' /> syrup
 			</Button>
-				{#if !$mixtureStore.mixture.findByType((o) => o instanceof WaterObject)}
-					<Button pill color="light" class="" onclick={addWater}>
-						<CirclePlusSolid size='lg' /> water
-					</Button>
-			{/if}
+
+			<Button pill color="light" class="" onclick={addWater}>
+				<CirclePlusSolid size='lg' /> water
+			</Button>
 		</ButtonGroup>
 	</div>
 

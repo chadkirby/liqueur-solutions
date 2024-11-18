@@ -188,7 +188,7 @@
 		onfocus={handleFocus}
 		onblur={handleBlur}
 		class="
-				w-24 px-2 py-1
+				w-20 px-1 py-1
 				border border-gray-300 rounded-lg
 				focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
 				text-center
