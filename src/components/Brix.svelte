@@ -1,13 +1,15 @@
 <script lang="ts">
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { type AnyComponent } from '$lib';
-	import { Input } from 'svelte-5-ui-lib';
+	import { mixtureStore, Mixture, type AnyComponent } from '$lib';
+	import { Helper, Input } from 'svelte-5-ui-lib';
+	import { roundForDisplay } from '$lib/utils.js';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 	interface Props {
 		componentId: string;
 		component: AnyComponent;
 	}
 
-	let { componentId: storeId, component }: Props = $props();
+	let { componentId, component }: Props = $props();
 
 	let showProportion = $state(false);
 
@@ -16,14 +18,23 @@
 	};
 
 	const candidates = [
-		...Array.from({ length: 7 }, (_, i) => ({ ratio: `${i + 1}:1`, decimal: xToY(i + 1, 1) })),
-		...Array.from({ length: 6 }, (_, i) => ({ ratio: `1:${i + 2}`, decimal: xToY(1, i + 2) })),
-		{ ratio: `3:2`, decimal: xToY(3, 2) },
-		{ ratio: `5:2`, decimal: xToY(5, 2) },
-		{ ratio: `5:4`, decimal: xToY(5, 4) },
-		{ ratio: `2:3`, decimal: xToY(2, 3) },
-		{ ratio: `4:5`, decimal: xToY(4, 5) }
-	].sort((a, b) => a.decimal - b.decimal);
+		xToY(1, 1),
+		xToY(5, 4),
+		xToY(4, 3),
+		xToY(3, 2),
+		xToY(5, 3),
+		xToY(2, 1),
+		xToY(7, 3),
+		xToY(5, 2),
+		xToY(3, 1),
+		xToY(4, 1),
+		xToY(5, 1),
+		xToY(6, 1),
+		xToY(7, 1),
+		xToY(8, 1),
+		xToY(9, 1),
+		xToY(10, 1)
+	];
 	function closestRatio(brix: number) {
 		const diffs = candidates.map((x) => Math.abs(brix / 100 - x.decimal));
 		const min = Math.min(...diffs);
@@ -31,39 +42,29 @@
 	}
 
 	function xToY(x: number, y: number) {
-		return x / (x + y);
+		return { ratio: `${x}:${y}`, decimal: x / (x + y) };
 	}
 
-	let value = $derived(component.brix ?? 0);
+	let brix = $derived(component.brix ?? 0);
 	// convert 50 brix to 1/1
 	// convert 66.666 brix to 2/1
 	// convert 75 brix to 3/1
-	let parts = $derived(value < 100 ? closestRatio(value) : '');
+	let parts = $derived(brix < 100 && brix >= 50 ? closestRatio(brix) : '');
 </script>
 
 <div class="mx-1 grow">
-	<div
-		class="mdc-floating-label mdc-floating-label--float-above cursor-pointer"
-		onclick={labelClickHandler}
-		onkeypress={labelClickHandler}
-		role="button"
-		tabindex="0"
-	>
-		{parts}
-	</div>
+	<Helper>Sweetness</Helper>
 
 	{#if showProportion}
-		<Input class="w-18 p-1" value={parts} label="Proportion" invalid={value < 0} disabled={true} />
-	{:else}
+		<ReadOnlyValue>{parts}</ReadOnlyValue>
+	{:else if component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
-			{storeId}
-			valueType="brix"
-			readonly={component.canEdit('equivalentSugarMass')}
-			label="≍Brix"
-			suffix="%"
-			keyStep={1}
-			keyStepFast={10}
-			keyStepSlow={0.1}
+			value={brix}
+			format={(v) => `${roundForDisplay(v)}%`}
+			onValueChange={(v) => mixtureStore.setBrix(componentId, v)}
 		/>
+	{:else}
+		<ReadOnlyValue>{roundForDisplay(brix)}%</ReadOnlyValue>
 	{/if}
+	<Helper class="text-right mr-6">{parts}</Helper>
 </div>

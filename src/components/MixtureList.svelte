@@ -25,6 +25,7 @@
 	import CalComponent from './Cal.svelte';
 	import TextEntry from './TextEntry.svelte';
 	import debounce from 'lodash.debounce';
+	import SweetenerDropdown from './SweetenerDropdown.svelte';
 
 	interface Props {
 		data: { liqueur: string; components: SerializedComponent[] };
@@ -80,14 +81,38 @@
 		on:input={() => updateUrl()}
 		required
 	/>
+
+	<div class="mt-4 grid grid-cols-4 no-print">
+		<ButtonGroup class="col-span-4 justify-center">
+			<Button pill color="light" class="" onclick={addSpirit}>
+				<CirclePlusSolid size='lg' /> spirit
+			</Button>
+			<Button pill color="light" class="" onclick={addSugar}>
+				<CirclePlusSolid size='lg' /> sweetener
+			</Button>
+			<Button pill color="light" class="" onclick={addSyrup}>
+				<CirclePlusSolid size='lg' /> syrup
+			</Button>
+				{#if !$mixtureStore.mixture.findByType((o) => o instanceof WaterObject)}
+					<Button pill color="light" class="" onclick={addWater}>
+						<CirclePlusSolid size='lg' /> water
+					</Button>
+			{/if}
+		</ButtonGroup>
+	</div>
+
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 		<div class="flex flex-col items-stretch mt-2">
 			<div class="relative">
-				<TextEntry
-					value={name}
-					component={entry}
-					componentId={id}
-				/>
+				{#if entry instanceof Sweetener}
+					<SweetenerDropdown componentId={id} value={name} component={entry} />
+				{:else}
+					<TextEntry
+						value={name}
+						component={entry}
+						componentId={id}
+					/>
+				{/if}
 			</div>
 
 			<div class="flex flex-row grow my-1">
@@ -98,27 +123,10 @@
 				{/if}
 				<ABVComponent componentId={id} component={entry} />
 				<BrixComponent componentId={id} component={entry} />
-				<CalComponent componentId={id} />
+				<CalComponent componentId={id} component={entry} />
 			</div>
 		</div>
 	{/each}
-</div>
-
-<div class="mt-4 grid grid-cols-4 no-print">
-	<Button color="secondary" class="scale-75" onclick={addSpirit}>
-		<CirclePlusSolid />spirit
-	</Button>
-	<Button color="secondary" class="scale-75" onclick={addSugar}>
-		<CirclePlusSolid />sweetener
-	</Button>
-	<Button color="secondary" class="scale-75" onclick={addSyrup}>
-		<CirclePlusSolid />syrup
-	</Button>
-	{#if !$mixtureStore.mixture.findByType((o) => o instanceof WaterObject)}
-		<Button color="secondary" class="scale-75" onclick={addWater}>
-			<CirclePlusSolid />water
-		</Button>
-	{/if}
 </div>
 
 <div class="mt-2 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
@@ -127,7 +135,7 @@
 		<VolumeComponent componentId="totals" component={$mixtureStore.mixture} />
 		<ABVComponent componentId="totals" component={$mixtureStore.mixture} />
 		<BrixComponent componentId="totals" component={$mixtureStore.mixture} />
-		<CalComponent componentId="totals" />
+		<CalComponent componentId="totals" component={$mixtureStore.mixture} />
 	</div>
 </div>
 

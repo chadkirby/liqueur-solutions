@@ -1,25 +1,35 @@
 <script lang="ts">
-	import { Sweetener, type AnyComponent } from '$lib';
+	import { mixtureStore, Sweetener, type AnyComponent } from '$lib';
+	import { Helper } from 'svelte-5-ui-lib';
 	import NumberSpinner from './NumberSpinner.svelte';
+	import { roundForDisplay } from '$lib/utils.js';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 
 	interface Props {
 		componentId: string; // let flOz: number;
 		component: AnyComponent;
 	}
 
-	let { componentId: storeId, component }: Props = $props();
+	let { componentId, component }: Props = $props();
 
 	// let cups: number;
 	// $: flOz = volume * 0.033814;
 	// $: cups = flOz / 8;
+
+	let value = $derived(component.volume);
+	let mass = $derived(component.mass);
 </script>
 
 <div class="mx-1 grow">
-	<NumberSpinner
-	label="Volume"
-	suffix="ml"
-	{storeId}
-	readonly={component instanceof Sweetener}
-	valueType="volume"
-	/>
+	<Helper>Volume</Helper>
+	{#if component instanceof Sweetener}
+		<ReadOnlyValue>{roundForDisplay(value)}ml</ReadOnlyValue>
+	{:else}
+		<NumberSpinner
+			{value}
+			format={v => `${roundForDisplay(v)}ml`}
+			onValueChange={v => mixtureStore.setVolume(componentId, v)}
+		/>
+		<Helper class="text-right mr-6">{roundForDisplay(mass)}g</Helper>
+	{/if}
 </div>

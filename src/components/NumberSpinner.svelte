@@ -1,172 +1,198 @@
+<!-- NumberSpinner.svelte -->
 <script lang="ts">
-
-	// @ts-expect-error no types
-	import SvNumberSpinner from 'svelte-number-spinner';
-	import {
-		mixtureStore,
-	} from '$lib';
-	import type { ComponentValueKey } from '$lib/mixture-store.js';
-	import { BaseComponent } from '$lib/component.js';
-	import { Helper, Input } from 'svelte-5-ui-lib';
+	import { digitsForDisplay } from "$lib/utils.js";
 
 	interface Props {
-		storeId: 'totals' | string; // static
-		valueType: ComponentValueKey; // static
-		readonly?: boolean;
-		label: string;
-		suffix: string;
-		max?: any;
-		keyStep?: number;
-		keyStepSlow?: number;
-		keyStepFast?: number;
-		decimals?: number;
+		value: number;
+		min?: number;
+		max?: number;
+		format?: (value: number) => string;
+		onValueChange?: (value: number) => void;
 	}
 
 	let {
-		storeId,
-		valueType,
-		readonly = false,
-		label,
-		suffix,
+		value,
+		min = 0,
 		max = Infinity,
-		keyStep = 10,
-		keyStepSlow = 1,
-		keyStepFast = 100,
-		decimals = 0
+		format = (v: number) => v.toString(),
+		onValueChange
 	}: Props = $props();
 
-	const secondaryValueType: 'mass' | 'volume' | 'proof' | 'equivalentSugarMass' | null =
-		valueType === 'volume'
-		? 'mass'
-		: valueType === 'mass'
-		? 'volume'
-		: valueType === 'abv'
-		? 'proof'
-		: valueType === 'brix'
-		? 'equivalentSugarMass'
-		: null;
+	// Internal state
+	let touchStartY = $state(0);
+	let isKeyboardEditing = $state(false);
+	let touchStartTime = $state(0);
+	let rawInputValue = $state('');
+	let input: HTMLInputElement;
 
-	const errorStore = mixtureStore.errorStore(storeId, valueType);
+	// Handle keyboard input
+	function handleKeyDown(event: KeyboardEvent) {
+		if (isKeyboardEditing && (event.key === 'Enter' || event.key === 'Escape')) {
+			event.preventDefault();
+			if (event.key === 'Enter') {
+				const newValue = Number(rawInputValue);
+				if (!isNaN(newValue)) {
+					setValue(newValue);
+				}
+			}
+			finishEditing();
+		}
 
-	let validState = $derived(!errorStore)
-
-	let mixtureStoreData = $derived($mixtureStore); // Subscribe to mixtureStore directly
-
-	let component: BaseComponent | null = $derived(storeId !== 'totals' && mixtureStoreData.mixture.components.find(c => c.id === storeId)?.component || null);
-
-
-	let value: number = $derived((component ? component[valueType] : mixtureStoreData.totals[valueType]) ?? 0);
-
-	let canEdit: boolean = $derived(!readonly);
-
-
-	let secondaryValue = $derived(secondaryValueType ? {
-		value: component ? (component[secondaryValueType] ?? 0).toFixed(1) : mixtureStoreData.totals[secondaryValueType] ?? 0,
-		unit: secondaryValueType === 'mass' ? 'g' : secondaryValueType === 'volume' ? 'ml' : secondaryValueType === 'equivalentSugarMass' ? '≍g sug' : 'proof'
-	} : {value: 0, unit: ''});
-
-	const id = Math.random().toString(36).substring(2);
-
-	function reset() {
-		mixtureStore.resetError(storeId, valueType);
-	}
-
-	let isFocused = false;
-
-	function onFocus() {
-		isFocused = true;
-	}
-	function onBlur() {
-		isFocused = false;
-	}
-
-	function doInput(event: CustomEvent) {
-		if (event.detail === Number(value.toFixed(1))) return;
-		if (!isFocused) return;
-		switch (valueType) {
-			case 'volume':
-				mixtureStore.setVolume(storeId, event.detail);
-				break;
-			case 'mass':
-				mixtureStore.setMass(storeId, event.detail);
-				break;
-			case 'brix':
-				mixtureStore.setBrix(storeId, event.detail);
-				break;
-			case 'abv':
-				mixtureStore.setAbv(storeId, event.detail);
-				break;
+		if (event.key === 'ArrowUp') {
+			if (isKeyboardEditing) finishEditing();
+			event.preventDefault();
+			incrementValue();
+		} else if (event.key === 'ArrowDown') {
+			if (isKeyboardEditing) finishEditing();
+			event.preventDefault();
+			decrementValue();
+		} else if (event.key === 'Tab') {
+			if (isKeyboardEditing) finishEditing();
+		} else if (
+			!isKeyboardEditing &&
+			(event.key === 'ArrowRight' || event.key === 'ArrowLeft' || /^[\d.]$/.test(event.key))
+		) {
+			// enter keyboard editing mode
+			handleFocus();
 		}
 	}
 
-	const buttonClasses = "absolute top-0 -right-1 scale-75 cursor-pointer z-10";
+	// Handle focus/blur for keyboard editing mode
+	function handleFocus() {
+		isKeyboardEditing = true;
+		rawInputValue = value.toString();
+	}
 
+	function handleBlur() {
+		finishEditing();
+	}
+
+	function finishEditing() {
+		isKeyboardEditing = false;
+		rawInputValue = '';
+	}
+
+	// Handle direct input
+	function handleInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (isKeyboardEditing) {
+			rawInputValue = target.value;
+			const newValue = Number(target.value);
+			if (!isNaN(newValue)) {
+				// Update the value but keep editing
+				setValue(newValue);
+			}
+		} else {
+			const newValue = Number(target.value);
+			if (!isNaN(newValue)) {
+				setValue(newValue);
+			}
+		}
+	}
+
+	// Handle touch events
+	function handleTouchStart(event: TouchEvent) {
+		touchStartY = event.touches[0].clientY;
+		touchStartTime = Date.now();
+	}
+
+	function handleTouchEnd(event: TouchEvent) {
+		// If the touch duration was very short and there was minimal movement,
+		// treat it as a tap and enable keyboard editing
+		const touchDuration = Date.now() - touchStartTime;
+		const touchMovement = Math.abs(event.changedTouches[0].clientY - touchStartY);
+
+		if (touchDuration < 200 && touchMovement < 10) {
+			isKeyboardEditing = true;
+			rawInputValue = value.toString();
+			input.focus();
+		}
+	}
+
+	function handleTouchMove(event: TouchEvent) {
+		if (isKeyboardEditing) return;
+
+		event.preventDefault();
+		const touchY = event.touches[0].clientY;
+		const diff = touchStartY - touchY;
+
+		if (Math.abs(diff) > 10) {
+			// Add some threshold to prevent accidental changes
+			if (diff > 0) {
+				incrementValue();
+			} else {
+				decrementValue();
+			}
+			touchStartY = touchY;
+		}
+	}
+
+	// Value manipulation functions
+	function incrementValue() {
+		setValue(increment(value));
+	}
+
+	function decrementValue() {
+		setValue(decrement(value));
+	}
+
+	function setValue(newValue: number) {
+		// Clamp the value between min and max
+		const clampedValue = Math.max(min, Math.min(max, newValue));
+		if (clampedValue !== value) {
+			onValueChange?.(clampedValue);
+			value = clampedValue;
+		}
+	}
+
+	/**
+	 * Increments the given number by a step size determined by its order
+	 * of magnitude.
+	 *
+	 * @param value - The number to be incremented.
+	 * @returns The incremented number.
+	 */
+	function increment(value: number) {
+		// how many digits to the left of the decimal point are shown for
+		// this value?
+		const digits = digitsForDisplay(value);
+		// increment by the least significant that is shown
+		const step = Math.max(1/(10 ** digits));
+		return value + step;
+	}
+	function decrement(value: number) {
+		const digits = digitsForDisplay(value);
+		const step = 1/(10 ** digits);
+		return value - step;
+	}
+
+
+	// Display either the formatted value or raw input value based on editing state
+	$effect(() => {
+		if (input && !isKeyboardEditing) {
+			input.value = format(value);
+		}
+	});
 </script>
 
-<div class="mx-1 relative">
-	{#if canEdit}
-		{#if validState}
-		  <!-- {#if isTotals}
-			<button class={buttonClasses} on:click={() => toggleLock()}>
-				<span class="material-icons mdc-fab__icon">lock_open</span>
-			</button>
-			{/if} -->
-		{:else}
-			<button class={buttonClasses} onclick={() => reset()}>
-				<span class="material-icons mdc-fab__icon">refresh</span>
-			</button>
-		{/if}
-	{/if}
-	{#if canEdit }
-		<label
-				for="{valueType}-{id}"
-				class="mdc-text-field smui-text-field--standard mdc-text-field--label-floating w-18 p-1 {validState ? "border-b border-slate-300" : "border-b-2 border-red-400 text-red-600"}"
-			>
-			<Helper>{label}</Helper>
-			<SvNumberSpinner
-				class="mdc-text-field__input"
-				value={value.toFixed(1)}
-				on:input={doInput}
-				on:focus={onFocus}
-				on:blur={onBlur}
-				min="0"
-				max={max}
-				step="1"
-				decimals={decimals}
-				editOnClick={true}
-				vertical={true}
-				horizontal={false}
-				keyStep={keyStep}
-				keyStepSlow={keyStepSlow}
-				keyStepFast={keyStepFast}
-			/>
-			<span class="mdc-text-field__affix mdc-text-field__affix--suffix">{suffix}</span>
-		</label>
-	{:else}
-		<Input
-			class="w-18 p-1"
-			value={value.toFixed((valueType === 'mass' || valueType === 'volume') ? 1 : 0)}
-			type="number"
-			invalid={value < 0}
-			disabled={true}
-		/>
-	{/if}
+<div class="flex items-center">
+	<input
+		bind:this={input}
+		type="text"
+		value={isKeyboardEditing ? rawInputValue : format(value)}
+		oninput={handleInput}
+		onkeydown={handleKeyDown}
+		ontouchstart={handleTouchStart}
+		ontouchmove={handleTouchMove}
+		ontouchend={handleTouchEnd}
+		onfocus={handleFocus}
+		onblur={handleBlur}
+		class="
+				w-24 px-2 py-1
+				border border-gray-300 rounded-lg
+				focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+				text-center
+				text-base
+		"
+	/>
 </div>
-<div>
-	{#if secondaryValueType}
-		<div class="secondary-value w-18 px-1 text-sm italic flex flex-row m-1 gap-x-2 justify-between">
-			<span>{secondaryValue.value}</span> <span>{secondaryValue.unit}</span>
-		</div>
-
-	{/if}
-</div>
-
-<style>
-	:global(.mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input) {
-    color: unset;
-	}
-
-	.secondary-value {
-		color: var(--screenGray);
-	}
-</style>

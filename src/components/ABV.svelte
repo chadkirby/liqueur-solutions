@@ -1,27 +1,32 @@
 <script lang="ts">
 
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { mixtureStore, type AnyComponent } from '$lib';
+	import { Mixture, mixtureStore, type AnyComponent } from '$lib';
+	import { Helper } from 'svelte-5-ui-lib';
+	import { roundForDisplay } from '$lib/utils.js';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 	interface Props {
 		componentId: string;
 		component: AnyComponent
 	}
 
-	let { componentId: storeId, component }: Props = $props();
+	let { component, componentId }: Props = $props();
 
-	let readonly = $derived(!component.canEdit('abv'));
+	let abv = $derived(component.abv);
+	let proof = $derived(abv * 2);
 </script>
 
 <div class="mx-1 grow">
-	<NumberSpinner
-		label="ABV"
-		suffix="%"
-		{storeId}
-		readonly={readonly}
-		valueType="abv"
-		max={100}
-		keyStep={1}
-		keyStepFast={10}
-		keyStepSlow={0.1}
-	/>
+	<Helper>ABV</Helper>
+	{#if component instanceof Mixture && component.canEdit('abv')}
+		<NumberSpinner
+			value={abv}
+			format={v => `${roundForDisplay(v)}%`}
+			onValueChange={v => mixtureStore.setAbv(componentId, v)}
+			max={100}
+		/>
+	{:else}
+		<ReadOnlyValue>{roundForDisplay(abv)}%</ReadOnlyValue>
+	{/if}
+	<Helper class="text-right mr-6">{roundForDisplay(proof, 'thin')}proof</Helper>
 </div>

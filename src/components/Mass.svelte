@@ -1,25 +1,32 @@
 <script lang="ts">
 
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { Sweetener, type AnyComponent } from '$lib';
+	import { mixtureStore, Sweetener, type AnyComponent } from '$lib';
+	import { Helper } from 'svelte-5-ui-lib';
+	import { roundForDisplay } from '$lib/utils.js';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 	interface Props {
 		componentId: string;
 		component: AnyComponent
 	}
 
-	let { componentId: storeId, component }: Props = $props();
+	let { componentId, component }: Props = $props();
 
-	let decimals = $derived(component.mass > 10 ? 0 : component.mass > 1 ? 1 : 2);
+	let grams = $derived(component.mass);
+	let ounces = $derived(grams/ 28.3495);
 
 </script>
 
 <div class="mx-1 grow">
-	<NumberSpinner
-		label="Mass"
-		suffix="g"
-		{storeId}
-		valueType="mass"
-		readonly={!(component instanceof Sweetener)}
-		decimals={decimals}
+	<Helper>Mass</Helper>
+	{#if component instanceof Sweetener}
+		<NumberSpinner
+			value={grams}
+			format={v => `${roundForDisplay(v)}g`}
+			onValueChange={v => mixtureStore.setMass(componentId, v)}
 		/>
+	{:else}
+		<ReadOnlyValue>{roundForDisplay(grams)}g</ReadOnlyValue>
+	{/if}
+	<Helper class="text-right mr-6">{roundForDisplay(ounces)}oz</Helper>
 </div>
