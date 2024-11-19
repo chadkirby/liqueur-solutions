@@ -1,6 +1,15 @@
 <script lang="ts">
-  import { Button, Select, Input, ButtonGroup } from 'svelte-5-ui-lib';
-	import { CirclePlusSolid, CloseCircleSolid} from "flowbite-svelte-icons";
+	import {
+		Button,
+		Input,
+		ButtonGroup,
+		Dropdown,
+		DropdownUl,
+		DropdownLi,
+		uiHelpers
+	} from 'svelte-5-ui-lib';
+	import { CirclePlusSolid } from 'flowbite-svelte-icons';
+	import { sineIn } from 'svelte/easing';
 
 	import {
 		Sweetener as SweetenerObject,
@@ -14,9 +23,7 @@
 		Mixture,
 		type AnyComponent,
 		Sweetener,
-
 		getLabel
-
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
@@ -43,12 +50,15 @@
 		}, 100);
 
 	function addSpirit() {
+		closeDropdown();
 		mixtureStore.addComponents([{ name: 'spirit', id: 'spirit', component: newSpirit(100, 40) }]);
 	}
 	function addWater() {
+		closeDropdown();
 		mixtureStore.addComponents([{ name: 'water', id: 'water', component: new WaterObject(100) }]);
 	}
 	function addSugar() {
+		closeDropdown();
 		mixtureStore.addComponents([
 			{
 				name: 'sugar',
@@ -58,6 +68,7 @@
 		]);
 	}
 	function addSyrup() {
+		closeDropdown();
 		mixtureStore.addComponents([{ name: 'syrup', id: 'mixture', component: newSyrup(100, 50) }]);
 	}
 
@@ -70,49 +81,84 @@
 		);
 	}
 
+	let dropdown = uiHelpers();
+	let dropdownStatus = $state(false);
+	let closeDropdown = dropdown.close;
+	$effect(() => {
+		// this can be done adding nav.navStatus directly to DOM element
+		// without using effect
+		dropdownStatus = dropdown.isOpen;
+	});
+	let transitionParams = {
+		y: 0,
+		duration: 100,
+		easing: sineIn
+	};
 
-
+	let dropdownRef: HTMLDivElement | null = $state(null);
 </script>
 
-<div class="flex flex-col gap-x-2 gap-y-2">
-	<Input
-		class="col-span-4"
-		value={$mixtureStore.title}
-		oninput={() => updateUrl()}
-		required
-	/>
+<div class="relative" bind:this={dropdownRef}>
+	{#if dropdownStatus}
+		<button
+			type="button"
+			class="fixed inset-0 bg-transparent cursor-default"
+			onclick={closeDropdown}
+			aria-label="Close dropdown"
+		></button>
 
-	<div class="mt-4 grid grid-cols-4 no-print">
-		<ButtonGroup class="col-span-4 justify-center">
-			<Button pill color="light" class="" onclick={addSpirit}>
-				<CirclePlusSolid size='lg' /> spirit
-			</Button>
+		<Dropdown
+			{dropdownStatus}
+			{closeDropdown}
+			params={transitionParams}
+			class="fixed"
+			style="
+			top: {dropdownRef?.getBoundingClientRect().bottom + 30}px;
+			left: {dropdownRef?.getBoundingClientRect().left - 0}px;
+		"
+		>
+			<DropdownUl>
+				<DropdownLi aClass="flex" href="/">
+					<button class="flex w-32 justify-start" onclick={addSpirit}>
+						<CirclePlusSolid size="lg" class="mr-1"/> <span class="mt-[1px]">spirit</span>
+					</button>
+				</DropdownLi>
+				<DropdownLi aClass="flex" href="/">
+					<button class="flex w-32 justify-start" onclick={addSugar}>
+						<CirclePlusSolid size="lg" class="mr-1"/> <span class="mt-[1px]">sweetener</span>
+					</button>
+				</DropdownLi>
+				<DropdownLi aClass="flex" href="/">
+					<button class="flex w-32 justify-start" onclick={addSyrup}>
+						<CirclePlusSolid size="lg" class="mr-1"/> <span class="mt-[1px]">syrup</span>
+					</button>
+				</DropdownLi>
+				<DropdownLi aClass="flex" href="/">
+					<button class="flex w-32 justify-start" onclick={addWater}>
+						<CirclePlusSolid size="lg" class="mr-1"/> <span class="mt-[1px]">water</span>
+					</button>
+				</DropdownLi>
+			</DropdownUl>
+		</Dropdown>
+	{/if}
+</div>
 
-			<Button pill color="light" class="" onclick={addSugar}>
-				<CirclePlusSolid size='lg' /> sweetener
-			</Button>
+<div class="flex flex-col gap-x-2 gap-y-1">
+	<ButtonGroup class="mb-2">
+		<Button onclick={dropdown.toggle}>
+			<CirclePlusSolid size="lg" />
+		</Button>
 
-			<Button pill color="light" class="" onclick={addSyrup}>
-				<CirclePlusSolid size='lg' /> syrup
-			</Button>
-
-			<Button pill color="light" class="" onclick={addWater}>
-				<CirclePlusSolid size='lg' /> water
-			</Button>
-		</ButtonGroup>
-	</div>
+		<Input value={$mixtureStore.title} oninput={() => updateUrl()} required />
+	</ButtonGroup>
 
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
-		<div class="flex flex-col items-stretch mt-2">
+		<div class="flex flex-col items-stretch mt-1">
 			<div class="relative">
 				{#if entry instanceof Sweetener}
 					<SweetenerDropdown componentId={id} value={name} component={entry} />
 				{:else}
-					<TextEntry
-						value={name}
-						component={entry}
-						componentId={id}
-					/>
+					<TextEntry value={name} component={entry} componentId={id} />
 				{/if}
 			</div>
 
@@ -130,8 +176,18 @@
 	{/each}
 </div>
 
-<div class="mt-2 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
-	<h2 class="col-span-4 mb-4 basis-full text-xl font-bold">Totals</h2>
+<div class="mt-0 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
+	<h2
+		class="
+		col-span-4
+		mb-2
+		basis-full
+		text-xl
+		font-bold
+	"
+	>
+		Totals
+	</h2>
 	<div class="flex flex-row">
 		<VolumeComponent componentId="totals" component={$mixtureStore.mixture} />
 		<ABVComponent componentId="totals" component={$mixtureStore.mixture} />
@@ -148,43 +204,8 @@
 		--mdc-theme-secondary: #676778;
 	}
 
-	:global(.mdc-notched-outline__notch) {
-		border-left: none;
-		border-right: none;
-	}
-
-	:global(.mdc-text-field--disabled .mdc-text-field__input) {
-		color: var(--screenGray);
-	}
-	:global(.mdc-text-field--disabled .mdc-floating-label) {
-		color: var(--screenGray);
-	}
-
-	:global(.mdc-text-field__affix--suffix) {
-		padding-left: 4px;
-	}
-
-	/* position the sweetener dropdown caret to the left of the label */
-	:global(.mdc-select__anchor) {
-		flex-direction: row-reverse;
-	}
-	/* adjust the sweetener dropdown caret margins */
-	:global(.mdc-select__dropdown-icon) {
-		margin-left: -6px;
-		margin-right: 0px;
-	}
-
 	@media print {
 		.no-print {
-			display: none;
-		}
-		:global(.mdc-text-field--disabled .mdc-text-field__input) {
-			color: var(--printGray);
-		}
-		:global(.mdc-text-field--disabled .mdc-floating-label) {
-			color: var(--printGray);
-		}
-		:global(.mdc-select__dropdown-icon) {
 			display: none;
 		}
 	}

@@ -13,7 +13,7 @@
 </script>
 
 <div class="relative w-full">
-	<Helper class="mt-2">{getLabel(component)}</Helper>
+	<Helper>{getLabel(component)}</Helper>
 	<ButtonGroup class="w-full">
 		<Input bind:value class="w-full pr-8" />
 		<RemoveButton {componentId} />

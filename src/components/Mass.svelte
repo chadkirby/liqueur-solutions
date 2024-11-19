@@ -28,5 +28,5 @@
 	{:else}
 		<ReadOnlyValue>{roundForDisplay(grams)}g</ReadOnlyValue>
 	{/if}
-	<Helper class="text-right mr-6">{roundForDisplay(ounces)}oz</Helper>
+	<Helper class="text-center">{roundForDisplay(ounces)}oz</Helper>
 </div>

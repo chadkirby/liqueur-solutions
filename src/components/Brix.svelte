@@ -66,5 +66,5 @@
 	{:else}
 		<ReadOnlyValue>{roundForDisplay(brix)}%</ReadOnlyValue>
 	{/if}
-	<Helper class="text-right mr-6">{parts}</Helper>
+	<Helper class="text-center">{parts}</Helper>
 </div>

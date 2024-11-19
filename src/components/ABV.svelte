@@ -28,5 +28,5 @@
 	{:else}
 		<ReadOnlyValue>{roundForDisplay(abv)}%</ReadOnlyValue>
 	{/if}
-	<Helper class="text-right mr-6">{roundForDisplay(proof, 'thin')}proof</Helper>
+	<Helper class="text-center">{roundForDisplay(proof, 'thin')}proof</Helper>
 </div>

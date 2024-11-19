@@ -30,6 +30,6 @@
 			format={v => `${roundForDisplay(v)}ml`}
 			onValueChange={v => mixtureStore.setVolume(componentId, v)}
 		/>
-		<Helper class="text-right mr-6">{roundForDisplay(mass)}g</Helper>
+		<Helper class="text-center">{roundForDisplay(mass)}g</Helper>
 	{/if}
 </div>
