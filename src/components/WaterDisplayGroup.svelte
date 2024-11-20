@@ -1,0 +1,20 @@
+<script lang="ts">
+
+	import { type Water } from '$lib';
+	import Mass from './Mass.svelte';
+	import Volume from './Volume.svelte';
+	import Cal from './Cal.svelte';
+	import Abv from './ABV.svelte';
+	interface Props {
+		componentId: string;
+		component: Water
+	}
+
+	let { componentId, component }: Props = $props();
+
+</script>
+
+<Volume {componentId} {component} />
+<Mass {componentId} {component} />
+<Abv {componentId} {component} />
+<Cal {componentId} {component} />

@@ -13,7 +13,7 @@ type Sweetnesss = {
 	kcalPerGram: number;
 };
 
-const SweetenerData: Record<SweetenerTypes, Sweetnesss> = {
+export const SweetenerEquivData: Record<SweetenerTypes, Sweetnesss> = {
 	sucrose: { density: 1.59, sweetness: 100, kcalPerGram: 3.87 },
 	fructose: { density: 1.48, sweetness: 173, kcalPerGram: 3.73 },
 	allulose: { density: 1.6, sweetness: 70, kcalPerGram: 0.4 },
@@ -94,26 +94,26 @@ export class Sweetener extends BaseComponent implements Component {
 		this.mass = value * this.density;
 	}
 	get equivalentSugarMass() {
-		return this.mass * (SweetenerData[this._subType].sweetness / 100);
+		return this.mass * (SweetenerEquivData[this._subType].sweetness / 100);
 	}
 	set equivalentSugarMass(value: number) {
 		this.setEquivalentSugarMass(value);
 	}
 
 	setEquivalentSugarMass(mass: number): void {
-		this.mass = mass / (SweetenerData[this._subType].sweetness / 100);
+		this.mass = mass / (SweetenerEquivData[this._subType].sweetness / 100);
 	}
 
 	get density() {
-		return SweetenerData[this._subType].density;
+		return SweetenerEquivData[this._subType].density;
 	}
 
 	get brix() {
-		return SweetenerData[this._subType].sweetness;
+		return SweetenerEquivData[this._subType].sweetness;
 	}
 
 	get kcal() {
-		return this.mass * SweetenerData[this._subType].kcalPerGram;
+		return this.mass * SweetenerEquivData[this._subType].kcalPerGram;
 	}
 }
 

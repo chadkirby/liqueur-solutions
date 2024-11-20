@@ -17,22 +17,25 @@
 		mixtureStore,
 		updateUrl,
 		type SerializedComponent,
-		SweetenerTypes,
 		newSyrup,
 		newSpirit,
 		Mixture,
 		type AnyComponent,
 		Sweetener,
-		getLabel
+		Water,
+		isSpirit
 	} from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
-	import MassComponent from './Mass.svelte';
 	import BrixComponent from './Brix.svelte';
 	import CalComponent from './Cal.svelte';
 	import TextEntry from './TextEntry.svelte';
 	import debounce from 'lodash.debounce';
 	import SweetenerDropdown from './SweetenerDropdown.svelte';
+	import WaterDisplayGroup from './WaterDisplayGroup.svelte';
+	import SweetenerDisplayGroup from './SweetenerDisplayGroup.svelte';
+	import SpiritDisplayGroup from './SpiritDisplayGroup.svelte';
+	import SyrupDisplayGroup from './SyrupDisplayGroup.svelte';
 
 	interface Props {
 		data: { liqueur: string; components: SerializedComponent[] };
@@ -43,10 +46,10 @@
 	// Initialize the store with the data from the load function
 	mixtureStore.deserialize(data);
 
-	const handleNameInput = (id: string) =>
-		debounce((event: CustomEvent) => {
+	const handleTitleInput = () =>
+		debounce((event: InputEvent) => {
 			const newName = (event.target as HTMLInputElement).value;
-			mixtureStore.updateComponentName(id, newName);
+			mixtureStore.setTitle(newName);
 		}, 100);
 
 	function addSpirit() {
@@ -98,7 +101,7 @@
 	let dropdownRef: HTMLDivElement | null = $state(null);
 </script>
 
-<div class="relative" bind:this={dropdownRef}>
+<div class="relative">
 	{#if dropdownStatus}
 		<button
 			type="button"
@@ -111,11 +114,11 @@
 			{dropdownStatus}
 			{closeDropdown}
 			params={transitionParams}
-			class="fixed"
+			class="fixed -translate-y-full"
 			style="
-			top: {dropdownRef?.getBoundingClientRect().bottom + 30}px;
-			left: {dropdownRef?.getBoundingClientRect().left - 0}px;
-		"
+				top: {dropdownRef?.getBoundingClientRect().top! + 2}px;
+				left: {dropdownRef?.getBoundingClientRect().left! - 8}px;
+			"
 		>
 			<DropdownUl>
 				<DropdownLi aClass="flex" href="/">
@@ -143,40 +146,56 @@
 	{/if}
 </div>
 
-<div class="flex flex-col gap-x-2 gap-y-1">
-	<ButtonGroup class="mb-2">
-		<Button onclick={dropdown.toggle}>
-			<CirclePlusSolid size="lg" />
-		</Button>
-
-		<Input value={$mixtureStore.title} oninput={() => updateUrl()} required />
-	</ButtonGroup>
+<div class="flex flex-col gap-x-2 gap-y-2">
+	<Input
+		value={$mixtureStore.title}
+		oninput={handleTitleInput()}
+		required
+		class="text-l font-bold mb-2"
+	/>
 
 	{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
-		<div class="flex flex-col items-stretch mt-1">
+		<div class="flex flex-col items-stretch">
 			<div class="relative">
 				{#if entry instanceof Sweetener}
-					<SweetenerDropdown componentId={id} value={name} component={entry} />
+					<SweetenerDropdown componentId={id} component={entry} />
 				{:else}
 					<TextEntry value={name} component={entry} componentId={id} />
 				{/if}
 			</div>
 
 			<div class="flex flex-row grow my-1">
-				{#if entry.type.startsWith('sweetener')}
-					<MassComponent componentId={id} component={entry} />
-				{:else}
-					<VolumeComponent componentId={id} component={entry} />
+				{#if entry instanceof Sweetener}
+					<SweetenerDisplayGroup componentId={id} component={entry} />
+				{:else if entry instanceof Water}
+					<WaterDisplayGroup componentId={id} component={entry} />
+				{:else if entry instanceof Mixture && isSpirit(entry)}
+					<SpiritDisplayGroup componentId={id} component={entry} />
+				{:else if entry instanceof Mixture && isSyrup(entry)}
+					<SyrupDisplayGroup componentId={id} component={entry} />
 				{/if}
-				<ABVComponent componentId={id} component={entry} />
-				<BrixComponent componentId={id} component={entry} />
-				<CalComponent componentId={id} component={entry} />
 			</div>
 		</div>
 	{/each}
 </div>
 
-<div class="mt-0 items-center border-t-2 pt-2 gap-x-2 gap-y-2">
+<div class="mt-2"  bind:this={dropdownRef}>
+	<button
+		class="
+			flex
+			w-full
+			justify-start
+			border-t-2
+			border-gray-300
+			relative
+			"
+		onclick={dropdown.toggle}
+	>
+		<CirclePlusSolid size="lg" class="absolute -ml-2 -translate-y-[55%] bg-white"/>
+	</button>
+</div>
+
+<div class="mt-2 items-center pt-2 gap-x-2 gap-y-2">
 	<h2
 		class="
 		col-span-4

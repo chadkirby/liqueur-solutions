@@ -63,6 +63,12 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		setTitle(title: string) {
+			update((data) => {
+				data.title = title;
+				return data;
+			});
+		},
 		addComponents(components: Mixture['components']) {
 			update((data) => {
 				for (const component of components) {
