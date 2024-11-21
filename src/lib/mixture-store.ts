@@ -63,6 +63,9 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		getTitle() {
+			return get(store).title;
+		},
 		setTitle(title: string) {
 			update((data) => {
 				data.title = title;

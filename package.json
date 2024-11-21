@@ -68,6 +68,8 @@
 		"node": "20.12.1"
 	},
 	"dependencies": {
-		"lodash.debounce": "^4.0.8"
+		"@castlenine/svelte-qrcode": "^2.3.0",
+		"lodash.debounce": "^4.0.8",
+		"svelte-portal": "^2.2.1"
 	}
 }

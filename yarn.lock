@@ -20,6 +20,11 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
+"@castlenine/svelte-qrcode@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@castlenine/svelte-qrcode/-/svelte-qrcode-2.3.0.tgz#9a8385f002531244636cb489d613edfa2cad0a93"
+  integrity sha512-1YO6tL63gjbCuBkhd/PyMMFbjFD6gO6TJjvq5Ucfs5+0s13oDfiUyxO15kjR11enG7O/A2R0WBuc4bfdMqjTJQ==
+
 "@esbuild/aix-ppc64@0.21.5":
   version "0.21.5"
   resolved "https://registry.yarnpkg.com/@esbuild/aix-ppc64/-/aix-ppc64-0.21.5.tgz#c7184a326533fcdf1b8ee0733e21c713b975575f"
@@ -2867,6 +2872,11 @@ svelte-eslint-parser@^0.43.0:
     espree "^9.6.1"
     postcss "^8.4.39"
     postcss-scss "^4.0.9"
+
+svelte-portal@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/svelte-portal/-/svelte-portal-2.2.1.tgz#b1d7bed78e56318db245996beb5483d8de6b9740"
+  integrity sha512-uF7is5sM4aq5iN7QF/67XLnTUvQCf2iiG/B1BHTqLwYVY1dsVmTeXZ/LeEyU6dLjApOQdbEG9lkqHzxiQtOLEQ==
 
 svelte-preprocess@^6.0.0:
   version "6.0.3"
