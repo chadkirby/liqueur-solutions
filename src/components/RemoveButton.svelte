@@ -18,5 +18,5 @@
   outline color="light"
   onclick={() => mixtureStore.removeComponent(componentId)}
 >
-  <CloseCircleSolid size="lg"/>
+  <CloseCircleSolid size="md" />
 </Button>

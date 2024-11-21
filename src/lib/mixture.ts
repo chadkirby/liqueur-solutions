@@ -10,6 +10,7 @@ import { Ethanol } from './ethanol.js';
 import { solver } from './solver.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
+import { brixToSyrupProportion, roundForDisplay } from './utils.js';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
@@ -48,7 +49,8 @@ export function getLabel(component: AnyComponent) {
 	}
 	if (component instanceof Mixture) {
 		if (isSpirit(component)) return 'spirit';
-		if (isSyrup(component)) return 'syrup';
+		if (isSyrup(component)) return 'simple syrup';
+		if (isLiqueur(component)) return 'liqueur';
 		return 'mixture';
 	}
 	throw new Error('Unknown component type');
@@ -57,6 +59,22 @@ export function getLabel(component: AnyComponent) {
 export class Mixture extends BaseComponent {
 	constructor(readonly components: MixtureComponent[] = []) {
 		super();
+	}
+
+	summarize(name: string) {
+		const volume = `${roundForDisplay(this.volume)}ml`;
+		if (isSyrup(this)) {
+			const sweetener = this.findByType((x) => x instanceof Sweetener);
+			const summary = [volume, brixToSyrupProportion(this.brix), name, `(${sweetener?.subType})`];
+			return summary.join(' ');
+		}
+		if (isSpirit(this)) {
+			return `${volume} ${roundForDisplay(this.proof)} proof ${name}`;
+		}
+		if (isLiqueur(this)) {
+			return `${volume} ${roundForDisplay(this.proof)} proof ${roundForDisplay(this.brix)}ºBx ${name}`;
+		}
+		return '';
 	}
 
 	get type() {
@@ -306,4 +324,8 @@ export function isSyrup(mixture: Mixture): boolean {
 			mixture.findByType((x) => x instanceof Sweetener) &&
 			mixture.findByType((x) => x instanceof Water)
 	);
+}
+
+export function isLiqueur(mixture: Mixture): boolean {
+	return mixture.abv > 0 && mixture.brix > 0;
 }

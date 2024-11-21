@@ -62,3 +62,32 @@ export function roundForDisplay(
 		}[whichSpace] || '';
 	return `${formatted}${space}`;
 }
+
+const candidates = [
+	xToY(1, 1),
+	xToY(5, 4),
+	xToY(4, 3),
+	xToY(3, 2),
+	xToY(5, 3),
+	xToY(2, 1),
+	xToY(7, 3),
+	xToY(5, 2),
+	xToY(3, 1),
+	xToY(4, 1),
+	xToY(5, 1),
+	xToY(6, 1),
+	xToY(7, 1),
+	xToY(8, 1),
+	xToY(9, 1),
+	xToY(10, 1)
+];
+export function brixToSyrupProportion(brix: number) {
+	const diffs = candidates.map((x) => Math.abs(brix / 100 - x.decimal));
+	const min = Math.min(...diffs);
+	return candidates[diffs.indexOf(min)].ratio;
+}
+
+function xToY(x: number, y: number) {
+	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
+}
+

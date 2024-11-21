@@ -27,9 +27,9 @@
 
 	// Handle keyboard input
 	function handleKeyDown(event: KeyboardEvent) {
-		if (isKeyboardEditing && (event.key === 'Enter' || event.key === 'Escape')) {
+		if (isKeyboardEditing && (event.key === 'Enter' || event.key === 'Escape' || event.key === 'Tab')) {
 			event.preventDefault();
-			if (event.key === 'Enter') {
+			if (event.key !== 'Escape') {
 				const newValue = Number(rawInputValue);
 				if (!isNaN(newValue)) {
 					setValue(newValue);
@@ -46,12 +46,7 @@
 			if (isKeyboardEditing) finishEditing();
 			event.preventDefault();
 			decrementValue();
-		} else if (event.key === 'Tab') {
-			if (isKeyboardEditing) finishEditing();
-		} else if (
-			!isKeyboardEditing &&
-			(event.key === 'ArrowRight' || event.key === 'ArrowLeft' || /^[\d.]$/.test(event.key))
-		) {
+		} else if (!isKeyboardEditing) {
 			// enter keyboard editing mode
 			handleFocus();
 		}

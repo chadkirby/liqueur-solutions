@@ -1,28 +1,35 @@
 <script lang="ts">
-	import { ButtonGroup, Helper } from 'svelte-5-ui-lib';
+	import { ButtonGroup, Input } from 'svelte-5-ui-lib';
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
-	import { getLabel, mixtureStore, Sweetener, SweetenerTypes } from '$lib';
-	import RemoveButton from './RemoveButton.svelte';
+	import { Mixture, mixtureStore, Sweetener, SweetenerTypes } from '$lib';
 
 	interface Props {
 		componentId: string;
-		component: Sweetener;
+		name: string;
+		component: Sweetener | Mixture;
 	}
 
-	let { componentId, component }: Props = $props();
+	let { componentId, component, name }: Props = $props();
 
 	const sweeteners = SweetenerTypes.map((type) => ({ value: type, name: type }));
 
-	let subType = $state(component.subType);
+	let subType = $state(
+		component instanceof Sweetener
+			? component.subType
+			: component.findByType((x) => x instanceof Sweetener)!.subType
+	);
 </script>
 
-<div class="w-full">
-	<Helper>{getLabel(component)}</Helper>
-	<ButtonGroup class="w-full relative">
-		<ChevronDownOutline class="pointer-events-none absolute left-2 top-3 h-5 w-5 text-gray-500" />
+<div class="w-full flex flex-row gap-1 relative">
+		<Input
+			value={name}
+			class="w-1/2 pr-8"
+			oninput={(e) => mixtureStore.updateComponentName(componentId, e.currentTarget.value)}
+		/>
+
 		<select
 			class="
-      w-full
+      w-1/2
       appearance-none
       rounded border
       border-gray-300
@@ -38,6 +45,10 @@
 				<option {value} selected={value === subType}>{name}</option>
 			{/each}
 		</select>
-		<RemoveButton {componentId} />
-	</ButtonGroup>
+		<ChevronDownOutline
+			class="
+      pointer-events-none
+      absolute
+      left-[51%] top-3 h-5 w-5 text-gray-500"
+		/>
 </div>

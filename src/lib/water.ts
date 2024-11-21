@@ -4,7 +4,7 @@ import {
 	type ComponentNumberKeys,
 	type WaterData
 } from './component.js';
-import { round } from './utils.js';
+import { round, roundForDisplay } from './utils.js';
 
 export class Water extends BaseComponent implements Component {
 	readonly type = 'water';
@@ -18,6 +18,10 @@ export class Water extends BaseComponent implements Component {
 
 	constructor(public volume: number) {
 		super();
+	}
+
+	summarize(name = 'water') {
+		return `${roundForDisplay(this.volume)}ml ${name}`;
 	}
 	get rawData(): WaterData {
 		const { type, volume } = this;
