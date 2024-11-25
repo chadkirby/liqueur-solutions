@@ -18,4 +18,4 @@ export type {
 	WaterData
 } from './component.js';
 export { deserialize } from './deserialize.js';
-export { mixtureStore, updateUrl } from './mixture-store.js';
+export { mixtureStore } from './mixture-store.js';

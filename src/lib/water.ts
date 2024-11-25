@@ -20,7 +20,7 @@ export class Water extends BaseComponent implements Component {
 		super();
 	}
 
-	summarize(name = 'water') {
+	describe(name = 'water') {
 		return `${roundForDisplay(this.volume)}ml ${name}`;
 	}
 	get rawData(): WaterData {

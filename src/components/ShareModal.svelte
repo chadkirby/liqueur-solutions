@@ -1,22 +1,27 @@
 <script lang="ts">
-	import { Modal, Button, uiHelpers, Toast } from 'svelte-5-ui-lib';
+	import { Modal, Button, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
 	import { ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
 	import { mixtureStore } from '$lib';
+	import { resolveUrl } from '$lib/local-storage.js';
+	import { urlEncode } from '$lib/mixture-store.js';
 	const modal = uiHelpers();
 	let modalStatus = $state(false);
-	const closeModal = modal.close;
 	$effect(() => {
 		modalStatus = modal.isOpen;
 	});
+	const closeModal = modal.close;
 
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
 
   const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(window.location.href);
+		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture())));
     toastStatus = true;
+    setTimeout(() => {
+      toastStatus = false;
+    }, 2000);
 	};
 
 
@@ -25,7 +30,7 @@
 	};
 
 	const copyImage = async () => {
-		const svg = document.querySelector('svg[height="256"][width="256"]');
+		const svg = document.querySelector('#qr-code svg');
 		if (!svg) return;
 
 		// Create a canvas with the same dimensions as the SVG
@@ -64,16 +69,26 @@
 			await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 		}
     toastStatus = true;
+    setTimeout(() => {
+      toastStatus = false;
+    }, 2000);
 	};
 </script>
 
-<ArrowUpFromBracketOutline class="text-white" onclick={modal.toggle} />
+<Tooltip
+  color="default"
+  offset={6}
+  triggeredBy="#share-button"
+>
+Share the current mixture
+</Tooltip>
+<ArrowUpFromBracketOutline id="share-button" class="text-white" onclick={modal.toggle} />
 
 <Portal target="body">
 	<Modal size="sm" {modalStatus} {closeModal}>
-		<div class="flex flex-col content-center items-center gap-2">
+		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
-				data={window.location.href}
+				data={resolveUrl(resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture())))}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl
@@ -91,7 +106,7 @@
 					<Button
 						class="bg-secondary-600"
 						href={downloadUrl}
-						download={(mixtureStore.getTitle() || 'my-mixture') + '.png'}>Download QR Code</Button
+						download={(mixtureStore.getName() || 'my-mixture') + '.png'}>Download QR Code</Button
 					>
 				{/if}
 			</div>

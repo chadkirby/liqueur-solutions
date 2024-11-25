@@ -2,68 +2,105 @@
 	import {
 		Accordion,
 		AccordionItem,
+		accordionitem,
 		Input,
-		Label
+		Label,
+		Listgroup
 	} from 'svelte-5-ui-lib';
+	import { FileOutline } from 'flowbite-svelte-icons';
+	import debounce from 'lodash.debounce';
 
-	import {
-		Water as WaterObject,
-		mixtureStore,
-		type SerializedComponent,
-		Mixture,
-		type AnyComponent,
-		Sweetener,
-		Water,
-		isSpirit
-	} from '$lib';
+	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup } from '$lib';
 	import VolumeComponent from './Volume.svelte';
 	import ABVComponent from './ABV.svelte';
 	import BrixComponent from './Brix.svelte';
 	import CalComponent from './Cal.svelte';
-	import debounce from 'lodash.debounce';
 	import SweetenerDropdown from './SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './SweetenerDisplayGroup.svelte';
 	import SpiritDisplayGroup from './SpiritDisplayGroup.svelte';
 	import SyrupDisplayGroup from './SyrupDisplayGroup.svelte';
 	import RemoveButton from './RemoveButton.svelte';
+	import SaveButton from './SaveButton.svelte';
+	import { getName, listFiles, type LocalStorageId } from '$lib/local-storage.js';
+	import type { ChangeEventHandler } from 'svelte/elements';
+	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
+	import { browser } from '$app/environment';
 
-	const handleTitleInput = () =>
-		debounce((event: InputEvent) => {
-			const newName = (event.target as HTMLInputElement).value;
-			mixtureStore.setTitle(newName);
-		}, 100);
-
-
-	function isSyrup(mx: AnyComponent): mx is Mixture {
-		return Boolean(
-			mx instanceof Mixture &&
-				mx.components.length === 2 &&
-				mx.findByType((x) => x instanceof WaterObject) &&
-				mx.findByType((x) => x instanceof Sweetener)
-		);
+	interface Props {
+		storeId: LocalStorageId;
 	}
 
+	let { storeId }: Props = $props();
+	if (browser) {
+		const mixture = deserializeFromLocalStorage(storeId);
+		if (!mixture.isValid) throw new Error('Invalid mixture');
+		const name = getName(storeId) || 'mixture';
+		mixtureStore.load({ storeId, name, mixture });
+	}
 
+	// hack to remove accordion focus ring
+	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
+	// hack to adjust accordion item padding
+	accordionitem.variants.flush.false = {
+		button: 'p-3 border-s border-e group-first:border-t',
+		content: 'p-3 border-s border-e'
+	};
+
+	const handleTitleInput: ChangeEventHandler<HTMLInputElement> = (event) => {
+		const newName = (event.target as HTMLInputElement).value;
+		mixtureStore.setName(newName);
+		mixtureStore.save();
+	};
+
+	const selectFile = (e?: MouseEvent) => {
+		if (e?.target instanceof HTMLElement) {
+			const name = e.target.attributes.getNamedItem('name')?.value;
+			if (name) {
+				mixtureStore.setName(name);
+			}
+		}
+	};
 </script>
 
-
 <div class="flex flex-col gap-x-2 gap-y-2">
-	<Input
-		value={$mixtureStore.title}
-		oninput={handleTitleInput()}
-		required
-		class="text-l font-bold mb-2"
-	/>
+	<Accordion flush={false} isSingle={false}>
+		<AccordionItem class="py-2">
+			{#snippet header()}
+				<div
+					class="
+					flex flex-row
+					items-center
+					gap-x-2
+					"
+				>
+					<SaveButton />
 
-	<Accordion flush={true} isSingle={false}>
-		{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
-			<AccordionItem  class="pt-2 pb-2">
-				{#snippet header()}
-				<div class="flex flex-row items-center gap-x-2">
-					<RemoveButton componentId={id}/>
-					<Label>{entry.summarize(name)}</Label>
+					<Label class="font-semibold">{$mixtureStore.name || 'untitled'}</Label>
 				</div>
+			{/snippet}
+			<Input
+				value={$mixtureStore.name}
+				onchange={handleTitleInput}
+				placeholder="Name your mixture"
+				required
+				class="text-l font-bold mb-2"
+			/>
+			<Listgroup
+				active
+				items={listFiles({ Icon: FileOutline })}
+				class="w-48"
+				onclick={selectFile}
+			/>
+		</AccordionItem>
+
+		{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
+			<AccordionItem class="py-2">
+				{#snippet header()}
+					<div class="flex flex-row items-center gap-x-2">
+						<RemoveButton componentId={id} />
+						<Label>{entry.describe(name)}</Label>
+					</div>
 				{/snippet}
 				<div class="flex flex-col items-stretch">
 					{#if entry instanceof Sweetener || isSyrup(entry)}

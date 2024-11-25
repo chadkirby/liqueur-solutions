@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { mixtureStore, newSpirit, newSyrup, Sweetener, Water } from '$lib';
 	import { CirclePlusSolid, PlusOutline } from 'flowbite-svelte-icons';
-	import { Dropdown, DropdownLi, DropdownUl, uiHelpers } from 'svelte-5-ui-lib';
+	import { Dropdown, DropdownLi, DropdownUl, Tooltip, uiHelpers } from 'svelte-5-ui-lib';
 	import { sineIn } from 'svelte/easing';
 	import Portal from 'svelte-portal';
 
@@ -45,8 +45,17 @@
 	}
 </script>
 
+<Tooltip
+  color="default"
+  offset={6}
+  triggeredBy="#add-component-button"
+>
+Add a component to the mixture
+</Tooltip>
+
 <div class="relative">
 	<PlusOutline
+		id="add-component-button"
 		class="text-white"
 		onclick={() => (dropdown.isOpen ? dropdown.close() : dropdown.open())}
 	/>

@@ -10,13 +10,18 @@
   let {
     componentId,
   }: Props = $props();
+
+  function removeComponent(e: Event) {
+    e.preventDefault();
+    mixtureStore.removeComponent(componentId);
+  }
 </script>
 
 
 <Button
   class="p-1"
   outline color="light"
-  onclick={() => mixtureStore.removeComponent(componentId)}
+  onclick={removeComponent}
 >
   <CloseCircleSolid size="md" />
 </Button>

@@ -1,17 +1,24 @@
 import { writable, get, derived } from 'svelte/store';
-import { isSweetenerData, SweetenerTypes, type SerializedComponent } from './component.js';
+import { isSweetenerData, SweetenerTypes } from './component.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
-import type { Analysis } from './utils.js';
-import { Mixture, dataToMixture } from './mixture.js';
-import { goto } from '$app/navigation';
+import { type Analysis } from './utils.js';
+import { Mixture } from './mixture.js';
 import { solver } from './solver.js';
+import {
+	asLocalStorageId,
+	filesDb,
+	generateLocalStorageId,
+	type LocalStorageId
+} from './local-storage.js';
 
 export type ComponentValueKey = keyof Analysis;
 
 export function createMixtureStore() {
 	const store = writable({
-		title: 'mixture',
+		storeId: generateLocalStorageId(),
+		isDirty: false,
+		name: `Mixture-0`,
 		mixture: new Mixture([]),
 		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
 		totals: getTotals(new Mixture([]))
@@ -29,8 +36,13 @@ export function createMixtureStore() {
 		store.update((data) => {
 			const newData = updater(data);
 			if (newData.mixture.isValid) {
+				newData.isDirty =
+					!newData.storeId ||
+					!newData.name ||
+					filesDb.read(newData.storeId)?.href !== urlEncode(newData.name, newData.mixture);
+				console.log('isDirty', newData.isDirty);
+
 				newData.totals = getTotals(newData.mixture);
-				updateUrl(newData.mixture);
 			}
 			return newData;
 		});
@@ -44,11 +56,17 @@ export function createMixtureStore() {
 			store.set(...args);
 			store.update((data) => {
 				data.totals = getTotals(data.mixture);
-				updateUrl(data.mixture);
+				this.save();
 				return data;
 			});
 		},
 		subscribe,
+		getStoreId() {
+			return get(store).storeId;
+		},
+		get isDirty() {
+			return get(store).isDirty;
+		},
 		getMixture() {
 			return get(store).mixture;
 		},
@@ -63,12 +81,12 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
-		getTitle() {
-			return get(store).title;
+		getName() {
+			return get(store).name;
 		},
-		setTitle(title: string) {
+		setName(name: string) {
 			update((data) => {
-				data.title = title;
+				data.name = name;
 				return data;
 			});
 		},
@@ -265,17 +283,38 @@ export function createMixtureStore() {
 			});
 		},
 		/** reset the store */
-		deserialize(data: { liqueur: string; components: SerializedComponent[] }) {
-			console.log('deserialize', data);
-			const mixture = dataToMixture(data);
+		load({ storeId, name, mixture }: { storeId: LocalStorageId; name: string; mixture: Mixture }) {
 			set({
-				title: data.liqueur,
+				storeId: asLocalStorageId(storeId),
+				isDirty: false,
+				name,
 				mixture,
 				totals: getTotals(mixture),
 				errors: []
 			});
+			filesDb.write({
+				id: storeId,
+				accessTime: Date.now(),
+				name,
+				desc: mixture.describe(name),
+				href: urlEncode(name, mixture)
+			});
+		},
+		save() {
+			const { storeId, name, mixture } = get(store);
+			filesDb.write({
+				id: storeId,
+				accessTime: Date.now(),
+				name,
+				desc: mixture.describe(name),
+				href: urlEncode(name, mixture)
+			});
 		}
 	};
+}
+
+export function urlEncode(title: string, mixture: Mixture) {
+	return `/${encodeURIComponent(title)}?gz=${encodeURIComponent(mixture.serialize())}`;
 }
 
 function roundEq(a: number, b: number) {
@@ -284,18 +323,25 @@ function roundEq(a: number, b: number) {
 
 export const mixtureStore = createMixtureStore();
 
-export function updateUrl(mixture = mixtureStore.getMixture()) {
-	if (mixture.isValid) {
-		goto(
-			`/${encodeURIComponent(mixtureStore.get().title)}?gz=${encodeURIComponent(mixture.serialize())}`,
-			{
-				replaceState: true,
-				noScroll: true,
-				keepFocus: true
-			}
-		);
-	}
-}
+// function updateUrl(mixture: Mixture, storeId: string | null) {
+// 	if (mixture.isValid) {
+// 		if (storeId) {
+// 			const url = urlEncode(mixtureStore.getName(), mixtureStore.getMixture());
+// 			// window.localStorage.setItem(storeId, url);
+// 			// goto(`/file?id=${storeId}`, {
+// 			// 	replaceState: true,
+// 			// 	noScroll: true,
+// 			// 	keepFocus: true
+// 			// });
+// 		} else {
+// 			// goto(url, {
+// 			// 	replaceState: true,
+// 			// 	noScroll: true,
+// 			// 	keepFocus: true
+// 			// });
+// 		}
+// 	}
+// }
 
 function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number): void {
 	if (!mixture.canEdit(key)) {

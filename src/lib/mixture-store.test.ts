@@ -8,7 +8,7 @@ describe('Mixture Store', () => {
 		const store = createMixtureStore();
 
 		const state = store.get();
-		expect(state.title).toBe('mixture');
+		expect(state.name).toBe('mixture');
 		expect(state.mixture).toBeDefined();
 		expect(state.totalsLock).toEqual([]);
 		expect(state.errors).toEqual([]);
@@ -56,7 +56,7 @@ describe('Mixture Store', () => {
 			}
 		];
 
-		store.deserialize({
+		store.load({
 			liqueur: 'My Mixture',
 			components
 		});
@@ -107,7 +107,7 @@ describe('Mixture Store', () => {
 			}
 		];
 
-		store.deserialize({
+		store.load({
 			liqueur: 'My Mixture',
 			components
 		});

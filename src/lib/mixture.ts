@@ -61,7 +61,7 @@ export class Mixture extends BaseComponent {
 		super();
 	}
 
-	summarize(name: string) {
+	describe(name: string) {
 		const volume = `${roundForDisplay(this.volume)}ml`;
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
@@ -300,14 +300,6 @@ export function newSpirit(volume: number, abv: number): Mixture {
 	return mx;
 }
 
-export function isSpirit(mixture: Mixture): boolean {
-	return Boolean(
-		mixture.components.length === 2 &&
-			mixture.findByType((x) => x instanceof Ethanol) &&
-			mixture.findByType((x) => x instanceof Water)
-	);
-}
-
 export function newSyrup(volume: number, brix: number): Mixture {
 	const mx = new Mixture([
 		{ name: 'sugar', id: 'sugar', component: new Sweetener('sucrose', 1) },
@@ -318,14 +310,42 @@ export function newSyrup(volume: number, brix: number): Mixture {
 	return mx;
 }
 
-export function isSyrup(mixture: Mixture): boolean {
-	return Boolean(
-		mixture.components.length === 2 &&
-			mixture.findByType((x) => x instanceof Sweetener) &&
-			mixture.findByType((x) => x instanceof Water)
-	);
+export function isSpirit(thing: Mixture): boolean;
+export function isSpirit(thing: AnyComponent): thing is Mixture;
+
+export function isSpirit(thing: AnyComponent) {
+	return Boolean(thing instanceof Mixture && thing.abv > 0 && thing.brix === 0);
 }
 
-export function isLiqueur(mixture: Mixture): boolean {
-	return mixture.abv > 0 && mixture.brix > 0;
+export function isSyrup(thing: Mixture): boolean;
+export function isSyrup(thing: AnyComponent): thing is Mixture;
+export function isSyrup(thing: AnyComponent) {
+	return Boolean(thing instanceof Mixture && thing.abv === 0 && thing.brix > 0);
+}
+
+export function isLiqueur(thing: Mixture): boolean;
+export function isLiqueur(thing: AnyComponent): thing is Mixture;
+export function isLiqueur(thing: AnyComponent) {
+	return thing instanceof Mixture && thing.abv > 0 && thing.brix > 0;
+}
+
+/**
+ * Describes a component in a human-readable format.
+ * @param thing - The component to describe.
+ * @returns A human-readable description of the component.
+ */
+export function describe(name: string, thing: AnyComponent): string {
+	if (thing instanceof Mixture) {
+		return thing.describe(name);
+	}
+	if (thing instanceof Water) {
+		return `${roundForDisplay(thing.volume)}ml water`;
+	}
+	if (thing instanceof Sweetener) {
+		return `${roundForDisplay(thing.mass)}g ${thing.subType}`;
+	}
+	if (thing instanceof Ethanol) {
+		return `${roundForDisplay(thing.volume)}ml ethanol`;
+	}
+	return '???';
 }

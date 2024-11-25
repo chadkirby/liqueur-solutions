@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { dataToMixture, mixtureStore } from '$lib';
+	import { dataToMixture } from '$lib';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
 	import { filesDb, generateLocalStorageId, type FileItem } from '$lib/local-storage.js';
 	import { urlEncode } from '$lib/mixture-store.js';
+	import { redirect } from '@sveltejs/kit';
 	import NewMixture from '../../components/NewMixture.svelte';
 
 	interface Props {
@@ -10,26 +11,19 @@
 		data: LoadDataFromUrl;
 	}
 
-	let { data }: Props = $props();
+	const { data }: Props = $props();
 
-	const name = data.liqueur;
 	const mixture = dataToMixture(data);
-	const href = urlEncode(name, mixture);
-	const storeId =
-		filesDb.idForItem({
-			name,
-			href
-		}) ?? generateLocalStorageId();
+	const name = `Untitled Mixture`;
 
 
-	const item: FileItem = {
-		id: storeId,
+	const item: FileItem = ({
+		id: generateLocalStorageId(),
 		accessTime: Date.now(),
 		name,
 		desc: mixture.describe(name),
-		href
-	}
-
+		href: urlEncode(name, mixture)
+	});
 </script>
 
 <NewMixture {item} />

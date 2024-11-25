@@ -90,4 +90,3 @@ export function brixToSyrupProportion(brix: number) {
 function xToY(x: number, y: number) {
 	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
 }
-

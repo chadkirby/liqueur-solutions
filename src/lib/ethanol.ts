@@ -20,7 +20,7 @@ export class Ethanol extends BaseComponent implements Component {
 		super();
 	}
 
-	summarize(name = 'ethanol') {
+	describe(name = 'ethanol') {
 		return `${roundForDisplay(this.volume)}ml ${name}`;
 	}
 

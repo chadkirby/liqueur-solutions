@@ -48,7 +48,7 @@ export class Sweetener extends BaseComponent implements Component {
 		}
 	}
 
-	summarize(name = 'sweetener') {
+	describe(name = 'sweetener') {
 		return `${roundForDisplay(this.mass)}g ${name} (${this._subType})`;
 	}
 

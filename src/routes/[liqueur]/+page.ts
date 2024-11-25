@@ -1,24 +1,25 @@
-import { dataToMixture, deserialize, type SerializedComponent, newSpirit, Sweetener } from '$lib';
+import { deserialize, newSpirit, Sweetener } from '$lib';
+import type { LoadDataFromUrl } from '$lib/load-data.js';
 
-export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
-	liqueur: string;
-	components: Array<SerializedComponent>;
-} {
-	if (url.pathname.startsWith('/favicon')) return;
+export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
+	const { url, params } = args;
+	// if (url.pathname.startsWith('/favicon')) return;
 	try {
-		const { components } = deserialize(url.searchParams);
+		const mixture = deserialize(url.searchParams);
 		// decode params.liqueur
 		const liqueur = decodeURIComponent(params.liqueur) ?? 'mixture';
-		const mixture = dataToMixture({ components });
 		if (!mixture.isValid) throw new Error('Invalid mixture');
+
 		return {
+			storeId: null,
 			liqueur,
-			components
+			components: mixture.rawData.components
 		};
 	} catch (err) {
 		console.error(err);
 		return {
-			liqueur: 'mixture',
+			storeId: null,
+			liqueur: '',
 			components: [
 				{
 					name: 'spirit',
