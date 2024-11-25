@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { dataToMixture } from '$lib';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
-	import { filesDb, generateLocalStorageId, type FileItem } from '$lib/local-storage.js';
+	import { generateLocalStorageId, type FileItem } from '$lib/local-storage.js';
 	import { urlEncode } from '$lib/mixture-store.js';
-	import { redirect } from '@sveltejs/kit';
 	import NewMixture from '../../components/NewMixture.svelte';
 
 	interface Props {
@@ -21,7 +20,7 @@
 		id: generateLocalStorageId(),
 		accessTime: Date.now(),
 		name,
-		desc: mixture.describe(name),
+		desc: mixture.describe(),
 		href: urlEncode(name, mixture)
 	});
 </script>

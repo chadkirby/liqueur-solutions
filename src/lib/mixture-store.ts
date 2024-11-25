@@ -296,7 +296,7 @@ export function createMixtureStore() {
 				id: storeId,
 				accessTime: Date.now(),
 				name,
-				desc: mixture.describe(name),
+				desc: mixture.describe(),
 				href: urlEncode(name, mixture)
 			});
 		},
@@ -306,7 +306,7 @@ export function createMixtureStore() {
 				id: storeId,
 				accessTime: Date.now(),
 				name,
-				desc: mixture.describe(name),
+				desc: mixture.describe(),
 				href: urlEncode(name, mixture)
 			});
 		}

@@ -20,8 +20,8 @@ export class Ethanol extends BaseComponent implements Component {
 		super();
 	}
 
-	describe(name = 'ethanol') {
-		return `${roundForDisplay(this.volume)}ml ${name}`;
+	describe() {
+		return `${roundForDisplay(this.volume)}ml ethanol`;
 	}
 
 	get rawData(): EthanolData {

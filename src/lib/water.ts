@@ -20,8 +20,8 @@ export class Water extends BaseComponent implements Component {
 		super();
 	}
 
-	describe(name = 'water') {
-		return `${roundForDisplay(this.volume)}ml ${name}`;
+	describe() {
+		return `${roundForDisplay(this.volume)}ml water`;
 	}
 	get rawData(): WaterData {
 		const { type, volume } = this;

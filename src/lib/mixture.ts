@@ -61,7 +61,7 @@ export class Mixture extends BaseComponent {
 		super();
 	}
 
-	describe(name: string) {
+	describe() {
 		const volume = `${roundForDisplay(this.volume)}ml`;
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
@@ -69,10 +69,10 @@ export class Mixture extends BaseComponent {
 			return summary.join(' ');
 		}
 		if (isSpirit(this)) {
-			return `${volume} ${roundForDisplay(this.proof)} proof ${name}`;
+			return `${volume} ${roundForDisplay(this.proof)} proof`;
 		}
 		if (isLiqueur(this)) {
-			return `${volume} ${roundForDisplay(this.proof)} proof ${roundForDisplay(this.brix)}ºBx ${name}`;
+			return `${volume} ${roundForDisplay(this.proof)} proof ${roundForDisplay(this.brix)}ºBx`;
 		}
 		return '';
 	}
@@ -334,9 +334,9 @@ export function isLiqueur(thing: AnyComponent) {
  * @param thing - The component to describe.
  * @returns A human-readable description of the component.
  */
-export function describe(name: string, thing: AnyComponent): string {
+export function describe(thing: AnyComponent): string {
 	if (thing instanceof Mixture) {
-		return thing.describe(name);
+		return thing.describe();
 	}
 	if (thing instanceof Water) {
 		return `${roundForDisplay(thing.volume)}ml water`;

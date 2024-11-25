@@ -47,11 +47,12 @@
 		content: 'p-3 border-s border-e'
 	};
 
-	const handleTitleInput: ChangeEventHandler<HTMLInputElement> = (event) => {
+	const handleTitleInput = () =>
+	debounce<ChangeEventHandler<HTMLInputElement>>((event) => {
 		const newName = (event.target as HTMLInputElement).value;
 		mixtureStore.setName(newName);
 		mixtureStore.save();
-	};
+	}, 100);
 
 	const selectFile = (e?: MouseEvent) => {
 		if (e?.target instanceof HTMLElement) {
@@ -81,7 +82,7 @@
 			{/snippet}
 			<Input
 				value={$mixtureStore.name}
-				onchange={handleTitleInput}
+				oninput={handleTitleInput()}
 				placeholder="Name your mixture"
 				required
 				class="text-l font-bold mb-2"
@@ -99,7 +100,7 @@
 				{#snippet header()}
 					<div class="flex flex-row items-center gap-x-2">
 						<RemoveButton componentId={id} />
-						<Label>{entry.describe(name)}</Label>
+						<Label>{entry.describe()}</Label>
 					</div>
 				{/snippet}
 				<div class="flex flex-col items-stretch">

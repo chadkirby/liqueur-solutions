@@ -94,7 +94,7 @@ export abstract class BaseComponent {
 	abstract mass: number;
 	abstract kcal: number;
 
-	abstract describe(name: string): string;
+	abstract describe(): string;
 
 	abstract setVolume(volume: number): void;
 	abstract setEquivalentSugarMass(mass: number): void;

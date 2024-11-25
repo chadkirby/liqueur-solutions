@@ -26,7 +26,7 @@
 		id: storeId,
 		accessTime: Date.now(),
 		name,
-		desc: mixture.describe(name),
+		desc: mixture.describe(),
 		href
 	}
 
