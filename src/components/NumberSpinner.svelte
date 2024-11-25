@@ -185,6 +185,7 @@
 	<input
 		bind:this={input}
 		type="text"
+		autocomplete="off"
 		value={isKeyboardEditing ? rawInputValue : format(value)}
 		oninput={handleInput}
 		onkeydown={handleKeyDown}

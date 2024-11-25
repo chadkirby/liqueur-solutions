@@ -17,7 +17,6 @@ export type ComponentValueKey = keyof Analysis;
 export function createMixtureStore() {
 	const store = writable({
 		storeId: generateLocalStorageId(),
-		isDirty: false,
 		name: `Mixture-0`,
 		mixture: new Mixture([]),
 		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
@@ -36,15 +35,32 @@ export function createMixtureStore() {
 		store.update((data) => {
 			const newData = updater(data);
 			if (newData.mixture.isValid) {
-				newData.isDirty =
-					!newData.storeId ||
-					!newData.name ||
-					filesDb.read(newData.storeId)?.href !== urlEncode(newData.name, newData.mixture);
-				console.log('isDirty', newData.isDirty);
-
 				newData.totals = getTotals(newData.mixture);
 			}
+			save({
+				storeId: newData.storeId,
+				name: newData.name,
+				mixture: newData.mixture
+			});
 			return newData;
+		});
+	}
+
+	function save({
+		storeId,
+		name,
+		mixture
+	}: {
+		storeId: LocalStorageId;
+		name: string;
+		mixture: Mixture;
+	}) {
+		filesDb.write({
+			id: storeId,
+			accessTime: Date.now(),
+			name,
+			desc: mixture.describe(),
+			href: urlEncode(name, mixture)
 		});
 	}
 
@@ -63,9 +79,6 @@ export function createMixtureStore() {
 		subscribe,
 		getStoreId() {
 			return get(store).storeId;
-		},
-		get isDirty() {
-			return get(store).isDirty;
 		},
 		getMixture() {
 			return get(store).mixture;
@@ -286,7 +299,6 @@ export function createMixtureStore() {
 		load({ storeId, name, mixture }: { storeId: LocalStorageId; name: string; mixture: Mixture }) {
 			set({
 				storeId: asLocalStorageId(storeId),
-				isDirty: false,
 				name,
 				mixture,
 				totals: getTotals(mixture),
@@ -302,13 +314,7 @@ export function createMixtureStore() {
 		},
 		save() {
 			const { storeId, name, mixture } = get(store);
-			filesDb.write({
-				id: storeId,
-				accessTime: Date.now(),
-				name,
-				desc: mixture.describe(),
-				href: urlEncode(name, mixture)
-			});
+			save({ storeId, name, mixture });
 		}
 	};
 }

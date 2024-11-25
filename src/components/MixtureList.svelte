@@ -75,8 +75,6 @@
 					gap-x-2
 					"
 				>
-					<SaveButton />
-
 					<Label class="font-semibold">{$mixtureStore.name || 'untitled'}</Label>
 				</div>
 			{/snippet}
@@ -86,12 +84,6 @@
 				placeholder="Name your mixture"
 				required
 				class="text-l font-bold mb-2"
-			/>
-			<Listgroup
-				active
-				items={listFiles({ Icon: FileOutline })}
-				class="w-48"
-				onclick={selectFile}
 			/>
 		</AccordionItem>
 
