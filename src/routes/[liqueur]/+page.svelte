@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { dataToMixture, mixtureStore } from '$lib';
+	import { dataToMixture } from '$lib';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
-	import { filesDb, generateLocalStorageId, type FileItem } from '$lib/local-storage.js';
+	import { workingMixtureId, type FileItem } from '$lib/local-storage.js';
 	import { urlEncode } from '$lib/mixture-store.js';
 	import NewMixture from '../../components/NewMixture.svelte';
 
@@ -15,15 +15,9 @@
 	const name = data.liqueur;
 	const mixture = dataToMixture(data);
 	const href = urlEncode(name, mixture);
-	const storeId =
-		filesDb.idForItem({
-			name,
-			href
-		}) ?? generateLocalStorageId();
-
 
 	const item: FileItem = {
-		id: storeId,
+		id: workingMixtureId,
 		accessTime: Date.now(),
 		name,
 		desc: mixture.describe(),

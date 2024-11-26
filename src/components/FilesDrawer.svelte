@@ -47,48 +47,57 @@
 <ListOutline id="file-drawer-button" class="text-white" onclick={drawer.toggle} />
 
 <Portal target="body">
-	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col">
-		<Drawerhead onclick={closeDrawer} class="mb-4">
-			<h5
-				id="drawer-label"
-				class="inline-flex items-center text-lg font-semibold text-gray-500 dark:text-gray-400"
-			>
-				Saved Mixtures
-			</h5>
-		</Drawerhead>
-
-		{#each files as { name, id, desc, href }}
-			<div class="flex flex-row items-center gap-2">
-				<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
-					Delete {name}
-				</Tooltip>
-				<CloseCircleSolid
-					id={domIdFor('remove', id)}
-					role="button"
-					size="sm"
-					onclick={() => removeItem(id)}
-				/>
-
-				<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('link', id)}`}>
-					Open {name}
-				</Tooltip>
-				<a
-					id={domIdFor('link', id)}
+	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
+		<div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+			<Drawerhead onclick={closeDrawer}>
+				<h5
+					id="drawer-label"
 					class="
-						flex flex-col
-						items-start
-						mb-2
-						cursor-pointer
-						w-full
-						text-sm
-					"
-					{href}
-					onclick={closeDrawer}
+						inline-flex
+						items-center
+						p-4
+						text-lg
+						font-semibold
+						text-gray-500 dark:text-gray-400"
 				>
-					<span>{name}</span>
-					<span>{desc}</span>
-				</a>
-			</div>
-		{/each}
+					Saved Mixtures
+				</h5>
+			</Drawerhead>
+		</div>
+
+		<div class="flex-1 overflow-y-auto px-4 mt-2">
+			{#each files as { name, id, desc, href }}
+				<div class="flex flex-row items-center gap-2">
+					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
+						Delete {name}
+					</Tooltip>
+					<CloseCircleSolid
+						id={domIdFor('remove', id)}
+						role="button"
+						size="sm"
+						onclick={() => removeItem(id)}
+					/>
+					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('link', id)}`}>
+						Open {name}
+					</Tooltip>
+					<a
+						id={domIdFor('link', id)}
+						class="
+							flex flex-col
+							items-start
+							mb-2
+							cursor-pointer
+							w-full
+							text-sm
+						"
+						{href}
+						onclick={closeDrawer}
+					>
+						<span>{name}</span>
+						<span>{desc}</span>
+					</a>
+				</div>
+			{/each}
+		</div>
 	</Drawer>
 </Portal>

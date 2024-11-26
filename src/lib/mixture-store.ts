@@ -8,7 +8,7 @@ import { solver } from './solver.js';
 import {
 	asLocalStorageId,
 	filesDb,
-	generateLocalStorageId,
+	workingMixtureId,
 	type LocalStorageId
 } from './local-storage.js';
 
@@ -16,7 +16,7 @@ export type ComponentValueKey = keyof Analysis;
 
 export function createMixtureStore() {
 	const store = writable({
-		storeId: generateLocalStorageId(),
+		storeId: workingMixtureId,
 		name: `Mixture-0`,
 		mixture: new Mixture([]),
 		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
@@ -79,6 +79,12 @@ export function createMixtureStore() {
 		subscribe,
 		getStoreId() {
 			return get(store).storeId;
+		},
+		setStoreId(storeId: LocalStorageId) {
+			update((data) => {
+				data.storeId = storeId;
+				return data;
+			});
 		},
 		getMixture() {
 			return get(store).mixture;

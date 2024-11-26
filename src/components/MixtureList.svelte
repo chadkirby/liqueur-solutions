@@ -3,11 +3,13 @@
 		Accordion,
 		AccordionItem,
 		accordionitem,
+		Button,
+		Helper,
 		Input,
 		Label,
-		Listgroup
+		Tooltip
 	} from 'svelte-5-ui-lib';
-	import { FileOutline } from 'flowbite-svelte-icons';
+	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup } from '$lib';
@@ -21,22 +23,34 @@
 	import SpiritDisplayGroup from './SpiritDisplayGroup.svelte';
 	import SyrupDisplayGroup from './SyrupDisplayGroup.svelte';
 	import RemoveButton from './RemoveButton.svelte';
-	import SaveButton from './SaveButton.svelte';
-	import { getName, listFiles, type LocalStorageId } from '$lib/local-storage.js';
+	import {
+		filesDb,
+		generateLocalStorageId,
+		getName,
+		workingMixtureId,
+		type LocalStorageId
+	} from '$lib/local-storage.js';
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		storeId: LocalStorageId;
 	}
 
 	let { storeId }: Props = $props();
+	let isWorking = $derived(storeId === workingMixtureId);
+	console.log(storeId);
 	if (browser) {
-		const mixture = deserializeFromLocalStorage(storeId);
-		if (!mixture.isValid) throw new Error('Invalid mixture');
-		const name = getName(storeId) || 'mixture';
-		mixtureStore.load({ storeId, name, mixture });
+		try {
+			const mixture = deserializeFromLocalStorage(storeId);
+			if (!mixture.isValid) throw new Error('Invalid mixture');
+			const name = getName(storeId) || 'mixture';
+			mixtureStore.load({ storeId, name, mixture });
+		} catch (error) {
+			goto('/new');
+		}
 	}
 
 	// hack to remove accordion focus ring
@@ -48,45 +62,74 @@
 	};
 
 	const handleTitleInput = () =>
-	debounce<ChangeEventHandler<HTMLInputElement>>((event) => {
-		const newName = (event.target as HTMLInputElement).value;
-		mixtureStore.setName(newName);
-		mixtureStore.save();
-	}, 100);
+		debounce<ChangeEventHandler<HTMLInputElement>>((event) => {
+			const newName = (event.target as HTMLInputElement).value;
+			mixtureStore.setName(newName);
+			mixtureStore.save();
+		}, 100);
 
-	const selectFile = (e?: MouseEvent) => {
-		if (e?.target instanceof HTMLElement) {
-			const name = e.target.attributes.getNamedItem('name')?.value;
-			if (name) {
-				mixtureStore.setName(name);
+	if (browser) {
+		// listen for cmd+s or ctrl+s to save the mixture
+		window.addEventListener('keydown', (event) => {
+			if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+				event.preventDefault();
+				toggleStar();
 			}
+		});
+	}
+
+	function saveAndGo(id: LocalStorageId) {
+		storeId = id;
+		mixtureStore.setStoreId(id);
+		goto(`/file?id=${id}`, { replaceState: true, invalidateAll: true });
+	}
+
+	function toggleStar(event?: Event) {
+		event?.preventDefault();
+		if (isWorking) {
+			saveAndGo(generateLocalStorageId());
+		} else {
+			filesDb.delete(storeId);
+			saveAndGo(workingMixtureId);
 		}
-	};
+	}
 </script>
 
 <div class="flex flex-col gap-x-2 gap-y-2">
-	<Accordion flush={false} isSingle={false}>
-		<AccordionItem class="py-2">
-			{#snippet header()}
-				<div
-					class="
+	<div
+		class="
 					flex flex-row
 					items-center
 					gap-x-2
 					"
-				>
-					<Label class="font-semibold">{$mixtureStore.name || 'untitled'}</Label>
-				</div>
-			{/snippet}
+	>
+		<Button class="p-1" outline color="light" onclick={toggleStar}>
+			{#if isWorking}
+				<Tooltip color="default" offset={6} triggeredBy="#unsaved-star">
+					This mixture is not saved
+				</Tooltip>
+				<StarOutline id="unsaved-star" />
+			{:else}
+				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
+					This mixture is saved
+				</Tooltip>
+				<StarSolid id="saved-star" />
+			{/if}
+		</Button>
+		<div class="w-full">
+			<Helper>Mixture name</Helper>
 			<Input
 				value={$mixtureStore.name}
 				oninput={handleTitleInput()}
 				placeholder="Name your mixture"
+				autocomplete="off"
 				required
 				class="text-l font-bold mb-2"
 			/>
-		</AccordionItem>
+		</div>
+	</div>
 
+	<Accordion flush={false} isSingle={false}>
 		{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 			<AccordionItem class="py-2">
 				{#snippet header()}

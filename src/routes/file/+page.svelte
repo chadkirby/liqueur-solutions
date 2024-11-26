@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { dataToMixture, mixtureStore } from '$lib';
 	import type { LoadDataFromStore } from '$lib/load-data.js';
 	import MixtureList from '../../components/MixtureList.svelte';
 	import BottomNav from '../../components/BottomNav.svelte';
-	import { urlEncode } from '$lib/mixture-store.js';
-	import { filesDb, generateLocalStorageId } from '$lib/local-storage.js';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function

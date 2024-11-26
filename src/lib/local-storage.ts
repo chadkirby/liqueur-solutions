@@ -17,6 +17,8 @@ export function generateLocalStorageId(): LocalStorageId {
 	return `/${Math.random().toString(36).slice(2, 12)}`;
 }
 
+export const workingMixtureId = '/~working~mixture~' as LocalStorageId;
+
 export function isLocalStorageId(value: unknown): value is LocalStorageId {
 	return typeof value === 'string' && /^\/.+/.test(value);
 }
@@ -129,12 +131,12 @@ class FilesDb {
 
 	scan(sortBy: keyof FileItem = 'accessTime'): Map<LocalStorageId, FileItem> {
 		const records: [LocalStorageId, FileItem][] = [];
-		for (const id of this.fileKeys()) {
-			const item = this.read(id);
-			if (item) records.push([id, item]);
+		for (const item of this) {
+			if (item?.id === workingMixtureId) continue;
+			if (item) records.push([item.id, item]);
 		}
 		if (sortBy === 'accessTime') {
-			records.sort((a, b) => a[1][sortBy] - b[1][sortBy]);
+			records.sort((a, z) => z[1][sortBy] - a[1][sortBy]);
 		} else if (sortBy) {
 			records.sort((a, b) => a[1][sortBy].localeCompare(b[1][sortBy]));
 		}

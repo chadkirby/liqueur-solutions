@@ -21,6 +21,7 @@
   focus:ring-secondary-300
   focus:outline-none dark:focus:ring-secondary-800
   `;
+
 </script>
 
 <BottomNav
