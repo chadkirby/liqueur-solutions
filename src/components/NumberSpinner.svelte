@@ -193,17 +193,18 @@
 		onfocus={handleFocus}
 		onblur={handleBlur}
 		class="
-				w-20 px-1 py-1
-				border border-gray-300
-				bg-gray-50
-				rounded-lg
-				focus:outline-none
-				focus:ring-2
-				focus:ring-blue-200
-				focus:border-transparent
-				text-center
-				text-base
-				touch-none
+			w-full
+			px-1 py-1
+			border border-gray-300
+			bg-gray-50
+			rounded-lg
+			focus:outline-none
+			focus:ring-2
+			focus:ring-blue-200
+			focus:border-transparent
+			text-center
+			text-base
+			touch-none
 		"
 	/>
 </div>

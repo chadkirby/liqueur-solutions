@@ -14,7 +14,7 @@
 
 </script>
 
-<Mass {componentId} {component} />
-<Volume {componentId} {component} />
-<EquivalentSugar {component} />
-<Cal {componentId} {component} />
+<Mass {componentId} {component} class="basis-1/4" />
+<Volume {componentId} {component} class="basis-1/5" />
+<EquivalentSugar {componentId} {component} class="basis-1/5"/>
+<Cal {componentId} {component} class="basis-1/5" />

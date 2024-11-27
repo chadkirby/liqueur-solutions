@@ -9,7 +9,7 @@
 
 <Label
 	class="
-  w-20 px-1 py-1
+  min-w-16 w-full px-1 py-1
   border border-gray-300 rounded-lg
   text-center
   text-slate-400

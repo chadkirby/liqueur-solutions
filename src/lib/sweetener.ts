@@ -5,7 +5,7 @@ import {
 	type ComponentNumberKeys,
 	type SweetenerData
 } from './component.js';
-import { round, roundForDisplay } from './utils.js';
+import { round, format } from './utils.js';
 
 type Sweetnesss = {
 	density: number;
@@ -49,7 +49,7 @@ export class Sweetener extends BaseComponent implements Component {
 	}
 
 	describe() {
-		return `${roundForDisplay(this.mass)}g ${name} (${this._subType})`;
+		return `${format(this.mass, { unit: 'g' })} ${name} (${this._subType})`;
 	}
 
 	setVolume(volume: number) {

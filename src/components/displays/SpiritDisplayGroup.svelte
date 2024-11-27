@@ -14,7 +14,7 @@
 
 </script>
 
-<Volume {componentId} {component} />
-<Mass {componentId} {component} />
-<Abv {componentId} {component} />
-<Cal {componentId} {component} />
+<Volume {componentId} {component}  class="basis-1/4" />
+<Mass {componentId} {component}  class="basis-1/5" />
+<Abv {componentId} {component}  class="basis-1/4" />
+<Cal {componentId} {component} class="basis-1/5" />

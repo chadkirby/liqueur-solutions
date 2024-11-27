@@ -13,15 +13,16 @@
 	import debounce from 'lodash.debounce';
 
 	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup } from '$lib';
-	import VolumeComponent from './Volume.svelte';
-	import ABVComponent from './ABV.svelte';
-	import BrixComponent from './Brix.svelte';
-	import CalComponent from './Cal.svelte';
+	import VolumeComponent from './displays/Volume.svelte';
+	import ABVComponent from './displays/ABV.svelte';
+	import BrixComponent from './displays/Brix.svelte';
+	import CalComponent from './displays/Cal.svelte';
+	import MassComponent from './displays/Mass.svelte';
 	import SweetenerDropdown from './SweetenerDropdown.svelte';
-	import WaterDisplayGroup from './WaterDisplayGroup.svelte';
-	import SweetenerDisplayGroup from './SweetenerDisplayGroup.svelte';
-	import SpiritDisplayGroup from './SpiritDisplayGroup.svelte';
-	import SyrupDisplayGroup from './SyrupDisplayGroup.svelte';
+	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
+	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
+	import SpiritDisplayGroup from './displays/SpiritDisplayGroup.svelte';
+	import SyrupDisplayGroup from './displays/SyrupDisplayGroup.svelte';
 	import RemoveButton from './RemoveButton.svelte';
 	import {
 		filesDb,
@@ -57,8 +58,8 @@
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
 	// hack to adjust accordion item padding
 	accordionitem.variants.flush.false = {
-		button: 'p-3 border-s border-e group-first:border-t',
-		content: 'p-3 border-s border-e'
+		button: 'p-2 border-s border-e group-first:border-t',
+		content: 'p-2 border-s border-e'
 	};
 
 	const handleTitleInput = () =>
@@ -129,6 +130,7 @@
 		</div>
 	</div>
 
+	<Helper>Mixture components</Helper>
 	<Accordion flush={false} isSingle={false}>
 		{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
 			<AccordionItem class="py-2">
@@ -148,7 +150,7 @@
 							oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
 						/>
 					{/if}
-					<div class="flex flex-row grow my-1">
+					<div class="flex flex-row my-1">
 						{#if entry instanceof Sweetener}
 							<SweetenerDisplayGroup componentId={id} component={entry} />
 						{:else if entry instanceof Water}
@@ -166,19 +168,10 @@
 </div>
 
 <div class="mt-2 items-center pt-2 gap-x-2 gap-y-2">
-	<h2
-		class="
-		col-span-4
-		mb-2
-		basis-full
-		text-xl
-		font-bold
-	"
-	>
-		Totals
-	</h2>
-	<div class="flex flex-row">
+	<Helper>Mixture totals</Helper>
+	<div class="flex flex-row mt-2">
 		<VolumeComponent componentId="totals" component={$mixtureStore.mixture} />
+		<MassComponent componentId="totals" component={$mixtureStore.mixture} />
 		<ABVComponent componentId="totals" component={$mixtureStore.mixture} />
 		<BrixComponent componentId="totals" component={$mixtureStore.mixture} />
 		<CalComponent componentId="totals" component={$mixtureStore.mixture} />

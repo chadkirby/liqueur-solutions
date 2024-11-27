@@ -35,6 +35,27 @@ export function digitsForDisplay(value: number) {
 	return value === 0 ? 0 : value < 1 ? 2 : value < 10 ? 1 : 0;
 }
 
+export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
+export type MassUnit = 'kg' | 'g' | 'mg' | 'lb' | 'oz';
+export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
+
+export type FormatOptions = {
+	decimal?: 'fraction' | 'decimal';
+	unit?: VolumeUnit | MassUnit | OtherUnit;
+};
+
+export const thinsp = '\u2009';
+function suffixForUnit(unit: VolumeUnit | MassUnit | OtherUnit) {
+	switch (unit) {
+		case 'fl_oz':
+			return `fl.${thinsp}oz`;
+		case 'brix':
+			return 'ºBx';
+		default:
+			return unit;
+	}
+}
+
 /**
  * Rounds a numeric value for display purposes based on its magnitude.
  *
@@ -48,19 +69,77 @@ export function digitsForDisplay(value: number) {
  * @param value - The numeric value to be rounded and formatted.
  * @returns The formatted string representation of the number with a hair space.
  */
-export function roundForDisplay(
-	value: number,
-	whichSpace: 'thin' | 'hair' | 'normal' | 'none' = 'hair'
-) {
-	const formatted = value.toFixed(digitsForDisplay(value));
-	const space =
-		{
-			thin: '\u2009',
-			hair: '\u200A',
-			normal: ' ',
-			none: ''
-		}[whichSpace] || '';
-	return `${formatted}${space}`;
+export function format(value: number, options: FormatOptions = {}) {
+	const formatted =
+		options.decimal === 'fraction'
+			? convertToFraction(value)
+			: value.toFixed(digitsForDisplay(value));
+	const suffix = options.unit ? `${thinsp}${suffixForUnit(options.unit)}` : '';
+	const str = Object.assign(new String(`${formatted}${suffix}`), {
+		value: formatted,
+		suffix
+	});
+	return str;
+}
+
+export function convertToFraction(input: number): string {
+	const integer = Math.floor(input);
+	const decimal = input - integer;
+
+	// Find the closest denominator
+	for (const denominator of [2, 4, 8]) {
+		const numerator = Math.round(decimal * denominator);
+		const delta = Math.abs(decimal - numerator / denominator);
+		// if the delta is less then 1/16, return the fraction
+		if (numerator > 0 && delta < 0.0625) {
+			return numerator < denominator
+				? `${integer}${thinsp}${getUnicodeFraction(numerator, denominator)}`
+				: `${integer + 1}`;
+		}
+	}
+	return integer.toString();
+}
+/**
+ * Return the unicode character for a fraction
+ *
+ * @param   {number}  numerator
+ * @param   {number}  denominator
+ *
+ * @return  {string} the unicode fraction character
+ */
+function getUnicodeFraction(numerator: number, denominator: number) {
+	const fractions: Record<string, string> = {
+		// 		⅛
+		// VULGAR FRACTION ONE EIGHTH
+		// Unicode: U+215B, UTF-8: E2 85 9B
+		'1/8': '\u215B',
+		// 		¼
+		// VULGAR FRACTION ONE QUARTER
+		// Unicode: U+00BC, UTF-8: C2 BC
+		'1/4': '\u00BC',
+		// 		⅜
+		// VULGAR FRACTION THREE EIGHTHS
+		// Unicode: U+215C, UTF-8: E2 85 9C
+		'3/8': '\u215C',
+		// 		½
+		// VULGAR FRACTION ONE HALF
+		// Unicode: U+00BD, UTF-8: C2 BD
+		'1/2': '\u00BD',
+		// 		⅝
+		// VULGAR FRACTION FIVE EIGHTHS
+		// Unicode: U+215D, UTF-8: E2 85 9D
+		'5/8': '\u215D',
+		// 		¾
+		// VULGAR FRACTION THREE QUARTERS
+		// Unicode: U+00BE, UTF-8: C2 BE
+		'3/4': '\u00BE',
+		// 		⅞
+		// VULGAR FRACTION SEVEN EIGHTHS
+		// Unicode: U+215E, UTF-8: E2 85 9E
+		'7/8': '\u215E'
+	};
+
+	return fractions[`${numerator}/${denominator}`] ?? `${numerator}⁄${denominator}`;
 }
 
 const candidates = [

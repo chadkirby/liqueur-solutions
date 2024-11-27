@@ -14,7 +14,7 @@
 
 </script>
 
-<Volume {componentId} {component} />
-<Mass {componentId} {component} />
-<Brix {componentId} {component} />
+<Volume {componentId} {component}  class="basis-1/4" />
+<Mass {componentId} {component}  class="basis-1/4" />
+<Brix {componentId} {component}  class="basis-1/4" />
 <Cal {componentId} {component} />

@@ -1,15 +1,12 @@
 <script lang="ts">
-	import NumberSpinner from './NumberSpinner.svelte';
-	import { mixtureStore, Mixture, type AnyComponent } from '$lib';
+	import NumberSpinner from '../NumberSpinner.svelte';
+	import { mixtureStore, Mixture } from '$lib';
 	import { Helper } from 'svelte-5-ui-lib';
-	import { brixToSyrupProportion, roundForDisplay } from '$lib/utils.js';
-	import ReadOnlyValue from './ReadOnlyValue.svelte';
-	interface Props {
-		componentId: string;
-		component: AnyComponent;
-	}
+	import { brixToSyrupProportion, format } from '$lib/utils.js';
+	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import type { DisplayProps } from './display-props.js';
 
-	let { componentId, component }: Props = $props();
+	let { componentId, component, class: classProp }: DisplayProps = $props();
 
 	let brix = $derived(component.brix ?? 0);
 	// convert 50 brix to 1/1
@@ -18,17 +15,17 @@
 	let parts = $derived(brix < 100 && brix >= 50 ? brixToSyrupProportion(brix) : '');
 </script>
 
-<div class="mx-1 grow">
+<div class="mx-1 min-w-0 w-full {classProp}">
 	<Helper>Sweetness</Helper>
 
 	{#if component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
 			value={brix}
-			format={(v) => `${roundForDisplay(v)}%`}
+			format={(v) => `${format(v, { unit: '%' })}`}
 			onValueChange={(v) => mixtureStore.setBrix(componentId, v)}
 		/>
 	{:else}
-		<ReadOnlyValue>{roundForDisplay(brix)}%</ReadOnlyValue>
+		<ReadOnlyValue>{format(brix, { unit: '%' })}</ReadOnlyValue>
 	{/if}
 	<Helper class="text-center">{parts}</Helper>
 </div>

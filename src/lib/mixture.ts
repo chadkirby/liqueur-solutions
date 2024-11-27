@@ -10,7 +10,7 @@ import { Ethanol } from './ethanol.js';
 import { solver } from './solver.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
-import { brixToSyrupProportion, roundForDisplay } from './utils.js';
+import { brixToSyrupProportion, format } from './utils.js';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
@@ -62,17 +62,17 @@ export class Mixture extends BaseComponent {
 	}
 
 	describe() {
-		const volume = `${roundForDisplay(this.volume)}ml`;
+		const volume = `${format(this.volume, { unit: 'ml' })}`;
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
 			const summary = [volume, brixToSyrupProportion(this.brix), name, `(${sweetener?.subType})`];
 			return summary.join(' ');
 		}
 		if (isSpirit(this)) {
-			return `${volume} ${roundForDisplay(this.proof)} proof`;
+			return `${volume} ${format(this.proof, { unit: 'proof' })}`;
 		}
 		if (isLiqueur(this)) {
-			return `${volume} ${roundForDisplay(this.proof)} proof ${roundForDisplay(this.brix)}ºBx`;
+			return `${volume} ${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })}`;
 		}
 		return '';
 	}
@@ -339,13 +339,13 @@ export function describe(thing: AnyComponent): string {
 		return thing.describe();
 	}
 	if (thing instanceof Water) {
-		return `${roundForDisplay(thing.volume)}ml water`;
+		return `${format(thing.volume, { unit: 'ml' })} water`;
 	}
 	if (thing instanceof Sweetener) {
-		return `${roundForDisplay(thing.mass)}g ${thing.subType}`;
+		return `${format(thing.mass, { unit: 'g' })} ${thing.subType}`;
 	}
 	if (thing instanceof Ethanol) {
-		return `${roundForDisplay(thing.volume)}ml ethanol`;
+		return `${format(thing.volume, { unit: 'ml' })} ethanol`;
 	}
 	return '???';
 }

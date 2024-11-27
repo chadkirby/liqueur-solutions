@@ -4,7 +4,7 @@ import {
 	type Component,
 	type ComponentNumberKeys
 } from './component.js';
-import { round, roundForDisplay } from './utils.js';
+import { round, format } from './utils.js';
 
 export class Ethanol extends BaseComponent implements Component {
 	readonly type = 'ethanol';
@@ -21,7 +21,7 @@ export class Ethanol extends BaseComponent implements Component {
 	}
 
 	describe() {
-		return `${roundForDisplay(this.volume)}ml ethanol`;
+		return `${format(this.volume, { unit: 'ml' })} ethanol`;
 	}
 
 	get rawData(): EthanolData {
