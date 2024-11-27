@@ -3,7 +3,6 @@
 	import { BottomNav, BottomNavItem } from 'svelte-5-ui-lib';
 	import ShareModal from './ShareModal.svelte';
 	import FilesDrawer from './FilesDrawer.svelte';
-	import SaveButton from './SaveButton.svelte';
 	import NewButton from './NewButton.svelte';
 
 	const btnClass = `

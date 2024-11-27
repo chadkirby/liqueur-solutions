@@ -77,22 +77,22 @@ Add a component to the mixture
 			class="fixed -translate-y-[120%] -translate-x-4"
 		>
 			<DropdownUl>
-				<DropdownLi aClass="flex" href="/">
+				<DropdownLi aClass="flex">
 					<button class="flex w-32 justify-start" onclick={addSpirit}>
 						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">spirit</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex" href="/">
+				<DropdownLi aClass="flex">
 					<button class="flex w-32 justify-start" onclick={addSugar}>
 						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">sweetener</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex" href="/">
+				<DropdownLi aClass="flex">
 					<button class="flex w-32 justify-start" onclick={addSyrup}>
 						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">syrup</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex" href="/">
+				<DropdownLi aClass="flex">
 					<button class="flex w-32 justify-start" onclick={addWater}>
 						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">water</span>
 					</button>
