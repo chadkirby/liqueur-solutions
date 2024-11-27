@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { LoadDataFromStore } from '$lib/load-data.js';
 	import MixtureList from '../../components/MixtureList.svelte';
-	import BottomNav from '../../components/BottomNav.svelte';
+	import BottomNav from '../../components/nav/BottomNav.svelte';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function

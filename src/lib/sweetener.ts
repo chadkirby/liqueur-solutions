@@ -49,7 +49,10 @@ export class Sweetener extends BaseComponent implements Component {
 	}
 
 	describe() {
-		return `${format(this.mass, { unit: 'g' })} ${name} (${this._subType})`;
+		if (this.subType === 'sucrose') {
+			return `${format(this.mass, { unit: 'g' })} sugar`;
+		}
+		return `${format(this.mass, { unit: 'g' })} ${this._subType} sweetener`;
 	}
 
 	setVolume(volume: number) {

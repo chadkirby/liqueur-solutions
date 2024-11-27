@@ -65,14 +65,18 @@ export class Mixture extends BaseComponent {
 		const volume = `${format(this.volume, { unit: 'ml' })}`;
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
-			const summary = [volume, brixToSyrupProportion(this.brix), name, `(${sweetener?.subType})`];
+			const summary = [
+				volume,
+				brixToSyrupProportion(this.brix),
+				`${sweetener?.subType === 'sucrose' ? 'simple syrup' : `${sweetener?.subType} syrup`}`
+			];
 			return summary.join(' ');
 		}
 		if (isSpirit(this)) {
-			return `${volume} ${format(this.proof, { unit: 'proof' })}`;
+			return `${volume} ${format(this.proof, { unit: 'proof' })} spirit`;
 		}
 		if (isLiqueur(this)) {
-			return `${volume} ${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })}`;
+			return `${volume} ${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
 		}
 		return '';
 	}

@@ -18,7 +18,7 @@
 	import BrixComponent from './displays/Brix.svelte';
 	import CalComponent from './displays/Cal.svelte';
 	import MassComponent from './displays/Mass.svelte';
-	import SweetenerDropdown from './SweetenerDropdown.svelte';
+	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
 	import SpiritDisplayGroup from './displays/SpiritDisplayGroup.svelte';

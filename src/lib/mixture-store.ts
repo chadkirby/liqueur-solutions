@@ -3,7 +3,7 @@ import { isSweetenerData, SweetenerTypes } from './component.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
 import { type Analysis } from './utils.js';
-import { Mixture } from './mixture.js';
+import { isSyrup, Mixture } from './mixture.js';
 import { solver } from './solver.js';
 import {
 	asLocalStorageId,
@@ -269,13 +269,18 @@ export function createMixtureStore() {
 			});
 		},
 		updateSweetenerSubType: (id: string, subType: SweetenerTypes) => {
-			store.update((data) => {
+			update((data) => {
 				const component = data.mixture.components.find((c) => c.id === id);
 				if (component && component.component instanceof Sweetener) {
 					// This will trigger the mixture's recalculations since
 					// subType affects equivalentSugarMass and other derived
 					// values
 					component.component.subType = subType;
+				} else if (component && isSyrup(component.component)) {
+					const sweetener = component.component.findByType((x) => x instanceof Sweetener);
+					if (sweetener) {
+						sweetener.subType = subType;
+					}
 				}
 				return data;
 			});
