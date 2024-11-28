@@ -324,7 +324,19 @@ export function isSpirit(thing: AnyComponent) {
 export function isSyrup(thing: Mixture): boolean;
 export function isSyrup(thing: AnyComponent): thing is Mixture;
 export function isSyrup(thing: AnyComponent) {
-	return Boolean(thing instanceof Mixture && thing.abv === 0 && thing.brix > 0);
+	return Boolean(
+		thing instanceof Mixture &&
+			thing.abv === 0 &&
+			thing.brix > 0 &&
+			thing.findByType((x) => x instanceof Water)
+	);
+}
+
+export function isSimpleSyrup(thing: Mixture): boolean;
+export function isSimpleSyrup(thing: AnyComponent): thing is Mixture;
+export function isSimpleSyrup(thing: AnyComponent) {
+	// simple syrup is a mixture of sweetener and water
+	return Boolean(isSyrup(thing) && thing.components.length === 2);
 }
 
 export function isLiqueur(thing: Mixture): boolean;

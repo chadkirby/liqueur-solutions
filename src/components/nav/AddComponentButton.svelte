@@ -4,6 +4,7 @@
 	import { Dropdown, DropdownLi, DropdownUl, Tooltip, uiHelpers } from 'svelte-5-ui-lib';
 	import { sineIn } from 'svelte/easing';
 	import Portal from 'svelte-portal';
+	import { filesDrawer } from '$lib/files-drawer-store';
 
 	let dropdown = uiHelpers();
 	let dropdownStatus = $state(false);
@@ -14,10 +15,12 @@
 		dropdownStatus = dropdown.isOpen;
 	});
 	let transitionParams = {
-		y: 0,
+		y: -8,
 		duration: 100,
 		easing: sineIn
 	};
+
+	const drawer = $filesDrawer;
 
 	function addSpirit() {
 		closeDropdown();
@@ -43,6 +46,11 @@
 			{ name: 'simple syrup', id: 'syrup', component: newSyrup(100, 50) }
 		]);
 	}
+
+	function openFilesDrawer() {
+		closeDropdown();
+		drawer.open();
+	}
 </script>
 
 <Tooltip
@@ -56,7 +64,7 @@ Add a component to the mixture
 <div class="relative">
 	<PlusOutline
 		id="add-component-button"
-		class="text-white"
+		class="text-white cursor-pointer"
 		onclick={() => (dropdown.isOpen ? dropdown.close() : dropdown.open())}
 	/>
 
@@ -74,27 +82,32 @@ Add a component to the mixture
 			{dropdownStatus}
 			{closeDropdown}
 			params={transitionParams}
-			class="fixed -translate-y-[120%] -translate-x-4"
+			class="absolute left-0 bottom-full mb-2 z-50 bg-white rounded-lg shadow-lg border border-gray-200"
 		>
-			<DropdownUl>
-				<DropdownLi aClass="flex">
-					<button class="flex w-32 justify-start" onclick={addSpirit}>
-						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">spirit</span>
+			<DropdownUl class="py-2">
+				<DropdownLi aClass="flex hover:bg-gray-100">
+					<button class="flex w-full px-4 py-2 items-center gap-2" onclick={addSpirit}>
+						<CirclePlusSolid size="sm" /> <span>spirit</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex">
-					<button class="flex w-32 justify-start" onclick={addSugar}>
-						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">sweetener</span>
+				<DropdownLi aClass="flex hover:bg-gray-100">
+					<button class="flex w-full px-4 py-2 items-center gap-2" onclick={addSugar}>
+						<CirclePlusSolid size="sm" /> <span>sweetener</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex">
-					<button class="flex w-32 justify-start" onclick={addSyrup}>
-						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">syrup</span>
+				<DropdownLi aClass="flex hover:bg-gray-100">
+					<button class="flex w-full px-4 py-2 items-center gap-2" onclick={addSyrup}>
+						<CirclePlusSolid size="sm" /> <span>syrup</span>
 					</button>
 				</DropdownLi>
-				<DropdownLi aClass="flex">
-					<button class="flex w-32 justify-start" onclick={addWater}>
-						<CirclePlusSolid size="lg" class="mr-1" /> <span class="mt-[1px]">water</span>
+				<DropdownLi aClass="flex hover:bg-gray-100">
+					<button class="flex w-full px-4 py-2 items-center gap-2" onclick={addWater}>
+						<CirclePlusSolid size="sm" /> <span>water</span>
+					</button>
+				</DropdownLi>
+				<DropdownLi aClass="flex hover:bg-gray-100">
+					<button class="flex w-full px-4 py-2 items-center gap-2" onclick={openFilesDrawer}>
+						<CirclePlusSolid size="sm" /> <span>saved mixture</span>
 					</button>
 				</DropdownLi>
 			</DropdownUl>

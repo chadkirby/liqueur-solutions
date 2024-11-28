@@ -1,15 +1,19 @@
 <script lang="ts">
-	import { Drawer, uiHelpers, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
-	import { CloseCircleSolid, ListOutline } from 'flowbite-svelte-icons';
+	import { Drawer, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
+	import { CloseCircleSolid, ListOutline, ArrowRightAltSolid } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import {
 		asLocalStorageId,
 		filesDb,
 		listFiles,
 		type FileItem,
-		type LocalStorageId
+		type LocalStorageId,
 	} from '$lib/local-storage';
-	const drawer = uiHelpers();
+	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
+	import { mixtureStore } from '$lib';
+	import { filesDrawer } from '$lib/files-drawer-store';
+
+	const drawer = $filesDrawer;
 	let drawerStatus = $state(false);
 	let files = $state([] as FileItem[]);
 	const closeDrawer = drawer.close;
@@ -38,6 +42,16 @@
 			window.location.href = `/file?id=${id}`;
 		};
 	};
+
+	function addToMixture(id: LocalStorageId, name: string) {
+		return () => {
+			drawer.close();
+			const mixture = deserializeFromLocalStorage(id);
+			if (mixture && mixture.isValid) {
+				mixtureStore.addComponents([{ name, id: 'mixture', component: mixture }]);
+			}
+		};
+	}
 </script>
 
 <Tooltip color="default" offset={6} triggeredBy="#file-drawer-button">
@@ -94,6 +108,15 @@
 						<span>{name}</span>
 						<span>{desc}</span>
 					</button>
+					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('add', id)}`}>
+						Add {name} to current mixture
+					</Tooltip>
+					<ArrowRightAltSolid
+						id={domIdFor('add', id)}
+						role="button"
+						size="sm"
+						onclick={addToMixture(id, name)}
+					/>
 				</div>
 			{/each}
 		</div>
