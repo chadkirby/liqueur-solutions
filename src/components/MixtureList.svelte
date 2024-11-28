@@ -12,7 +12,7 @@
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
-	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup } from '$lib';
+	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup, isLiqueur } from '$lib';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';
 	import BrixComponent from './displays/Brix.svelte';
@@ -42,18 +42,19 @@
 
 	let { storeId }: Props = $props();
 	let isWorking = $derived(storeId === workingMixtureId);
-	console.log(storeId);
-	if (browser) {
-		try {
-			const mixture = deserializeFromLocalStorage(storeId);
-			if (!mixture.isValid) throw new Error('Invalid mixture');
-			const name = getName(storeId) || 'mixture';
-			mixtureStore.load({ storeId, name, mixture });
-		} catch (error) {
-			goto('/new');
-		}
-	}
 
+	if (browser) {
+		$effect(() => {
+			try {
+				const mixture = deserializeFromLocalStorage(storeId);
+				if (!mixture.isValid) throw new Error('Invalid mixture');
+				const name = getName(storeId) || 'mixture';
+				mixtureStore.load({ storeId, name, mixture });
+			} catch (error) {
+				goto('/new');
+			}
+		});
+	}
 	// hack to remove accordion focus ring
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
 	// hack to adjust accordion item padding
@@ -68,16 +69,6 @@
 			mixtureStore.setName(newName);
 			mixtureStore.save();
 		}, 100);
-
-	if (browser) {
-		// listen for cmd+s or ctrl+s to save the mixture
-		window.addEventListener('keydown', (event) => {
-			if ((event.metaKey || event.ctrlKey) && event.key === 's') {
-				event.preventDefault();
-				toggleStar();
-			}
-		});
-	}
 
 	function saveAndGo(id: LocalStorageId) {
 		storeId = id;
@@ -143,7 +134,7 @@
 				<div class="flex flex-col items-stretch">
 					{#if entry instanceof Sweetener || isSyrup(entry)}
 						<SweetenerDropdown componentId={id} component={entry} {name} />
-					{:else}
+					{:else if isSpirit(entry) || isLiqueur(entry)}
 						<Input
 							value={name}
 							class="w-full pr-8"

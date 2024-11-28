@@ -73,7 +73,7 @@ export function format(value: number, options: FormatOptions = {}) {
 	const formatted =
 		options.decimal === 'fraction'
 			? convertToFraction(value)
-			: value.toFixed(digitsForDisplay(value));
+			: value.toFixed(digitsForDisplay(value) + (options.unit === '%' ? 1 : 0));
 	const suffix = options.unit ? `${thinsp}${suffixForUnit(options.unit)}` : '';
 	const str = Object.assign(new String(`${formatted}${suffix}`), {
 		value: formatted,

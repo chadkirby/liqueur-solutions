@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Drawer, uiHelpers, Drawerhead, A, Tooltip, Label } from 'svelte-5-ui-lib';
+	import { Drawer, uiHelpers, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
 	import { CloseCircleSolid, ListOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import {
@@ -9,7 +9,6 @@
 		type FileItem,
 		type LocalStorageId
 	} from '$lib/local-storage';
-	import { goto } from '$app/navigation';
 	const drawer = uiHelpers();
 	let drawerStatus = $state(false);
 	let files = $state([] as FileItem[]);
@@ -33,10 +32,10 @@
 
 	const goToFile = (id: LocalStorageId) => {
 		return () => {
-			const file = files.find((f) => f.id === id);
-			if (file) {
-				goto(file.href);
-			}
+			drawer.close();
+			// client-side navigation does not work???
+			// goto(`/file?id=${id}`, { replaceState: true, invalidateAll: true });
+			window.location.href = `/file?id=${id}`;
 		};
 	};
 </script>
@@ -80,7 +79,7 @@
 					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('link', id)}`}>
 						Open {name}
 					</Tooltip>
-					<a
+					<button
 						id={domIdFor('link', id)}
 						class="
 							flex flex-col
@@ -90,12 +89,11 @@
 							w-full
 							text-sm
 						"
-						{href}
-						onclick={closeDrawer}
+						onclick={goToFile(id)}
 					>
 						<span>{name}</span>
 						<span>{desc}</span>
-					</a>
+					</button>
 				</div>
 			{/each}
 		</div>

@@ -14,13 +14,13 @@ const deviceStorage = browser
  * Generates a LocalStorageId from a mixture name.
  */
 export function generateLocalStorageId(): LocalStorageId {
-	return `/${Math.random().toString(36).slice(2, 12)}`;
+	return `~${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export const workingMixtureId = '/~working~mixture~' as LocalStorageId;
+export const workingMixtureId = '~working~mixture~' as LocalStorageId;
 
 export function isLocalStorageId(value: unknown): value is LocalStorageId {
-	return typeof value === 'string' && /^\/.+/.test(value);
+	return typeof value === 'string' && /^~.+/.test(value);
 }
 
 export function assertLocalStorageId(value: string | null): asserts value is LocalStorageId {
@@ -68,7 +68,7 @@ export function resolveUrl(relativePath: string): string {
 	return link.href;
 }
 
-export type LocalStorageId = `/${string}`;
+export type LocalStorageId = `~${string}`;
 
 export type FileItem = {
 	id: LocalStorageId;

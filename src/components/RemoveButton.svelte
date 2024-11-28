@@ -13,6 +13,7 @@
 
   function removeComponent(e: Event) {
     e.preventDefault();
+    e.stopPropagation();
     mixtureStore.removeComponent(componentId);
   }
 </script>

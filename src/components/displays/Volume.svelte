@@ -11,8 +11,8 @@
 
 	let ml = $derived(component.volume);
 	const alternates: Alternate[] = [
-		{ options: { unit: 'tsp', decimal: 'fraction' }, fn: (v: number) => v * 0.202884 },
-		{ options: { unit: 'tbsp', decimal: 'fraction' }, fn: (v: number) => v * 0.0676288 },
+		{ options: { unit: 'tsp', decimal: 'decimal' }, fn: (v: number) => v * 0.202884 },
+		{ options: { unit: 'tbsp', decimal: 'decimal' }, fn: (v: number) => v * 0.0676288 },
 		{ options: { unit: `fl_oz` }, fn: (v: number) => v * 0.033814 },
 		{ options: { unit: 'cups', decimal: 'fraction' }, fn: (v: number) => v * 0.00422675 }
 	];

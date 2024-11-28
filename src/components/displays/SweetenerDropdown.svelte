@@ -21,15 +21,9 @@
 </script>
 
 <div class="w-full flex flex-row gap-1 relative">
-		<Input
-			value={name}
-			class="w-1/2 pr-8"
-			oninput={(e) => mixtureStore.updateComponentName(componentId, e.currentTarget.value)}
-		/>
-
 		<select
 			class="
-      w-1/2
+      w-full
       appearance-none
       rounded border
       border-gray-300
@@ -49,6 +43,6 @@
 			class="
       pointer-events-none
       absolute
-      left-[51%] top-3 h-5 w-5 text-gray-500"
+      left-2 top-3 h-5 w-5 text-gray-500"
 		/>
 </div>
