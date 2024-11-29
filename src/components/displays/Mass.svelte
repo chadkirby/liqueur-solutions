@@ -7,7 +7,7 @@
 	import type { DisplayProps } from './display-props.js';
 	import AlternateHelper, { type Alternate } from './AlternateHelper.svelte';
 
-	let { componentId, component, class: classProp }: DisplayProps = $props();
+	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
 
 	let grams = $derived(component.mass);
 	const alternates: Alternate[] = [
@@ -19,7 +19,7 @@
 
 <div class="mx-1 min-w-0 w-full {classProp}">
 	<Helper>Mass</Helper>
-	{#if component instanceof Sweetener}
+	{#if component instanceof Sweetener && !readonly}
 		<NumberSpinner
 			value={grams}
 			format={(v) => `${format(v, { unit: 'g' })}`}

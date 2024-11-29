@@ -6,6 +6,7 @@
 		value: number;
 		min?: number;
 		max?: number;
+		class?: string;
 		format?: (value: number) => string;
 		onValueChange?: (value: number) => void;
 	}
@@ -14,6 +15,7 @@
 		value,
 		min = 0,
 		max = Infinity,
+		class: classProp,
 		format = (v: number) => v.toString(),
 		onValueChange
 	}: Props = $props();
@@ -181,7 +183,7 @@
 	});
 </script>
 
-<div class="flex items-center">
+<div class="flex items-center {classProp}">
 	<input
 		bind:this={input}
 		type="text"
@@ -192,6 +194,7 @@
 		use:touchHandler
 		onfocus={handleFocus}
 		onblur={handleBlur}
+		onclick={(e) => e.stopPropagation()}
 		class="
 			w-full
 			px-1 py-1

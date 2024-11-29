@@ -6,7 +6,7 @@
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 
-	let { componentId, component, class: classProp }: DisplayProps = $props();
+	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
 
 	let brix = $derived(component.brix ?? 0);
 	// convert 50 brix to 1/1
@@ -18,7 +18,7 @@
 <div class="mx-1 min-w-0 w-full {classProp}">
 	<Helper>Sweetness</Helper>
 
-	{#if component instanceof Mixture && component.canEdit('equivalentSugarMass')}
+	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
 			value={brix}
 			format={(v) => `${format(v, { unit: '%' })}`}

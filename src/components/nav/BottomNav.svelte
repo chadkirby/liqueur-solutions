@@ -1,9 +1,19 @@
 <script lang="ts">
-	import AddComponent from './AddComponentButton.svelte';
 	import { BottomNav, BottomNavItem } from 'svelte-5-ui-lib';
 	import ShareModal from './ShareModal.svelte';
 	import FilesDrawer from './FilesDrawer.svelte';
 	import NewButton from './NewButton.svelte';
+	import { filesDrawer } from '$lib/files-drawer-store.svelte';
+
+	function openFilesDrawer() {
+		filesDrawer.openWith(null);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			openFilesDrawer();
+		}
+	}
 
 	const btnClass = `
   inline-flex
@@ -20,7 +30,6 @@
   focus:ring-secondary-300
   focus:outline-none dark:focus:ring-secondary-800
   `;
-
 </script>
 
 <BottomNav
@@ -32,16 +41,14 @@
     justify-around
   "
 >
-	<BottomNavItem btnName="Files" {btnClass}>
-		<FilesDrawer />
-	</BottomNavItem>
+	<button type="button" onclick={openFilesDrawer} onkeydown={handleKeydown}>
+		<BottomNavItem btnName="Files" {btnClass}>
+			<FilesDrawer />
+		</BottomNavItem>
+	</button>
 
   <BottomNavItem btnName="New" {btnClass}>
 		<NewButton />
-	</BottomNavItem>
-
-  <BottomNavItem btnName="Add component" btnClass={btnClass.replace(/secondary/g, 'primary')}>
-		<AddComponent />
 	</BottomNavItem>
 
 	<BottomNavItem btnName="Share" {btnClass}>

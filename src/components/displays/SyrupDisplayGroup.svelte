@@ -14,7 +14,7 @@
 
 </script>
 
-<Volume {componentId} {component}  class="basis-1/4" />
-<Mass {componentId} {component}  class="basis-1/4" />
-<Brix {componentId} {component}  class="basis-1/4" />
-<Cal {componentId} {component} />
+<Volume {componentId} {component} readonly={true}  class="basis-1/4" />
+<Mass {componentId} {component} readonly={true}  class="basis-1/4" />
+<Brix {componentId} {component} readonly={true}  class="basis-1/4" />
+<Cal {componentId} {component} readonly={true} />

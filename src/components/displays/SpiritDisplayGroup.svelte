@@ -14,7 +14,7 @@
 
 </script>
 
-<Volume {componentId} {component}  class="basis-1/4" />
-<Mass {componentId} {component}  class="basis-1/5" />
-<Abv {componentId} {component}  class="basis-1/4" />
-<Cal {componentId} {component} class="basis-1/5" />
+<Volume {componentId} {component} readonly={true} class="basis-1/4" />
+<Mass {componentId} {component} readonly={true} class="basis-1/5" />
+<Abv {componentId} {component} readonly={true} class="basis-1/4" />
+<Cal {componentId} {component} readonly={true} class="basis-1/5" />

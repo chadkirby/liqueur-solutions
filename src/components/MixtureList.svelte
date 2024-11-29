@@ -12,7 +12,7 @@
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
-	import { mixtureStore, Mixture, Sweetener, Water, isSpirit, isSyrup, isLiqueur } from '$lib';
+	import { mixtureStore, Mixture, Sweetener, Water, isSimpleSpirit, isLiqueur, isSimpleSyrup } from '$lib';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';
 	import BrixComponent from './displays/Brix.svelte';
@@ -35,6 +35,7 @@
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import MixtureAccordion from './MixtureAccordion.svelte';
 
 	interface Props {
 		storeId: LocalStorageId;
@@ -122,40 +123,7 @@
 	</div>
 
 	<Helper>Mixture components</Helper>
-	<Accordion flush={false} isSingle={false}>
-		{#each $mixtureStore.mixture.components.entries() as [index, { name, id, component: entry }] (index)}
-			<AccordionItem class="py-2">
-				{#snippet header()}
-					<div class="flex flex-row items-center gap-x-2">
-						<RemoveButton componentId={id} />
-						<Label>{entry.describe()}</Label>
-					</div>
-				{/snippet}
-				<div class="flex flex-col items-stretch">
-					{#if entry instanceof Sweetener || isSyrup(entry)}
-						<SweetenerDropdown componentId={id} component={entry} {name} />
-					{:else if isSpirit(entry) || isLiqueur(entry)}
-						<Input
-							value={name}
-							class="w-full pr-8"
-							oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
-						/>
-					{/if}
-					<div class="flex flex-row my-1">
-						{#if entry instanceof Sweetener}
-							<SweetenerDisplayGroup componentId={id} component={entry} />
-						{:else if entry instanceof Water}
-							<WaterDisplayGroup componentId={id} component={entry} />
-						{:else if entry instanceof Mixture && isSpirit(entry)}
-							<SpiritDisplayGroup componentId={id} component={entry} />
-						{:else if entry instanceof Mixture && isSyrup(entry)}
-							<SyrupDisplayGroup componentId={id} component={entry} />
-						{/if}
-					</div>
-				</div>
-			</AccordionItem>
-		{/each}
-	</Accordion>
+	<MixtureAccordion mixture={$mixtureStore.mixture} id={null} />
 </div>
 
 <div class="mt-2 items-center pt-2 gap-x-2 gap-y-2">

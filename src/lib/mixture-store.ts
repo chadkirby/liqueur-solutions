@@ -3,7 +3,7 @@ import { isSweetenerData, SweetenerTypes } from './component.js';
 import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
 import { type Analysis } from './utils.js';
-import { isSyrup, Mixture } from './mixture.js';
+import { isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
 import {
 	asLocalStorageId,
@@ -109,10 +109,19 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
-		addComponents(components: Mixture['components']) {
+		addComponentTo(parentId: string | null, component: MixtureComponent) {
 			update((data) => {
-				for (const component of components) {
+				if (parentId === null) {
 					data.mixture.addComponent({ ...component });
+				} else {
+					const parent = data.mixture.findById(parentId);
+					if (!parent) {
+						throw new Error(`Unable to find component ${parentId}`);
+					}
+					if (!(parent.component instanceof Mixture)) {
+						throw new Error(`Component ${parentId} is not a mixture`);
+					}
+					parent.component.addComponent({ ...component });
 				}
 				return data;
 			});
@@ -120,15 +129,6 @@ export function createMixtureStore() {
 		removeComponent(componentId: string) {
 			update((data) => {
 				data.mixture.removeComponent(componentId);
-				return data;
-			});
-		},
-		replaceComponent(
-			componentId: string,
-			{ name, component }: Pick<Mixture['components'][0], 'name' | 'component'>
-		) {
-			update((data) => {
-				data.mixture.replaceComponent(componentId, { name, component });
 				return data;
 			});
 		},
@@ -210,10 +210,11 @@ export function createMixtureStore() {
 				throw new Error('Cannot set mass of totals');
 			}
 			update((data) => {
-				const component = data.mixture.findById(componentId);
-				if (!component) {
+				const mc = data.mixture.findById(componentId);
+				if (!mc) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
+				const { component } = mc;
 				// clear any errors
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-mass`

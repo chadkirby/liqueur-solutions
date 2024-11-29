@@ -12,5 +12,5 @@
 
 </script>
 
-<Volume {componentId} {component}  class="basis-1/2" />
-<Mass {componentId} {component}  class="basis-1/2" />
+<Volume {componentId} {component} readonly={true}  class="basis-1/2" />
+<Mass {componentId} {component} readonly={true}  class="basis-1/2" />

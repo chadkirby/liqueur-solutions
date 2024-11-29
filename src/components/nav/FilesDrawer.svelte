@@ -11,15 +11,15 @@
 	} from '$lib/local-storage';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { mixtureStore } from '$lib';
-	import { filesDrawer } from '$lib/files-drawer-store';
+	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 
-	const drawer = $filesDrawer;
-	let drawerStatus = $state(false);
 	let files = $state([] as FileItem[]);
-	const closeDrawer = drawer.close;
+	let drawerStatus = $state(false);
+	const closeDrawer = () => filesDrawer.close();
+
 	$effect(() => {
-		drawerStatus = drawer.isOpen;
-		if (drawerStatus) {
+		drawerStatus = filesDrawer.isOpen;
+		if (filesDrawer.isOpen) {
 			files = listFiles();
 		}
 	});
@@ -36,7 +36,7 @@
 
 	const goToFile = (id: LocalStorageId) => {
 		return () => {
-			drawer.close();
+			filesDrawer.close();
 			// client-side navigation does not work???
 			// goto(`/file?id=${id}`, { replaceState: true, invalidateAll: true });
 			window.location.href = `/file?id=${id}`;
@@ -45,10 +45,10 @@
 
 	function addToMixture(id: LocalStorageId, name: string) {
 		return () => {
-			drawer.close();
+			filesDrawer.close();
 			const mixture = deserializeFromLocalStorage(id);
 			if (mixture && mixture.isValid) {
-				mixtureStore.addComponents([{ name, id: 'mixture', component: mixture }]);
+				mixtureStore.addComponentTo(filesDrawer.parentId, { name, id: 'mixture', component: mixture });
 			}
 		};
 	}
@@ -57,7 +57,7 @@
 <Tooltip color="default" offset={6} triggeredBy="#file-drawer-button">
 	Show saved mixture files
 </Tooltip>
-<ListOutline id="file-drawer-button" class="text-white" onclick={drawer.toggle} />
+<ListOutline id="file-drawer-button" class="text-white" onclick={filesDrawer.toggle} />
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">

@@ -14,7 +14,17 @@ import { brixToSyrupProportion, format } from './utils.js';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
-type MixtureComponent = { name: string; id: string; component: AnyComponent };
+export type MixtureComponent = { name: string; id: string; component: AnyComponent };
+
+type Submixture = {
+	name: string;
+	id: string;
+	component: Mixture;
+};
+
+function isSubmixture(mixture: MixtureComponent): mixture is Submixture {
+	return mixture.component instanceof Mixture;
+}
 
 export function dataToMixture(d: {
 	components: Array<{ name: string; id: string; data: unknown }>;
@@ -62,21 +72,19 @@ export class Mixture extends BaseComponent {
 	}
 
 	describe() {
-		const volume = `${format(this.volume, { unit: 'ml' })}`;
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
 			const summary = [
-				volume,
 				brixToSyrupProportion(this.brix),
 				`${sweetener?.subType === 'sucrose' ? 'simple syrup' : `${sweetener?.subType} syrup`}`
 			];
 			return summary.join(' ');
 		}
 		if (isSpirit(this)) {
-			return `${volume} ${format(this.proof, { unit: 'proof' })} spirit`;
+			return `spirit`;
 		}
 		if (isLiqueur(this)) {
-			return `${volume} ${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
+			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
 		}
 		return '';
 	}
@@ -132,6 +140,17 @@ export class Mixture extends BaseComponent {
 		return this.components.map(({ component }) => component);
 	}
 
+	*eachComponentAndSubmixture(): IterableIterator<MixtureComponent> {
+		for (const component of this.components) {
+			yield component;
+		}
+		for (const component of this.components) {
+			if (isSubmixture(component)) {
+				yield* component.component.eachComponentAndSubmixture();
+			}
+		}
+	}
+
 	findComponent(predicate: (component: AnyComponent) => boolean): AnyComponent | undefined {
 		return this.components.find(({ component }) => predicate(component))?.component;
 	}
@@ -140,18 +159,33 @@ export class Mixture extends BaseComponent {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-	findById(id: string): AnyComponent | undefined {
-		return this.components.find((c) => c.id === id)?.component;
+	findById(id: string): MixtureComponent | null {
+		for (const component of this.eachComponentAndSubmixture()) {
+			if (component.id === id) {
+				return component;
+			}
+		}
+		return null;
 	}
 
 	addComponent({ name, component }: { name: string; component: AnyComponent }) {
-		this.components.push({ id: this.getIdForComponent(component), name, component });
+		if (component instanceof Mixture) {
+			const clone = component.clone();
+			// ensure that submixture ids are unique
+			for (const x of clone.eachComponentAndSubmixture()) {
+				x.id = this.getIdForComponent(x.component);
+			}
+			this.components.push({ id: this.getIdForComponent(component), name, component: clone });
+		} else {
+			this.components.push({ id: this.getIdForComponent(component), name, component });
+		}
 	}
 
 	getIdForComponent(component: AnyComponent): string {
+		const existingIds = [...this.eachComponentAndSubmixture()].map((c) => c.id);
 		let inc = 0;
 		let id = `${component.type}-${inc}`;
-		while (this.findById(id)) {
+		while (existingIds.includes(id)) {
 			id = `${component.type}-${++inc}`;
 		}
 		return id;
@@ -161,24 +195,15 @@ export class Mixture extends BaseComponent {
 		const index = this.components.findIndex((c) => c.id === id);
 		if (index >= 0) {
 			this.components.splice(index, 1);
+			return true;
 		}
-	}
 
-	replaceComponent(id: string, { name, component }: { name: string; component: AnyComponent }) {
-		const index = this.components.findIndex((c) => c.id === id);
-		if (index < 0) {
-			throw new Error(`Unable to find component ${id}`);
+		for (const component of this.components) {
+			if (component.component instanceof Mixture) {
+				if (component.component.removeComponent(id)) return true;
+			}
 		}
-		this.components.splice(index, 1, {
-			id: this.getIdForComponent(component),
-			name,
-			component
-		});
-	}
-
-	// iterator to iterate over components
-	[Symbol.iterator]() {
-		return this.components[Symbol.iterator]();
+		return false;
 	}
 
 	canEdit(key: ComponentNumberKeys | string): boolean {
@@ -214,7 +239,7 @@ export class Mixture extends BaseComponent {
 		const originalVolume = this.volume;
 		if (isClose(originalVolume, newVolume, 0.001)) return;
 		const factor = newVolume / originalVolume;
-		for (const { component } of this) {
+		for (const { component } of this.components) {
 			component.setVolume(component.volume * factor);
 		}
 	}
@@ -236,7 +261,7 @@ export class Mixture extends BaseComponent {
 		const currentAlcoholVolume = this.alcoholVolume;
 		if (isClose(currentAlcoholVolume, targetEthanolVolume)) return;
 		const factor = targetEthanolVolume / currentAlcoholVolume;
-		for (const { component } of this) {
+		for (const { component } of this.components) {
 			if (component.abv > 0) {
 				component.setVolume(component.volume * factor);
 			}
@@ -267,7 +292,7 @@ export class Mixture extends BaseComponent {
 		if (isClose(currentSugarEquivalent, newSugarEquivalent)) return;
 
 		const factor = newSugarEquivalent / this.equivalentSugarMass;
-		for (const { component } of this) {
+		for (const { component } of this.components) {
 			if (component.brix > 0) {
 				component.setVolume(component.volume * factor);
 			}
@@ -316,9 +341,19 @@ export function newSyrup(volume: number, brix: number): Mixture {
 
 export function isSpirit(thing: Mixture): boolean;
 export function isSpirit(thing: AnyComponent): thing is Mixture;
-
 export function isSpirit(thing: AnyComponent) {
 	return Boolean(thing instanceof Mixture && thing.abv > 0 && thing.brix === 0);
+}
+
+export function isSimpleSpirit(thing: Mixture): boolean;
+export function isSimpleSpirit(thing: AnyComponent): thing is Mixture;
+export function isSimpleSpirit(thing: AnyComponent) {
+	return Boolean(
+		isSpirit(thing) &&
+			thing.components.length === 2 &&
+			thing.findByType((x) => x instanceof Ethanol) &&
+			thing.findByType((x) => x instanceof Water)
+	);
 }
 
 export function isSyrup(thing: Mixture): boolean;
@@ -336,7 +371,11 @@ export function isSimpleSyrup(thing: Mixture): boolean;
 export function isSimpleSyrup(thing: AnyComponent): thing is Mixture;
 export function isSimpleSyrup(thing: AnyComponent) {
 	// simple syrup is a mixture of sweetener and water
-	return Boolean(isSyrup(thing) && thing.components.length === 2);
+	return Boolean(
+		isSyrup(thing) &&
+			thing.components.length === 2 &&
+			thing.findByType((x) => x instanceof Sweetener)
+	);
 }
 
 export function isLiqueur(thing: Mixture): boolean;
