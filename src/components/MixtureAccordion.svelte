@@ -6,9 +6,12 @@
 		mixtureStore,
 		Mixture,
 		Sweetener,
-		Water
+		Water,
+		type AnyComponent,
+		isSpirit,
+		isSyrup
 	} from '$lib';
-	import { A, Accordion, AccordionItem, Button, Input, Label } from 'svelte-5-ui-lib';
+	import { Accordion, AccordionItem, Button, Helper, Input, Label } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
@@ -37,6 +40,16 @@
 			openStates.delete(id);
 		}
 	}
+
+	function getType(entry: AnyComponent) {
+		if (isSpirit(entry)) return 'spirit';
+		if (isLiqueur(entry)) return 'liqueur';
+		if (isSyrup(entry)) return 'syrup';
+		if (entry instanceof Mixture) return 'mixture';
+		if (entry instanceof Water) return 'water';
+		if (entry instanceof Sweetener) return 'sweetener';
+		return 'component';
+	}
 </script>
 
 <Accordion flush={false} isSingle={false}>
@@ -47,7 +60,9 @@
 			onclick={() => setOpen(id, !openStates.get(id))}
 		>
 			{#snippet header()}
-				<div class="flex flex-row items-center gap-x-2">
+				<div class="relative pt-2.5 flex flex-row items-center gap-x-2">
+					<div class="absolute txt-xxs text-slate-500">{getType(entry)}</div>
+
 					<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 					{#if entry instanceof Sweetener}
 						<NumberSpinner
@@ -114,3 +129,13 @@
 		</div>
 	</AccordionItem>
 </Accordion>
+
+<style>
+  .txt-xxs {
+    top: -7px;
+    left: 2px;
+    font-weight: 300;
+    font-size: 0.65rem;
+    line-height: 1rem;
+  }
+</style>

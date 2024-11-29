@@ -12,13 +12,7 @@
 	const storeId = data.storeId;
 </script>
 
-<div class="mixtures-page max-w-lg mx-auto">
+<div class="p-4 max-w-lg mx-auto">
 	<MixtureList {storeId} />
 	<BottomNav />
 </div>
-
-<style>
-	.mixtures-page {
-		padding: 1rem;
-	}
-</style>
