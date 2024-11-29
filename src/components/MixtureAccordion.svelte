@@ -21,15 +21,34 @@
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import AddComponent from './nav/AddComponent.svelte';
 
-	let { mixture, id: parentId }: { mixture: Mixture, id: string | null} = $props();
+	let { mixture, id: parentId }: { mixture: Mixture; id: string | null } = $props();
+	// We need to manage open states externally and use the component's ID
+	// as the key in the #each block to prevent Svelte from reusing
+	// AccordionItem components when a component is removed. This ensures
+	// that when we remove a component, its AccordionItem is properly
+	// destroyed rather than being reused for the next component that
+	// takes its place in the list.
+	let openStates = $state(new Map<string, boolean>());
+
+	function setOpen(id: string, value: boolean) {
+		if (value) {
+			openStates.set(id, true);
+		} else {
+			openStates.delete(id);
+		}
+	}
 </script>
 
 <Accordion flush={false} isSingle={false}>
-	{#each mixture.components.entries() as [index, { name, id, component: entry }] (index)}
-		<AccordionItem class="py-2">
+	{#each mixture.components.entries() as [index, { name, id, component: entry }] (id)}
+		<AccordionItem
+			class="py-2"
+			open={openStates.get(id) ?? false}
+			onclick={() => setOpen(id, !openStates.get(id))}
+		>
 			{#snippet header()}
 				<div class="flex flex-row items-center gap-x-2">
-					<RemoveButton componentId={id} {name} />
+					<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 					{#if entry instanceof Sweetener}
 						<NumberSpinner
 							class="basis-1/5"

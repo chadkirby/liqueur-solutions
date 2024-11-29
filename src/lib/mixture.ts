@@ -31,15 +31,19 @@ export function dataToMixture(d: {
 }) {
 	const ingredients: MixtureComponent[] = [];
 	for (const component of d.components) {
-		const { name, id, data } = component;
+		const { name, data } = component;
 		if (isEthanolData(data)) {
-			ingredients.push({ name, id, component: new Ethanol(data.volume) });
+			ingredients.push({ name, id: componentId(), component: new Ethanol(data.volume) });
 		} else if (isWaterData(data)) {
-			ingredients.push({ name, id, component: new Water(data.volume) });
+			ingredients.push({ name, id: componentId(), component: new Water(data.volume) });
 		} else if (isSweetenerData(data)) {
-			ingredients.push({ name, id, component: new Sweetener(data.subType, data.mass) });
+			ingredients.push({
+				name,
+				id: componentId(),
+				component: new Sweetener(data.subType, data.mass)
+			});
 		} else if (isMixtureData(data)) {
-			ingredients.push({ name, id, component: dataToMixture(data) });
+			ingredients.push({ name, id: componentId(), component: dataToMixture(data) });
 		} else {
 			throw new Error('Unknown mixture type');
 		}
@@ -124,7 +128,7 @@ export class Mixture extends BaseComponent {
 		return new Mixture(
 			this.components.map((item) => ({
 				name: item.name,
-				id: item.id,
+				id: componentId(),
 				component: item.component.clone()
 			}))
 		);
@@ -169,26 +173,8 @@ export class Mixture extends BaseComponent {
 	}
 
 	addComponent({ name, component }: { name: string; component: AnyComponent }) {
-		if (component instanceof Mixture) {
-			const clone = component.clone();
-			// ensure that submixture ids are unique
-			for (const x of clone.eachComponentAndSubmixture()) {
-				x.id = this.getIdForComponent(x.component);
-			}
-			this.components.push({ id: this.getIdForComponent(component), name, component: clone });
-		} else {
-			this.components.push({ id: this.getIdForComponent(component), name, component });
-		}
-	}
-
-	getIdForComponent(component: AnyComponent): string {
-		const existingIds = [...this.eachComponentAndSubmixture()].map((c) => c.id);
-		let inc = 0;
-		let id = `${component.type}-${inc}`;
-		while (existingIds.includes(id)) {
-			id = `${component.type}-${++inc}`;
-		}
-		return id;
+		const clone = component.clone();
+		this.components.push({ id: componentId(), name, component: clone });
 	}
 
 	removeComponent(id: string) {
@@ -313,6 +299,11 @@ export class Mixture extends BaseComponent {
 	get isValid(): boolean {
 		return this.components.every(({ component }) => component.isValid);
 	}
+}
+
+function componentId(): string {
+	// return a random string
+	return Math.random().toString(36).slice(2);
 }
 
 function isClose(a: number, b: number, delta = 0.01) {

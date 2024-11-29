@@ -12,18 +12,12 @@
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
-	import { mixtureStore, Mixture, Sweetener, Water, isSimpleSpirit, isLiqueur, isSimpleSyrup } from '$lib';
+	import { mixtureStore } from '$lib';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';
 	import BrixComponent from './displays/Brix.svelte';
 	import CalComponent from './displays/Cal.svelte';
 	import MassComponent from './displays/Mass.svelte';
-	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
-	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
-	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
-	import SpiritDisplayGroup from './displays/SpiritDisplayGroup.svelte';
-	import SyrupDisplayGroup from './displays/SyrupDisplayGroup.svelte';
-	import RemoveButton from './RemoveButton.svelte';
 	import {
 		filesDb,
 		generateLocalStorageId,

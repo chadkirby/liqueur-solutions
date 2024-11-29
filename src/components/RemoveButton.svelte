@@ -7,17 +7,20 @@
   interface Props {
     componentId: string;
     name: string;
+    onRemove?: () => void;
   }
 
   let {
     componentId,
-    name
+    name,
+    onRemove
   }: Props = $props();
 
   function removeComponent(e: Event) {
     e.preventDefault();
     e.stopPropagation();
     mixtureStore.removeComponent(componentId);
+    if (onRemove) onRemove();
   }
 </script>
 
