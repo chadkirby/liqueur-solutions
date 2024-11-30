@@ -263,24 +263,28 @@ export function createMixtureStore() {
 		},
 		updateComponentName(componentId: string, newName: string): void {
 			update((data) => {
-				const component = data.mixture.components.find((c) => c.id === componentId);
-				if (!component) {
+				const mcx = findById(data.mixture, componentId);
+				if (!mcx) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				component.name = newName;
+				mcx.name = newName;
 				return data;
 			});
 		},
 		updateSweetenerSubType: (id: string, subType: SweetenerTypes) => {
 			update((data) => {
-				const component = data.mixture.components.find((c) => c.id === id);
-				if (component && component.component instanceof Sweetener) {
+				const mcx = findById(data.mixture, id);
+				if (!mcx) {
+					throw new Error(`Unable to find component ${id}`);
+				}
+				const component = mcx.component;
+				if (component instanceof Sweetener) {
 					// This will trigger the mixture's recalculations since
 					// subType affects equivalentSugarMass and other derived
 					// values
-					component.component.subType = subType;
-				} else if (component && isSyrup(component.component)) {
-					const sweetener = component.component.findByType((x) => x instanceof Sweetener);
+					component.subType = subType;
+				} else if (component && isSyrup(component)) {
+					const sweetener = component.findByType((x) => x instanceof Sweetener);
 					if (sweetener) {
 						sweetener.subType = subType;
 					}
