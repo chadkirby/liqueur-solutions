@@ -4,7 +4,7 @@
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
 	import { mixtureStore } from '$lib';
-	import { resolveUrl } from '$lib/local-storage.js';
+	import { resolveUrl } from '$lib/local-storage.svelte';
 	import { urlEncode } from '$lib/mixture-store.js';
 	const modal = uiHelpers();
 	let modalStatus = $state(false);

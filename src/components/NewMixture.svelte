@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
 
-	import { filesDb, type FileItem } from '$lib/local-storage.js';
+	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	interface Props {
 		item: FileItem;
 	}
@@ -11,6 +11,6 @@
 
 	if (browser) {
 		filesDb.write(item);
-		goto(`/file?id=${item.id}`);
+		goto(`/file${item.id}`);
 	}
 </script>

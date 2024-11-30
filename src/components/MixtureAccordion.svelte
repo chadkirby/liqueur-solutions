@@ -1,17 +1,6 @@
 <script lang="ts">
-	import {
-		isLiqueur,
-		isSimpleSpirit,
-		isSimpleSyrup,
-		mixtureStore,
-		Mixture,
-		Sweetener,
-		Water,
-		type AnyComponent,
-		isSpirit,
-		isSyrup
-	} from '$lib';
-	import { Accordion, AccordionItem, Button, Helper, Input, Label } from 'svelte-5-ui-lib';
+	import { isSimpleSpirit, isSimpleSyrup, mixtureStore, Mixture, Sweetener, Water } from '$lib';
+	import { Accordion, AccordionItem, Button, Input } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
@@ -21,17 +10,26 @@
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import NumberSpinner from './NumberSpinner.svelte';
 	import { format } from '$lib/utils.js';
-	import { CirclePlusSolid } from 'flowbite-svelte-icons';
+	import { CircleMinusSolid, CirclePlusSolid } from 'flowbite-svelte-icons';
 	import AddComponent from './nav/AddComponent.svelte';
+	import VolumeComponent from './displays/Volume.svelte';
+	import ABVComponent from './displays/ABV.svelte';
+	import BrixComponent from './displays/Brix.svelte';
+	import CalComponent from './displays/Cal.svelte';
+	import MassComponent from './displays/Mass.svelte';
 
-	let { mixture, id: parentId }: { mixture: Mixture; id: string | null } = $props();
+	let {
+		mixture,
+		id: parentId,
+		name
+	}: { mixture: Mixture; id: string | null; name: string } = $props();
 	// We need to manage open states externally and use the component's ID
 	// as the key in the #each block to prevent Svelte from reusing
 	// AccordionItem components when a component is removed. This ensures
 	// that when we remove a component, its AccordionItem is properly
 	// destroyed rather than being reused for the next component that
 	// takes its place in the list.
-	let openStates = $state(new Map<string, boolean>());
+	let openStates = $state(new Map<string, boolean>([['add-component', false]]));
 
 	function setOpen(id: string, value: boolean) {
 		if (value) {
@@ -41,18 +39,49 @@
 		}
 	}
 
-	function getType(entry: AnyComponent) {
-		if (isSpirit(entry)) return 'spirit';
-		if (isLiqueur(entry)) return 'liqueur';
-		if (isSyrup(entry)) return 'syrup';
-		if (entry instanceof Mixture) return 'mixture';
-		if (entry instanceof Water) return 'water';
-		if (entry instanceof Sweetener) return 'sweetener';
-		return 'component';
+	let addMode = $state(false);
+	let removeMode = $state(false);
+	function toggleRemoveMode() {
+		addMode = false;
+		removeMode = !removeMode;
+	}
+	function toggleAddMode() {
+		addMode = !addMode;
+		removeMode = false;
 	}
 </script>
 
-<Accordion flush={false} isSingle={false}>
+<div class="flex flex-row justify-between gap-2">
+	<div class="basis-1/3 two-lines-max text-xs font-normal text-gray-500 dark:text-gray-400">
+		Components ({name})
+	</div>
+	<Button
+		onclick={toggleAddMode}
+		outline
+		color={addMode ? 'secondary' : 'light'}
+		class="basis-1/4 py-0 flex flex-row gap-1"
+	>
+		<CirclePlusSolid size="sm" />
+		<span class="italic text-sm text-slate-500">Add…</span>
+	</Button>
+	<Button
+		outline
+		color={removeMode ? 'secondary' : 'light'}
+		class="basis-1/4 py-0 flex flex-row gap-1"
+		onclick={toggleRemoveMode}
+	>
+		<CircleMinusSolid size="sm" />
+		<span class="italic text-sm text-slate-500">Remove…</span>
+	</Button>
+</div>
+
+{#if addMode}
+	<div class="flex flex-col items-stretch mt-1">
+		<AddComponent componentId={parentId} callback={() => setOpen('add-component', false)} />
+	</div>
+{/if}
+
+<Accordion flush={false} isSingle={false} class="mt-1">
 	{#each mixture.components.entries() as [index, { name, id, component: entry }] (id)}
 		<AccordionItem
 			class="py-2"
@@ -60,10 +89,12 @@
 			onclick={() => setOpen(id, !openStates.get(id))}
 		>
 			{#snippet header()}
-				<div class="relative pt-2.5 flex flex-row items-center gap-x-2">
-					<div class="absolute txt-xxs text-slate-500">{getType(entry)}</div>
+				<div class="relative pt-2.5 flex flex-row items-center gap-x-1">
+					<div class="absolute txt-xxs text-slate-500">{entry.describe()}</div>
 
-					<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
+					{#if removeMode}
+						<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
+					{/if}
 					{#if entry instanceof Sweetener}
 						<NumberSpinner
 							class="basis-1/5"
@@ -88,54 +119,90 @@
 						/>
 					{/if}
 
-					<Label>{entry.describe()}</Label>
+					{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
+						<SweetenerDropdown
+							componentId={id}
+							component={entry}
+							basis="basis-1/2"
+							onclick={(e) => e.stopPropagation()}
+						/>
+					{/if}
+					<Input
+						type="text"
+						value={name}
+						class="
+             mr-2
+             {entry instanceof Sweetener || isSimpleSyrup(entry)
+							? 'basis-1/3'
+							: isSimpleSpirit(entry)
+								? 'basis-1/2'
+								: 'basis-3/4'}
+             text-sm
+             px-1.5 py-1.5
+             focus:ring-2
+             focus:border-blue-200
+             focus:ring-blue-200
+             "
+						onclick={(e) => e.stopPropagation()}
+						oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
+					/>
 				</div>
 			{/snippet}
 			<div class="flex flex-col items-stretch">
-				{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
-					<SweetenerDropdown componentId={id} component={entry} {name} />
-				{:else if isSimpleSpirit(entry) || isLiqueur(entry)}
-					<Input
-						value={name}
-						class="w-full pr-8"
-						oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
-					/>
+				{#if entry instanceof Sweetener}
+					<SweetenerDisplayGroup componentId={id} component={entry} />
+				{:else if entry instanceof Water}
+					<WaterDisplayGroup componentId={id} component={entry} />
+				{:else if isSimpleSpirit(entry)}
+					<SpiritDisplayGroup componentId={id} component={entry} />
+				{:else if isSimpleSyrup(entry)}
+					<SyrupDisplayGroup componentId={id} component={entry} />
+				{:else if entry instanceof Mixture}
+					<MixtureAccordion mixture={entry} {id} {name} />
 				{/if}
-				<div class="flex flex-row my-1">
-					{#if entry instanceof Sweetener}
-						<SweetenerDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Water}
-						<WaterDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSpirit(entry)}
-						<SpiritDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSyrup(entry)}
-						<SyrupDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Mixture}
-						<MixtureAccordion mixture={entry} {id} />
-					{/if}
-				</div>
 			</div>
 		</AccordionItem>
 	{/each}
-	<AccordionItem class="py-2">
-		{#snippet header()}
-			<div class="flex flex-row items-center gap-x-2">
-				<Button outline color="light" class="p-1"><CirclePlusSolid size="sm" /></Button>
-				<Label class="italic">Add a component…</Label>
+	<h2 class="group">
+		<div class="items-center gap-x-2 gap-y-2">
+			<div class="text-sm p-2 font-medium text-slate-600">{name} totals</div>
+			<div class="flex flex-row">
+				<VolumeComponent
+					componentId={parentId === null ? 'totals' : parentId}
+					component={mixture}
+				/>
+				<MassComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
+				<ABVComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
+				<BrixComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
+				<CalComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
 			</div>
-		{/snippet}
-		<div class="flex flex-col items-stretch">
-			<AddComponent componentId={parentId} />
 		</div>
-	</AccordionItem>
+	</h2>
 </Accordion>
+<div class="mt-20"></div>
 
 <style>
-  .txt-xxs {
-    top: -7px;
-    left: 2px;
-    font-weight: 300;
-    font-size: 0.65rem;
-    line-height: 1rem;
-  }
+	.txt-xxs {
+		top: -7px;
+		left: 2px;
+		font-weight: 300;
+		font-size: 0.65rem;
+		line-height: 1rem;
+	}
+
+	.two-lines-max {
+		line-height: 0.8rem;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	@media print {
+		.no-print {
+			display: none;
+		}
+	}
 </style>

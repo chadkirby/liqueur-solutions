@@ -75,7 +75,7 @@ export class Mixture extends BaseComponent {
 		super();
 	}
 
-	describe() {
+	describe(): string {
 		if (isSyrup(this)) {
 			const sweetener = this.findByType((x) => x instanceof Sweetener);
 			const summary = [
@@ -90,7 +90,7 @@ export class Mixture extends BaseComponent {
 		if (isLiqueur(this)) {
 			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
 		}
-		return '';
+		return this.components.map(({ component }) => component.describe()).join(', ');
 	}
 
 	get type() {
@@ -124,11 +124,11 @@ export class Mixture extends BaseComponent {
 		};
 	}
 
-	clone(): Mixture {
+	clone(newIds = false): Mixture {
 		return new Mixture(
 			this.components.map((item) => ({
 				name: item.name,
-				id: componentId(),
+				id: newIds ? componentId() : item.id,
 				component: item.component.clone()
 			}))
 		);
@@ -163,17 +163,8 @@ export class Mixture extends BaseComponent {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-	findById(id: string): MixtureComponent | null {
-		for (const component of this.eachComponentAndSubmixture()) {
-			if (component.id === id) {
-				return component;
-			}
-		}
-		return null;
-	}
-
 	addComponent({ name, component }: { name: string; component: AnyComponent }) {
-		const clone = component.clone();
+		const clone = component.clone(true);
 		this.components.push({ id: componentId(), name, component: clone });
 	}
 

@@ -1,10 +1,11 @@
 import * as fflate from 'fflate';
 import { type AnyData } from './component.js';
 import { dataToMixture, Mixture } from './mixture.js';
-import { isLocalStorageId, filesDb } from './local-storage.js';
+import { filesDb } from './local-storage.svelte';
+import { isStorageId } from './storage-id.js';
 
 export function deserializeFromLocalStorage(id: string): Mixture {
-	if (!isLocalStorageId(id)) {
+	if (!isStorageId(id)) {
 		throw new Error('Invalid id');
 	}
 	const item = filesDb.read(id);

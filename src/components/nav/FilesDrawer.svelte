@@ -3,15 +3,14 @@
 	import { CloseCircleSolid, ListOutline, ArrowRightAltSolid } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import {
-		asLocalStorageId,
 		filesDb,
 		listFiles,
 		type FileItem,
-		type LocalStorageId,
-	} from '$lib/local-storage';
+	} from '$lib/local-storage.svelte';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { mixtureStore } from '$lib';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
+	import { asStorageId, type StorageId } from '$lib/storage-id.js';
 
 	let files = $state([] as FileItem[]);
 	let drawerStatus = $state(false);
@@ -25,30 +24,30 @@
 	});
 
 	function removeItem(key: string) {
-		const id = asLocalStorageId(key);
+		const id = asStorageId(key);
 		filesDb.delete(id);
 		files = listFiles();
 	}
 
-	function domIdFor(key: string, id: LocalStorageId) {
+	function domIdFor(key: string, id: StorageId) {
 		return `files-drawer-${key}-${id.slice(1)}`;
 	}
 
-	const goToFile = (id: LocalStorageId) => {
+	const goToFile = (id: StorageId) => {
 		return () => {
 			filesDrawer.close();
 			// client-side navigation does not work???
-			// goto(`/file?id=${id}`, { replaceState: true, invalidateAll: true });
-			window.location.href = `/file?id=${id}`;
+			// goto(`/file${id}`, { replaceState: true, invalidateAll: true });
+			window.location.href = `/file${id}`;
 		};
 	};
 
-	function addToMixture(id: LocalStorageId, name: string) {
+	function addToMixture(id: StorageId, name: string) {
 		return () => {
 			filesDrawer.close();
 			const mixture = deserializeFromLocalStorage(id);
 			if (mixture && mixture.isValid) {
-				mixtureStore.addComponentTo(filesDrawer.parentId, { name, id: 'mixture', component: mixture });
+				mixtureStore.addComponentTo(filesDrawer.parentId, { name, component: mixture });
 			}
 		};
 	}

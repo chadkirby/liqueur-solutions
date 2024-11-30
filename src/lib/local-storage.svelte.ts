@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { browser } from '$app/environment';
+import { deleteStar } from './stars.svelte.js';
+import { isStorageId, type StorageId } from './storage-id.js';
 
 // Create a function that returns the appropriate storage object
 const deviceStorage = browser
@@ -11,31 +13,9 @@ const deviceStorage = browser
 		};
 
 /**
- * Generates a LocalStorageId from a mixture name.
- */
-export function generateLocalStorageId(): LocalStorageId {
-	return `~${Math.random().toString(36).slice(2, 12)}`;
-}
-
-export const workingMixtureId = '~working~mixture~' as LocalStorageId;
-
-export function isLocalStorageId(value: unknown): value is LocalStorageId {
-	return typeof value === 'string' && /^~.+/.test(value);
-}
-
-export function assertLocalStorageId(value: string | null): asserts value is LocalStorageId {
-	if (!isLocalStorageId(value)) throw new Error(`Invalid LocalStorageId: ${value}`);
-}
-
-export function asLocalStorageId(value: string | null): LocalStorageId {
-	assertLocalStorageId(value);
-	return value;
-}
-
-/**
  * Creates a URL object from a LocalStorageId.
  */
-export function makeUrl(id: LocalStorageId): URL {
+export function makeUrl(id: StorageId): URL {
 	const item = deviceStorage.getItem(id);
 	// need a protocol to create a valid URL object
 	return new URL(`localstorage:${item}`);
@@ -44,7 +24,7 @@ export function makeUrl(id: LocalStorageId): URL {
 /**
  * Extracts the name of a mixture from a LocalStorageId.
  */
-export function getName(id: LocalStorageId): string {
+export function getName(id: StorageId): string {
 	const url = makeUrl(id);
 	return decodeURIComponent(url.pathname).split('/').pop() || '';
 }
@@ -68,10 +48,8 @@ export function resolveUrl(relativePath: string): string {
 	return link.href;
 }
 
-export type LocalStorageId = `~${string}`;
-
 export type FileItem = {
-	id: LocalStorageId;
+	id: StorageId;
 	accessTime: number;
 	name: string;
 	desc: string;
@@ -79,12 +57,12 @@ export type FileItem = {
 };
 
 class FilesDb {
-	has(id: LocalStorageId): boolean {
+	has(id: StorageId): boolean {
 		if (!browser) return false;
 		return deviceStorage.getItem(id) !== null;
 	}
 
-	idForItem(item: Pick<FileItem, 'name' | 'href'>): LocalStorageId | null {
+	idForItem(item: Pick<FileItem, 'name' | 'href'>): StorageId | null {
 		for (const file of this) {
 			if (item.name === file.name && item.href === file.href) {
 				return file.id;
@@ -93,13 +71,13 @@ class FilesDb {
 		return null;
 	}
 
-	read(id: LocalStorageId): FileItem | null {
+	read(id: StorageId): FileItem | null {
 		if (!browser) return null;
 		const item = deviceStorage.getItem(id);
 		return item ? { ...JSON.parse(item), id } : null;
 	}
 
-	access(id: LocalStorageId): FileItem | null {
+	access(id: StorageId): FileItem | null {
 		if (!browser) return null;
 		const item = this.read(id);
 		if (item) {
@@ -110,9 +88,9 @@ class FilesDb {
 		return null;
 	}
 
-	private *fileKeys(): IterableIterator<LocalStorageId> {
+	private *fileKeys(): IterableIterator<StorageId> {
 		for (const key in deviceStorage) {
-			if (isLocalStorageId(key)) yield key;
+			if (isStorageId(key)) yield key;
 		}
 	}
 
@@ -129,10 +107,9 @@ class FilesDb {
 		}
 	}
 
-	scan(sortBy: keyof FileItem = 'accessTime'): Map<LocalStorageId, FileItem> {
-		const records: [LocalStorageId, FileItem][] = [];
+	scan(sortBy: keyof FileItem = 'accessTime'): Map<StorageId, FileItem> {
+		const records: [StorageId, FileItem][] = [];
 		for (const item of this) {
-			if (item?.id === workingMixtureId) continue;
 			if (item) records.push([item.id, item]);
 		}
 		if (sortBy === 'accessTime') {
@@ -146,19 +123,20 @@ class FilesDb {
 	write(item: FileItem): void {
 		if (!browser) return;
 		const { id, ...data } = item;
-		if (!isLocalStorageId(id)) throw new Error('Invalid LocalStorageId');
+		if (!isStorageId(id)) throw new Error('Invalid LocalStorageId');
 		if (!data.name) throw new Error('Invalid name');
 		if (!data.href) throw new Error('Invalid href');
 
 		deviceStorage.setItem(id, JSON.stringify(data));
 	}
 
-	delete(id: LocalStorageId): void {
+	delete(id: StorageId): void {
 		if (!browser) return;
 		deviceStorage.removeItem(id);
+		deleteStar(id);
 	}
 
-	update(id: LocalStorageId, updater: (item: Omit<FileItem, 'id'>) => Omit<FileItem, 'id'>): void {
+	update(id: StorageId, updater: (item: Omit<FileItem, 'id'>) => Omit<FileItem, 'id'>): void {
 		if (!browser) return;
 		const item = this.access(id) ?? { id, accessTime: 0, name: '', desc: '', href: '' };
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars

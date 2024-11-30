@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from 'svelte-5-ui-lib';
-  import { CloseCircleSolid } from 'flowbite-svelte-icons';
+  import { CircleMinusSolid } from 'flowbite-svelte-icons';
   import { Tooltip } from 'svelte-5-ui-lib';
 	import { mixtureStore } from '$lib';
 
@@ -31,5 +31,5 @@
   outline color="light"
   onclick={removeComponent}
 >
-  <CloseCircleSolid size="sm" />
+  <CircleMinusSolid size="sm" />
 </Button>

@@ -5,18 +5,23 @@ import { Water } from './water.js';
 import { type Analysis } from './utils.js';
 import { isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
-import {
-	asLocalStorageId,
-	filesDb,
-	workingMixtureId,
-	type LocalStorageId
-} from './local-storage.js';
+import { filesDb } from './local-storage.svelte';
+import { asStorageId, type StorageId } from './storage-id.js';
 
 export type ComponentValueKey = keyof Analysis;
 
+function findById(mixture: Mixture, id: string): MixtureComponent | null {
+	for (const component of mixture.eachComponentAndSubmixture()) {
+		if (component.id === id) {
+			return component;
+		}
+	}
+	return null;
+}
+
 export function createMixtureStore() {
 	const store = writable({
-		storeId: workingMixtureId,
+		storeId: '/0' as StorageId,
 		name: `Mixture-0`,
 		mixture: new Mixture([]),
 		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
@@ -51,7 +56,7 @@ export function createMixtureStore() {
 		name,
 		mixture
 	}: {
-		storeId: LocalStorageId;
+		storeId: StorageId;
 		name: string;
 		mixture: Mixture;
 	}) {
@@ -80,12 +85,6 @@ export function createMixtureStore() {
 		getStoreId() {
 			return get(store).storeId;
 		},
-		setStoreId(storeId: LocalStorageId) {
-			update((data) => {
-				data.storeId = storeId;
-				return data;
-			});
-		},
 		getMixture() {
 			return get(store).mixture;
 		},
@@ -109,12 +108,12 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
-		addComponentTo(parentId: string | null, component: MixtureComponent) {
+		addComponentTo(parentId: string | null, component: Omit<MixtureComponent, 'id'>) {
 			update((data) => {
 				if (parentId === null) {
 					data.mixture.addComponent({ ...component });
 				} else {
-					const parent = data.mixture.findById(parentId);
+					const parent = findById(data.mixture, parentId);
 					if (!parent) {
 						throw new Error(`Unable to find component ${parentId}`);
 					}
@@ -139,7 +138,8 @@ export function createMixtureStore() {
 			}
 			update((data) => {
 				const working = data.mixture.clone();
-				const component = working.findById(componentId);
+				const mxc = findById(working, componentId);
+				const component = mxc?.component;
 				// clear any errors
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
@@ -182,10 +182,11 @@ export function createMixtureStore() {
 				return;
 			}
 			update((data) => {
-				const component = data.mixture.findById(componentId);
-				if (!component) {
+				const mxc = findById(data.mixture, componentId);
+				if (!mxc) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
+				const { component } = mxc;
 				// clear any errors
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-abv`
@@ -210,7 +211,7 @@ export function createMixtureStore() {
 				throw new Error('Cannot set mass of totals');
 			}
 			update((data) => {
-				const mc = data.mixture.findById(componentId);
+				const mc = findById(data.mixture, componentId);
 				if (!mc) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
@@ -235,10 +236,11 @@ export function createMixtureStore() {
 				return;
 			}
 			update((data) => {
-				const component = data.mixture.findById(componentId);
-				if (!component) {
+				const mxc = findById(data.mixture, componentId);
+				if (!mxc) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
+				const { component } = mxc;
 				// clear any errors
 				data.errors = data.errors.filter(
 					(e) => `${e.componentId}-${e.key}` !== `${componentId}-brix`
@@ -308,9 +310,9 @@ export function createMixtureStore() {
 			});
 		},
 		/** reset the store */
-		load({ storeId, name, mixture }: { storeId: LocalStorageId; name: string; mixture: Mixture }) {
+		load({ storeId, name, mixture }: { storeId: StorageId; name: string; mixture: Mixture }) {
 			set({
-				storeId: asLocalStorageId(storeId),
+				storeId: asStorageId(storeId),
 				name,
 				mixture,
 				totals: getTotals(mixture),
@@ -346,7 +348,7 @@ export const mixtureStore = createMixtureStore();
 // 		if (storeId) {
 // 			const url = urlEncode(mixtureStore.getName(), mixtureStore.getMixture());
 // 			// window.localStorage.setItem(storeId, url);
-// 			// goto(`/file?id=${storeId}`, {
+// 			// goto(`/file${storeId}`, {
 // 			// 	replaceState: true,
 // 			// 	noScroll: true,
 // 			// 	keepFocus: true

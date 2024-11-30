@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { dataToMixture } from '$lib';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
-	import { workingMixtureId, type FileItem } from '$lib/local-storage.js';
+	import { type FileItem } from '$lib/local-storage.svelte';
 	import { urlEncode } from '$lib/mixture-store.js';
+	import { generateStorageId } from '$lib/storage-id.js';
 	import NewMixture from '../../components/NewMixture.svelte';
 
 	interface Props {
@@ -17,7 +18,7 @@
 
 
 	const item: FileItem = ({
-		id: workingMixtureId,
+		id: generateStorageId(),
 		accessTime: Date.now(),
 		name,
 		desc: mixture.describe(),

@@ -1,34 +1,43 @@
 <script lang="ts">
-	import { mixtureStore, newSpirit, newSyrup, Sweetener, Water } from '$lib';
+	import { Mixture, mixtureStore, newSpirit, newSyrup, Sweetener, Water } from '$lib';
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { Button } from 'svelte-5-ui-lib';
 
-	let { componentId }: { componentId: string | null } = $props();
+	let { componentId, callback }: { componentId: string | null, callback?: () => void } = $props();
 
 	function addSpirit() {
-		mixtureStore.addComponentTo(componentId, { name: 'spirit', id: 'spirit', component: newSpirit(100, 40) });
+		if (callback) callback();
+		mixtureStore.addComponentTo(componentId, { name: 'spirit',  component: newSpirit(100, 40) });
 	}
 	function addWater() {
-		mixtureStore.addComponentTo(componentId, { name: 'water', id: 'water', component: new Water(100) });
+		if (callback) callback();
+		mixtureStore.addComponentTo(componentId, { name: 'water', component: new Water(100) });
 	}
 	function addSugar() {
+		if (callback) callback();
 		mixtureStore.addComponentTo(componentId,
 			{
 				name: 'sugar',
-				id: 'sweetener-sucrose',
 				component: new Sweetener('sucrose', 100)
 			}
 		);
 	}
 	function addSyrup() {
+		if (callback) callback();
 		mixtureStore.addComponentTo(componentId,
-			{ name: 'simple syrup', id: 'syrup', component: newSyrup(100, 50) }
+			{ name: 'simple syrup', component: newSyrup(100, 50) }
 		);
+	}
+
+	function addEmpty() {
+		if (callback) callback();
+		mixtureStore.addComponentTo(componentId, { name: 'mixture', component: new Mixture([]) });
 	}
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(componentId);
+		if (callback) callback();
 	}
 </script>
 
@@ -47,6 +56,10 @@
 
 	<Button outline color="light" class="p-1" onclick={addWater}>
 		<CirclePlusSolid size="sm" /> <span class="mx-1">water</span>
+	</Button>
+
+	<Button outline color="light" class="p-1" onclick={addEmpty}>
+		<CirclePlusSolid size="sm" /> <span class="mx-1">empty mixture</span>
 	</Button>
 
 	<Button outline color="light" class="p-1" onclick={openFilesDrawer}>

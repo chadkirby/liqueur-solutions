@@ -1,42 +1,25 @@
 <script lang="ts">
-	import {
-		Accordion,
-		AccordionItem,
-		accordionitem,
-		Button,
-		Helper,
-		Input,
-		Label,
-		Tooltip
-	} from 'svelte-5-ui-lib';
+	import { accordionitem, Button, Helper, Input, Tooltip } from 'svelte-5-ui-lib';
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import { mixtureStore } from '$lib';
-	import VolumeComponent from './displays/Volume.svelte';
-	import ABVComponent from './displays/ABV.svelte';
-	import BrixComponent from './displays/Brix.svelte';
-	import CalComponent from './displays/Cal.svelte';
-	import MassComponent from './displays/Mass.svelte';
 	import {
-		filesDb,
-		generateLocalStorageId,
 		getName,
-		workingMixtureId,
-		type LocalStorageId
-	} from '$lib/local-storage.js';
+	} from '$lib/local-storage.svelte';
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import MixtureAccordion from './MixtureAccordion.svelte';
+	import type { StorageId } from '$lib/storage-id.js';
+	import { starredIds, toggleStar } from '$lib/stars.svelte.js';
 
 	interface Props {
-		storeId: LocalStorageId;
+		storeId: StorageId;
 	}
 
 	let { storeId }: Props = $props();
-	let isWorking = $derived(storeId === workingMixtureId);
 
 	if (browser) {
 		$effect(() => {
@@ -65,20 +48,17 @@
 			mixtureStore.save();
 		}, 100);
 
-	function saveAndGo(id: LocalStorageId) {
-		storeId = id;
-		mixtureStore.setStoreId(id);
-		goto(`/file?id=${id}`, { replaceState: true, invalidateAll: true });
+	function saveAndGo(id: StorageId) {
+		// storeId = id;
+		// mixtureStore.setStoreId(id);
+		goto(`/file${id}`, { replaceState: true, invalidateAll: true });
 	}
 
-	function toggleStar(event?: Event) {
+	let isStarred = $derived(starredIds.includes(storeId));
+
+	function handleToggleStar(event?: Event) {
 		event?.preventDefault();
-		if (isWorking) {
-			saveAndGo(generateLocalStorageId());
-		} else {
-			filesDb.delete(storeId);
-			saveAndGo(workingMixtureId);
-		}
+		toggleStar(storeId);
 	}
 </script>
 
@@ -90,17 +70,17 @@
 					gap-x-2
 					"
 	>
-		<Button class="p-1" outline color="light" onclick={toggleStar}>
-			{#if isWorking}
-				<Tooltip color="default" offset={6} triggeredBy="#unsaved-star">
-					This mixture is not saved
-				</Tooltip>
-				<StarOutline id="unsaved-star" />
-			{:else}
+		<Button class="p-1" outline color="light" onclick={handleToggleStar}>
+			{#if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved
 				</Tooltip>
 				<StarSolid id="saved-star" />
+			{:else}
+				<Tooltip color="default" offset={6} triggeredBy="#unsaved-star">
+					This mixture is not saved
+				</Tooltip>
+				<StarOutline id="unsaved-star" />
 			{/if}
 		</Button>
 		<div class="w-full">
@@ -116,19 +96,7 @@
 		</div>
 	</div>
 
-	<Helper>Mixture components</Helper>
-	<MixtureAccordion mixture={$mixtureStore.mixture} id={null} />
-</div>
-
-<div class="mt-2 items-center pt-2 gap-x-2 gap-y-2">
-	<Helper>Mixture totals</Helper>
-	<div class="flex flex-row mt-2">
-		<VolumeComponent componentId="totals" component={$mixtureStore.mixture} />
-		<MassComponent componentId="totals" component={$mixtureStore.mixture} />
-		<ABVComponent componentId="totals" component={$mixtureStore.mixture} />
-		<BrixComponent componentId="totals" component={$mixtureStore.mixture} />
-		<CalComponent componentId="totals" component={$mixtureStore.mixture} />
-	</div>
+	<MixtureAccordion mixture={$mixtureStore.mixture} id={null} name={$mixtureStore.name} />
 </div>
 
 <style>
@@ -137,11 +105,5 @@
 		--printGray: rgb(0 0 0 / 75%);
 		--mdc-theme-primary: #676778;
 		--mdc-theme-secondary: #676778;
-	}
-
-	@media print {
-		.no-print {
-			display: none;
-		}
 	}
 </style>
