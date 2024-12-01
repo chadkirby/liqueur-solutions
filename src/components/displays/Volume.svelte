@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { mixtureStore, Sweetener } from '$lib';
-	import { Helper } from 'svelte-5-ui-lib';
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import AlternateHelper, { type Alternate } from './AlternateHelper.svelte';
+	import Helper from '../ui-primitives/Helper.svelte';
 
 	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
 
@@ -25,8 +25,8 @@
 	{:else}
 		<NumberSpinner
 			value={ml}
-			format={(v) => `${format(v, { unit: 'ml' })}`}
-			onValueChange={(v) => mixtureStore.setVolume(componentId, v)}
+			type="volume"
+			componentId={componentId}
 		/>
 	{/if}
 	<AlternateHelper base={ml} {alternates} />

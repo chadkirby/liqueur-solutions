@@ -32,7 +32,7 @@ export function analyze(
 }
 
 export function digitsForDisplay(value: number) {
-	return value === 0 ? 0 : value < 1 ? 2 : value < 10 ? 1 : 0;
+	return value === 0 ? 0 : value <= 1 ? 2 : value < 10 ? 1 : 0;
 }
 
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';

@@ -60,7 +60,7 @@
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
-		<div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+		<div class="sticky top-0 bg-white border-b border-slate-200 z-10">
 			<Drawerhead onclick={closeDrawer}>
 				<h5
 					id="drawer-label"
@@ -70,7 +70,7 @@
 						p-4
 						text-lg
 						font-semibold
-						text-gray-500 dark:text-gray-400"
+						text-slate-500 dark:text-slate-400"
 				>
 					Saved Mixtures
 				</h5>

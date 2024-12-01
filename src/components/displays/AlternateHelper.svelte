@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { format, type FormatOptions } from '$lib/utils.js';
-	import { Helper } from 'svelte-5-ui-lib';
+	import Helper from '../ui-primitives/Helper.svelte';
 
 	export interface Alternate {
 		fn: (val: number) => number;

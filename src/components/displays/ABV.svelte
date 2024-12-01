@@ -2,7 +2,7 @@
 
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { Mixture, mixtureStore, type AnyComponent } from '$lib';
-	import { Helper } from 'svelte-5-ui-lib';
+	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
@@ -18,8 +18,8 @@
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner
 			value={abv}
-			format={v => `${format(v, { unit: '%' })}`}
-			onValueChange={v => mixtureStore.setAbv(componentId, v)}
+			type="abv"
+			componentId={componentId}
 			max={100}
 		/>
 	{:else}

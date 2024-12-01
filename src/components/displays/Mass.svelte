@@ -1,11 +1,11 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { mixtureStore, Sweetener } from '$lib';
-	import { Helper } from 'svelte-5-ui-lib';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import AlternateHelper, { type Alternate } from './AlternateHelper.svelte';
+	import Helper from '../ui-primitives/Helper.svelte';
 
 	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
 
@@ -22,8 +22,8 @@
 	{#if component instanceof Sweetener && !readonly}
 		<NumberSpinner
 			value={grams}
-			format={(v) => `${format(v, { unit: 'g' })}`}
-			onValueChange={(v) => mixtureStore.setMass(componentId, v)}
+			type="mass"
+			componentId={componentId}
 		/>
 	{:else}
 		<ReadOnlyValue>{format(grams, { unit: 'g' })}</ReadOnlyValue>

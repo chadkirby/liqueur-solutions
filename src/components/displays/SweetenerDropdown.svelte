@@ -27,8 +27,8 @@
       w-full
       appearance-none
       rounded-lg border
-      border-gray-300
-      bg-gray-50
+      border-slate-300
+      bg-slate-50
       px-6 py-1
 			{classProp}
       "
@@ -45,6 +45,6 @@
 			class="
       pointer-events-none
       absolute
-      left-1 top-2 h-5 w-5 text-gray-500"
+      left-1 top-2 h-5 w-5 text-slate-500"
 		/>
 </div>

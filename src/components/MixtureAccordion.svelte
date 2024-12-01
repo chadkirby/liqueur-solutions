@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { isSimpleSpirit, isSimpleSyrup, mixtureStore, Mixture, Sweetener, Water } from '$lib';
-	import { Accordion, AccordionItem, Button, Input } from 'svelte-5-ui-lib';
+	import { Accordion, AccordionItem, Input } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
@@ -17,6 +17,7 @@
 	import BrixComponent from './displays/Brix.svelte';
 	import CalComponent from './displays/Cal.svelte';
 	import MassComponent from './displays/Mass.svelte';
+	import Button from './ui-primitives/Button.svelte';
 
 	let {
 		mixture,
@@ -52,21 +53,19 @@
 </script>
 
 <div class="flex flex-row justify-between gap-2">
-	<div class="basis-1/3 two-lines-max text-xs font-normal text-gray-500 dark:text-gray-400">
+	<div class="basis-1/3 two-lines-max text-xs font-normal text-slate-500 dark:text-slate-400">
 		Components ({name})
 	</div>
 	<Button
 		onclick={toggleAddMode}
-		outline
-		color={addMode ? 'secondary' : 'light'}
+		isActive={addMode}
 		class="basis-1/4 py-0 flex flex-row gap-1"
 	>
 		<CirclePlusSolid size="sm" />
 		<span class="italic text-sm text-slate-500">Add…</span>
 	</Button>
 	<Button
-		outline
-		color={removeMode ? 'secondary' : 'light'}
+    isActive={removeMode}
 		class="basis-1/4 py-0 flex flex-row gap-1"
 		onclick={toggleRemoveMode}
 	>
@@ -89,7 +88,7 @@
 			onclick={() => setOpen(id, !openStates.get(id))}
 		>
 			{#snippet header()}
-				<div class="relative pt-2.5 flex flex-row items-center gap-x-1">
+				<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
 					<div class="absolute txt-xxs text-slate-500">{entry.describe()}</div>
 
 					{#if removeMode}
@@ -99,23 +98,23 @@
 						<NumberSpinner
 							class="basis-1/5"
 							value={entry.mass}
-							format={(v) => `${format(v, { unit: 'g' })}`}
-							onValueChange={(m) => mixtureStore.setMass(id, m)}
+							type="mass"
+							componentId={id}
 						/>
 					{:else}
 						<NumberSpinner
 							class="basis-1/5"
 							value={entry.volume}
-							format={(v) => `${format(v, { unit: 'ml' })}`}
-							onValueChange={(v) => mixtureStore.setVolume(id, v)}
+							type="volume"
+							componentId={id}
 						/>
 					{/if}
 					{#if isSimpleSpirit(entry)}
 						<NumberSpinner
 							class="basis-1/5"
 							value={entry.abv}
-							format={(v) => `${format(v, { unit: '%' })}`}
-							onValueChange={(a) => mixtureStore.setAbv(id, a)}
+							type="abv"
+							componentId={id}
 						/>
 					{/if}
 
@@ -179,7 +178,10 @@
 		</div>
 	</h2>
 </Accordion>
-<div class="mt-20"></div>
+{#if parentId === null}
+	<!-- spacer to totals will scroll above the bottom nav -->
+	<div class="mt-20"></div>
+{/if}
 
 <style>
 	.txt-xxs {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { format } from '$lib/utils.js';
-	import { Helper } from 'svelte-5-ui-lib';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import Helper from '../ui-primitives/Helper.svelte';
 	import type { DisplayProps } from './display-props.js';
 
 	let { component, class: classProp }: DisplayProps = $props();

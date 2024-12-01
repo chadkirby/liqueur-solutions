@@ -1,67 +1,75 @@
 <!-- NumberSpinner.svelte -->
 <script lang="ts">
-	import { digitsForDisplay } from '$lib/utils.js';
+	import { mixtureStore } from '$lib';
+	import { digitsForDisplay, format } from '$lib/utils.js';
+	import Button from './ui-primitives/Button.svelte';
 
 	interface Props {
 		value: number;
+		componentId: string;
+		type: 'brix' | 'abv' | 'volume' | 'mass';
 		min?: number;
 		max?: number;
 		class?: string;
-		format?: (value: number) => string;
-		onValueChange?: (value: number) => void;
 	}
 
-	let {
-		value,
-		min = 0,
-		max = Infinity,
-		class: classProp,
-		format = (v: number) => v.toString(),
-		onValueChange
-	}: Props = $props();
+	let { value, type, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+
+	function changeValue(v: number) {
+		if (type === 'brix') {
+			mixtureStore.setBrix(componentId, v);
+		} else if (type === 'abv') {
+			mixtureStore.setAbv(componentId, v);
+		} else if (type === 'volume') {
+			mixtureStore.setVolume(componentId, v);
+		} else if (type === 'mass') {
+			mixtureStore.setMass(componentId, v);
+		}
+	}
+
+	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : type === 'abv' ? '%' : 'ºBx';
 
 	// Internal state
 	let touchStartY = $state(0);
 	let isKeyboardEditing = $state(false);
 	let touchStartTime = $state(0);
 	let rawInputValue = $state('');
-	let input: HTMLInputElement;
+	let input: HTMLInputElement | null = $state(null);
 
 	// Handle keyboard input
-	function handleKeyDown(event: KeyboardEvent) {
-		if (isKeyboardEditing && (event.key === 'Enter' || event.key === 'Escape' || event.key === 'Tab')) {
-			event.preventDefault();
-			if (event.key !== 'Escape') {
-				const newValue = Number(rawInputValue);
-				if (!isNaN(newValue)) {
-					setValue(newValue);
-				}
-			}
-			finishEditing();
-		}
-
-		if (event.key === 'ArrowUp') {
+	function handleKeyDown(e: Event) {
+		const { key } = e as KeyboardEvent;
+		console.log(key);
+		if (key === 'Enter' || key === 'Escape' || key === 'Tab') {
+			handleBlur();
+		} else if (key === 'ArrowUp') {
 			if (isKeyboardEditing) finishEditing();
-			event.preventDefault();
+			e.preventDefault();
 			incrementValue();
-		} else if (event.key === 'ArrowDown') {
+		} else if (key === 'ArrowDown') {
 			if (isKeyboardEditing) finishEditing();
-			event.preventDefault();
+			e.preventDefault();
 			decrementValue();
+		} else if (/^[^\d.]$/.test(key)) {
+			// ignore non-numeric keys
+			e.preventDefault();
 		} else if (!isKeyboardEditing) {
 			// enter keyboard editing mode
-			handleFocus();
+			handleFocus(e);
 		}
 	}
 
 	// Handle focus/blur for keyboard editing mode
-	function handleFocus() {
+	function handleFocus(e: Event) {
+		e.preventDefault();
+		e.stopPropagation();
 		isKeyboardEditing = true;
 		rawInputValue = value.toString();
 	}
 
 	function handleBlur() {
 		finishEditing();
+		input?.blur();
 	}
 
 	function finishEditing() {
@@ -121,7 +129,7 @@
 			if (touchDuration < 200 && touchMovement < 10) {
 				isKeyboardEditing = true;
 				rawInputValue = value.toString();
-				input.focus();
+				input?.focus();
 			}
 		}
 
@@ -149,7 +157,7 @@
 		// Clamp the value between min and max
 		const clampedValue = Math.max(min, Math.min(max, newValue));
 		if (clampedValue !== value) {
-			onValueChange?.(clampedValue);
+			changeValue(clampedValue);
 			value = clampedValue;
 		}
 	}
@@ -178,36 +186,51 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value);
+			input.value = format(value).toString();
 		}
 	});
 </script>
 
-<div class="flex items-center {classProp}">
+<div class="flex items-center whitespace-nowrap {classProp}">
 	<input
 		bind:this={input}
+		use:touchHandler
 		type="text"
-		autocomplete="off"
-		value={isKeyboardEditing ? rawInputValue : format(value)}
+		value={rawInputValue}
 		oninput={handleInput}
 		onkeydown={handleKeyDown}
-		use:touchHandler
 		onfocus={handleFocus}
 		onblur={handleBlur}
 		onclick={(e) => e.stopPropagation()}
+		autocomplete="off"
 		class="
-			w-full
-			px-1 py-1
-			border border-gray-300
-			bg-gray-50
-			rounded-lg
-			focus:outline-none
-			focus:ring-2
-			focus:ring-blue-200
-			focus:border-transparent
-			text-center
-			text-base
-			touch-none
-		"
-	/>
+				block
+				w-full
+				text-right
+				focus:outline-2
+				border
+				border-primary-300
+				dark:border-primary-600
+				dark:focus:border-primary-500
+				dark:focus:ring-primary-50
+				bg-primary-50
+				text-primary-900
+				dark:bg-primary-700
+				dark:text-white
+				dark:placeholder-primary-400
+				rounded-md
+				text-sm
+				px-0.5
+				py-0.5
+				focus:ring-2
+				focus:border-blue-200
+				focus:ring-blue-200
+			"
+	/>&thinsp;<span class="unit">{unit}</span>
 </div>
+
+<style>
+	span.unit {
+		font-size: 0.8em;
+	}
+</style>

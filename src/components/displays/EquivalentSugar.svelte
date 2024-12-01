@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { type Sweetener,  } from '$lib';
-	import { Helper } from 'svelte-5-ui-lib';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import { SweetenerEquivData } from '$lib/sweetener.js';
 	import type { DisplayProps } from './display-props.js';
+	import Helper from '../ui-primitives/Helper.svelte';
 
 	let { component, class: classProp }: DisplayProps & {component: Sweetener} = $props();
 

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
+	import Button from '../ui-primitives/Button.svelte';
+	import { Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
 	import { ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { accordionitem, Button, Helper, Input, Tooltip } from 'svelte-5-ui-lib';
+	import { accordionitem, Input, Tooltip } from 'svelte-5-ui-lib';
+	import Button from './ui-primitives/Button.svelte';
+	import Helper from './ui-primitives/Helper.svelte';
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
@@ -70,7 +72,7 @@
 					gap-x-2
 					"
 	>
-		<Button class="p-1" outline color="light" onclick={handleToggleStar}>
+		<Button onclick={handleToggleStar}>
 			{#if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved

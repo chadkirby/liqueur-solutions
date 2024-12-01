@@ -1,7 +1,7 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { mixtureStore, Mixture } from '$lib';
-	import { Helper } from 'svelte-5-ui-lib';
+	import Helper from '../ui-primitives/Helper.svelte';
 	import { brixToSyrupProportion, format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
@@ -21,8 +21,8 @@
 	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
 			value={brix}
-			format={(v) => `${format(v, { unit: '%' })}`}
-			onValueChange={(v) => mixtureStore.setBrix(componentId, v)}
+			type="brix"
+			componentId={componentId}
 		/>
 	{:else}
 		<ReadOnlyValue>{format(brix, { unit: '%' })}</ReadOnlyValue>
