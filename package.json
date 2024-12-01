@@ -30,8 +30,7 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.28.1",
-		"@sveltejs/adapter-cloudflare": "^4.8.0",
-		"@sveltejs/adapter-vercel": "^5.5.0",
+		"@sveltejs/adapter-auto": "^3.3.1",
 		"@sveltejs/kit": "^2.5.27",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
 		"@tsconfig/svelte": "^5.0.4",
@@ -63,11 +62,12 @@
 		"vitest": "^1.0.0"
 	},
 	"engines": {
-		"node": "20.x"
+		"node": "20.x",
+		"yarn": "1.22.19"
 	},
 	"volta": {
 		"node": "20.12.1",
-		"yarn": "1.22.11"
+		"yarn": "1.22.19"
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
