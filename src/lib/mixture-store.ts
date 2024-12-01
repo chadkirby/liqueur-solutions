@@ -399,6 +399,6 @@ function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number):
 	}
 
 	for (const [i, obj] of mixture.componentObjects.entries()) {
-		obj.data = working.componentObjects[i].rawData;
+		obj.data = working.componentObjects[i].data;
 	}
 }

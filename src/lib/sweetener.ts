@@ -5,7 +5,6 @@ import {
 	type ComponentNumberKeys,
 	type SweetenerData
 } from './component.js';
-import { round } from './utils.js';
 
 type Sweetnesss = {
 	density: number;
@@ -77,13 +76,9 @@ export class Sweetener extends BaseComponent implements Component {
 		this.setEquivalentSugarMass(equivalentSugarMass);
 	}
 
-	get rawData(): SweetenerData {
-		const { type, subType, mass } = this;
-		return { type, subType, mass };
-	}
 	get data(): SweetenerData {
 		const { type, subType, mass } = this;
-		return { type, subType, mass: round(mass, 1) };
+		return { type, subType, mass };
 	}
 	set data(data: SweetenerData) {
 		this._subType = data.subType;

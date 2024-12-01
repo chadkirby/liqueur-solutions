@@ -109,7 +109,6 @@ export abstract class BaseComponent {
 
 	abstract canEdit(key: ComponentNumberKeys | string): boolean;
 	abstract data: AnyData;
-	abstract rawData: AnyData;
 }
 
 export type NumberKeys<T> = {

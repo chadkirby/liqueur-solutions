@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Button from '../ui-primitives/Button.svelte';
-	import { Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
+	// import Button from '../ui-primitives/Button.svelte';
+	import { Button, Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
 	import { ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
@@ -89,7 +89,7 @@ Share the current mixture
 	<Modal size="sm" {modalStatus} {closeModal}>
 		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
-				data={resolveUrl(resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture())))}
+				data={resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture()))}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl
@@ -101,11 +101,11 @@ Share the current mixture
         >Copied to clipboard</Toast>
 
 			<div class="flex flex-row justify-center gap-2">
-				<Button class="bg-secondary-600" onclick={copyUrlToClipboard}>Copy URL</Button>
-				<Button class="bg-secondary-600" onclick={copyImage}>Copy QR Code</Button>
+				<Button outline color="light" class="p-1" onclick={copyUrlToClipboard}>Copy URL</Button>
+				<Button outline color="light" class="p-1" onclick={copyImage}>Copy QR Code</Button>
 				{#if downloadUrl}
-					<Button
-						class="bg-secondary-600"
+					<Button outline color="light"
+						class="p-1"
 						href={downloadUrl}
 						download={(mixtureStore.getName() || 'my-mixture') + '.png'}>Download QR Code</Button
 					>

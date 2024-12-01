@@ -1,5 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import type { SvelteHTMLElements} from 'svelte/elements';
+
+	type HTMLProps = SvelteHTMLElements['button'];
+type PropKeys = keyof HTMLProps;
+type EventKeys = Extract<PropKeys, `on${string}`> extends infer K
+  ? K extends `on:${string}` ? never : K
+  : never;
+
 	let {
 		children,
 		class: classProp,
@@ -11,9 +19,7 @@
 		isActive?: boolean;
 		class?: string;
 		id?: string;
-		touchHandler?: (node: HTMLElement) => void;
-		[key: `on${string}`]: (e: Event) => void;
-	} = $props();
+	} & Pick<HTMLProps, EventKeys> = $props();
 	let activeClass = $derived(
 		isActive ? `!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600` : ''
 	);

@@ -4,7 +4,6 @@ import {
 	type Component,
 	type ComponentNumberKeys
 } from './component.js';
-import { round } from './utils.js';
 
 export class Ethanol extends BaseComponent implements Component {
 	readonly type = 'ethanol';
@@ -24,13 +23,9 @@ export class Ethanol extends BaseComponent implements Component {
 		return `ethanol`;
 	}
 
-	get rawData(): EthanolData {
-		const { type, volume } = this;
-		return { type, volume };
-	}
 	get data(): EthanolData {
 		const { type, volume } = this;
-		return { type, volume: round(volume, 1) };
+		return { type, volume };
 	}
 	set data(data: EthanolData) {
 		this.volume = data.volume;

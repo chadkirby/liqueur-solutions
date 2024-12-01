@@ -10,9 +10,9 @@
 <Helper
 	class="
   min-w-16 w-full px-1 py-1
-  border border-slate-300 rounded-lg
+  border border-primary-300 rounded-lg
   text-center
-  text-slate-400
+  text-primary-400
   text-base
   "
 >

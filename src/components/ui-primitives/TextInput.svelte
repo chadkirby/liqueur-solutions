@@ -1,4 +1,12 @@
 <script lang="ts">
+	import type { SvelteHTMLElements} from 'svelte/elements';
+
+type HTMLProps = SvelteHTMLElements['input'];
+type PropKeys = keyof HTMLProps;
+	type EventKeys = Extract<PropKeys, `on${string}`> extends infer K
+		? K extends `on:${string}` ? never : K
+		: never;
+
 	let {
 		value,
 		type = 'text',
@@ -10,8 +18,7 @@
 		type?: 'text' | 'number';
 		class?: string;
 		id?: string;
-		[key: `on${string}`]: (e: Event) => void;
-	} = $props();
+	} & Pick<HTMLProps, EventKeys> = $props();
 </script>
 
 <input
@@ -36,8 +43,8 @@
     dark:placeholder-primary-400
     rounded-md
     text-sm
-    px-0.5
-    py-1
+    px-1
+    py-0.5
     focus:ring-2
     focus:border-blue-200
     focus:ring-blue-200

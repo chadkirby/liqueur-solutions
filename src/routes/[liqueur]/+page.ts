@@ -13,7 +13,7 @@ export function load(args: { url: URL; params: { liqueur: string } }): LoadDataF
 		return {
 			storeId: null,
 			liqueur,
-			components: mixture.rawData.components
+			components: mixture.data.components
 		};
 	} catch (err) {
 		console.error(err);

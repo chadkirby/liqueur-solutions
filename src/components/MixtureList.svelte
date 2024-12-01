@@ -23,18 +23,6 @@
 
 	let { storeId }: Props = $props();
 
-	if (browser) {
-		$effect(() => {
-			try {
-				const mixture = deserializeFromLocalStorage(storeId);
-				if (!mixture.isValid) throw new Error('Invalid mixture');
-				const name = getName(storeId) || 'mixture';
-				mixtureStore.load({ storeId, name, mixture });
-			} catch (error) {
-				goto('/new');
-			}
-		});
-	}
 	// hack to remove accordion focus ring
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
 	// hack to adjust accordion item padding

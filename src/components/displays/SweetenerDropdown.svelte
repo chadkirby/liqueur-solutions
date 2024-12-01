@@ -26,10 +26,11 @@
 			class="
       w-full
       appearance-none
-      rounded-lg border
-      border-slate-300
-      bg-slate-50
-      px-6 py-1
+      rounded-md border
+			text-sm
+      border-primary-300
+      bg-primary-50
+      px-6 py-0.5
 			{classProp}
       "
 			bind:value={subType}
@@ -45,6 +46,6 @@
 			class="
       pointer-events-none
       absolute
-      left-1 top-2 h-5 w-5 text-slate-500"
+      left-1 top-1 h-5 w-5 text-primary-500"
 		/>
 </div>

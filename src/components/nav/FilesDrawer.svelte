@@ -11,6 +11,7 @@
 	import { mixtureStore } from '$lib';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { asStorageId, type StorageId } from '$lib/storage-id.js';
+	import { openFile } from '$lib/open-file.js';
 
 	let files = $state([] as FileItem[]);
 	let drawerStatus = $state(false);
@@ -36,9 +37,7 @@
 	const goToFile = (id: StorageId) => {
 		return () => {
 			filesDrawer.close();
-			// client-side navigation does not work???
-			// goto(`/file${id}`, { replaceState: true, invalidateAll: true });
-			window.location.href = `/file${id}`;
+			openFile(id);
 		};
 	};
 
@@ -60,7 +59,7 @@
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
-		<div class="sticky top-0 bg-white border-b border-slate-200 z-10">
+		<div class="sticky top-0 bg-white border-b border-primary-200 z-10">
 			<Drawerhead onclick={closeDrawer}>
 				<h5
 					id="drawer-label"
@@ -70,7 +69,7 @@
 						p-4
 						text-lg
 						font-semibold
-						text-slate-500 dark:text-slate-400"
+						text-primary-500 dark:text-primary-400"
 				>
 					Saved Mixtures
 				</h5>

@@ -113,17 +113,6 @@ export class Mixture extends BaseComponent {
 		this.components.splice(0, this.components.length, ...mx.components);
 	}
 
-	get rawData(): MixtureData {
-		return {
-			type: this.type,
-			components: this.components.map(({ name, id, component }) => ({
-				name,
-				id,
-				data: component.rawData
-			}))
-		};
-	}
-
 	clone(newIds = false): Mixture {
 		return new Mixture(
 			this.components.map((item) => ({
