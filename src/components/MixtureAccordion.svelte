@@ -42,15 +42,9 @@
 		}
 	}
 
-	let addMode = $state(false);
-	let removeMode = $state(false);
-	function toggleRemoveMode() {
-		addMode = false;
-		removeMode = !removeMode;
-	}
-	function toggleAddMode() {
-		addMode = !addMode;
-		removeMode = false;
+	let editMode = $state(false);
+	function toggleEditMode() {
+		editMode = !editMode;
 	}
 </script>
 
@@ -59,20 +53,13 @@
 		<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3">
 			Components
 		</span>
-		<Button onclick={toggleAddMode} isActive={addMode} class="py-0 border-0 !justify-start gap-1">
-			<CirclePlusSolid size="xs" />
-			<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-				>Add…</span
-			>
-		</Button>
 		<Button
-			isActive={removeMode}
-			class="py-0 border-0 !justify-start gap-1"
-			onclick={toggleRemoveMode}
+			isActive={editMode}
+			class="py-0.5 px-1 border-1 !justify-start"
+			onclick={toggleEditMode}
 		>
-			<CircleMinusSolid size="xs" />
 			<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-				>Remove…</span
+				>Edit…</span
 			>
 		</Button>
 		{#if parentId !== null}
@@ -88,7 +75,7 @@
 		{/if}
 	</div>
 
-	{#if addMode}
+	{#if editMode}
 		<div class="flex flex-col items-stretch mt-1">
 			<AddComponent componentId={parentId} callback={() => setOpen('add-component', false)} />
 		</div>
@@ -105,7 +92,7 @@
 					<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
 						<div class="absolute txt-xxs text-primary-500">{entry.describe()}</div>
 
-						{#if removeMode}
+						{#if editMode}
 							<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 						{/if}
 						{#if entry instanceof Sweetener}
