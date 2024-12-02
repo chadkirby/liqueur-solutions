@@ -7,7 +7,7 @@
 	import { mixtureStore } from '$lib';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { asStorageId, type StorageId } from '$lib/storage-id.js';
-	import { openFile } from '$lib/open-file.js';
+	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { starredIds } from '$lib/stars.svelte.js';
 
 	let files = $state([] as FileItem[]);
@@ -44,10 +44,34 @@
 		return `files-drawer-${key}-${id.slice(1)}`;
 	}
 
+	// keep track of whether the shift or meta key is pressed
+	let modifierKey = $state(false);
+	$effect(() => {
+		if (drawerStatus) {
+			const handleKeyDown = (e: KeyboardEvent) => {
+				modifierKey = e.shiftKey || e.metaKey;
+			};
+			const handleKeyUp = (e: KeyboardEvent) => {
+				modifierKey = e.shiftKey || e.metaKey;
+			};
+
+			window.addEventListener('keydown', handleKeyDown);
+			window.addEventListener('keyup', handleKeyUp);
+
+			return () => {
+				window.removeEventListener('keydown', handleKeyDown);
+				window.removeEventListener('keyup', handleKeyUp);
+			};
+		}
+	});
+
 	const goToFile = (id: StorageId) => {
 		return () => {
 			filesDrawer.close();
-			openFile(id);
+			if (modifierKey) {
+				openFileInNewTab(id);
+			} else {
+				openFile(id);}
 		};
 	};
 
@@ -99,7 +123,7 @@
 						onclick={() => removeItem(id)}
 					/>
 					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('link', id)}`}>
-						Open {name}
+						Open {name} {#if modifierKey}in new tab{/if}
 					</Tooltip>
 					<button
 						id={domIdFor('link', id)}
