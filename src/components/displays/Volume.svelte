@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { mixtureStore, Sweetener } from '$lib';
+	import { Sweetener } from '$lib';
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';

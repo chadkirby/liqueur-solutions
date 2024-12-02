@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { mixtureStore, Mixture } from '$lib';
+	import { Mixture } from '$lib';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { brixToSyrupProportion, format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';

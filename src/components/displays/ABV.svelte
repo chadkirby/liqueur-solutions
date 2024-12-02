@@ -1,7 +1,7 @@
 <script lang="ts">
 
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { Mixture, mixtureStore, type AnyComponent } from '$lib';
+	import { Mixture } from '$lib';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';

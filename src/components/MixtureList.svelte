@@ -6,12 +6,7 @@
 	import debounce from 'lodash.debounce';
 
 	import { mixtureStore } from '$lib';
-	import {
-		getName,
-	} from '$lib/local-storage.svelte';
 	import type { ChangeEventHandler } from 'svelte/elements';
-	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
-	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import type { StorageId } from '$lib/storage-id.js';

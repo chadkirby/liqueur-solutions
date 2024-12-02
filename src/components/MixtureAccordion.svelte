@@ -50,9 +50,6 @@
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
-		<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3">
-			Components
-		</span>
 		<Button
 			isActive={editMode}
 			class="py-0.5 px-1 border-1 !justify-start"

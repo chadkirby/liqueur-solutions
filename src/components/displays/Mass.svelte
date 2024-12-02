@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { mixtureStore, Sweetener } from '$lib';
+	import { Sweetener } from '$lib';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';

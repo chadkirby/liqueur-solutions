@@ -2,7 +2,6 @@
 <script lang="ts">
 	import { mixtureStore } from '$lib';
 	import { digitsForDisplay, format } from '$lib/utils.js';
-	import Button from './ui-primitives/Button.svelte';
 
 	interface Props {
 		value: number;
