@@ -24,8 +24,8 @@
 			type="brix"
 			componentId={componentId}
 		/>
-	{:else}
-		<ReadOnlyValue>{format(brix, { unit: '%' })}</ReadOnlyValue>
+		<Helper class="text-center">{parts}</Helper>
+		{:else}
+		<ReadOnlyValue value={brix} type="brix" />
 	{/if}
-	<Helper class="text-center">{parts}</Helper>
 </div>

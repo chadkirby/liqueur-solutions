@@ -22,8 +22,8 @@
 			componentId={componentId}
 			max={100}
 		/>
-	{:else}
-		<ReadOnlyValue>{format(abv, {unit: '%' })}</ReadOnlyValue>
+		<Helper class="text-center">{format(proof, {unit: 'proof'})}</Helper>
+		{:else}
+		<ReadOnlyValue value={abv} type="abv" />
 	{/if}
-	<Helper class="text-center">{format(proof, {unit: 'proof'})}</Helper>
 </div>

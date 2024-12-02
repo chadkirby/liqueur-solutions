@@ -41,7 +41,7 @@ export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
 
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
-	unit?: VolumeUnit | MassUnit | OtherUnit;
+	unit?: VolumeUnit | MassUnit | OtherUnit | '';
 };
 
 export const thinsp = '\u2009';
@@ -69,7 +69,10 @@ function suffixForUnit(unit: VolumeUnit | MassUnit | OtherUnit) {
  * @param value - The numeric value to be rounded and formatted.
  * @returns The formatted string representation of the number with a hair space.
  */
-export function format(value: number, options: FormatOptions = {}) {
+export function format(value: number | string, options: FormatOptions = {}) {
+	if (typeof value === 'string') {
+		return Object.assign(new String(value), { value, suffix: '' });
+	}
 	const formatted =
 		options.decimal === 'fraction'
 			? convertToFraction(value)

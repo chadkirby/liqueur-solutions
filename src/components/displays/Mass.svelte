@@ -4,17 +4,11 @@
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
-	import AlternateHelper, { type Alternate } from './AlternateHelper.svelte';
 	import Helper from '../ui-primitives/Helper.svelte';
 
 	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
 
 	let grams = $derived(component.mass);
-	const alternates: Alternate[] = [
-		{ options: { unit: 'oz' }, fn: (g: number) => g / 28.3495 },
-		{ options: { unit: 'lb' }, fn: (g: number) => g / 453.592 },
-		{ options: { unit: 'kg' }, fn: (g: number) => g / 1000 }
-	];
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}">
@@ -25,8 +19,8 @@
 			type="mass"
 			componentId={componentId}
 		/>
+		<Helper class="text-center">{format(grams / 28.3495, {unit: 'oz'})}</Helper>
 	{:else}
-		<ReadOnlyValue>{format(grams, { unit: 'g' })}</ReadOnlyValue>
+		<ReadOnlyValue value={grams} type="mass" />
 	{/if}
-	<AlternateHelper base={grams} {alternates} />
 </div>
