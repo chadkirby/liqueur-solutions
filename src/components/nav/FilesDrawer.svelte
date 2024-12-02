@@ -2,20 +2,30 @@
 	import { Drawer, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
 	import { CloseCircleSolid, ListOutline, ArrowRightAltSolid } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import {
-		filesDb,
-		listFiles,
-		type FileItem,
-	} from '$lib/local-storage.svelte';
+	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import { mixtureStore } from '$lib';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { asStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile } from '$lib/open-file.js';
+	import { starredIds } from '$lib/stars.svelte.js';
 
 	let files = $state([] as FileItem[]);
 	let drawerStatus = $state(false);
 	const closeDrawer = () => filesDrawer.close();
+
+	function listFiles<T extends Record<string, unknown> = Record<string, never>>(
+		extra: T = {} as T
+	): Array<FileItem & T> {
+		const files = filesDb.scan();
+		const out: Array<FileItem & T> = [];
+		for (const [id, item] of files) {
+			if (starredIds.includes(id)) {
+				out.push({ ...item, id, ...extra });
+			}
+		}
+		return out;
+	}
 
 	$effect(() => {
 		drawerStatus = filesDrawer.isOpen;

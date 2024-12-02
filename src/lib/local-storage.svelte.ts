@@ -146,14 +146,3 @@ class FilesDb {
 }
 
 export const filesDb = new FilesDb();
-
-export function listFiles<T extends Record<string, unknown> = Record<string, never>>(
-	extra: T = {} as T
-): Array<FileItem & T> {
-	const files = filesDb.scan();
-	const out: Array<FileItem & T> = [];
-	for (const [id, item] of files) {
-		out.push({ ...item, id, ...extra });
-	}
-	return out;
-}
