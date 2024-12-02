@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { BottomNav, BottomNavItem } from 'svelte-5-ui-lib';
 	import ShareModal from './ShareModal.svelte';
 	import FilesDrawer from './FilesDrawer.svelte';
-	import NewButton from './NewButton.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
+	import { Tooltip } from 'svelte-5-ui-lib';
+	import { FileOutline, ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
+	import { goto } from '$app/navigation';
+	import { shareModal } from '$lib/share-modal-store.svelte';
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(null);
@@ -30,28 +32,63 @@
   focus:ring-secondary-300
   focus:outline-none dark:focus:ring-secondary-800
   `;
+
 </script>
 
-<BottomNav
-	position="fixed"
-	navType="application"
-	innerClass="
-    flex
-    items-center
-    justify-around
-  "
+<div
+	class="
+		w-full
+		z-30
+		border-primary-200
+		dark:bg-primary-700
+		dark:border-primary-600
+		fixed
+		h-16
+		max-w-lg
+		-translate-x-1/2
+		rtl:translate-x-1/2
+		bg-white
+		border
+		rounded-full
+		bottom-4
+		start-1/2
+		"
 >
-	<button type="button" onclick={openFilesDrawer} onkeydown={handleKeydown}>
-		<BottomNavItem btnName="Files" {btnClass}>
+	<div class="h-full max-w-lg mx-auto flex items-center justify-around">
+		<button
+			id="file-drawer-button"
+			aria-label="Files"
+			class={btnClass}
+			onclick={openFilesDrawer}
+			onkeydown={handleKeydown}
+		>
 			<FilesDrawer />
-		</BottomNavItem>
-	</button>
+		</button>
 
-  <BottomNavItem btnName="New" {btnClass}>
-		<NewButton />
-	</BottomNavItem>
+		<button
+			id="new-button"
+			aria-label="New"
+			class={btnClass}
+			onclick={() => goto('/new', { replaceState: true, invalidateAll: true })}
+		>
+			<FileOutline class="text-white" />
+		</button>
 
-	<BottomNavItem btnName="Share" {btnClass}>
-		<ShareModal />
-	</BottomNavItem>
-</BottomNav>
+		<button
+			id="share-button"
+			aria-label="Share"
+			class={btnClass}
+			onclick={shareModal.open}
+		>
+			<ArrowUpFromBracketOutline class="text-white" />
+		</button>
+	</div>
+</div>
+
+<ShareModal />
+
+<Tooltip color="default" offset={6} triggeredBy="#new-button">Create a new mixture</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#file-drawer-button">
+	Show saved mixture files
+</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#share-button">Share the current mixture</Tooltip>

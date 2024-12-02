@@ -1,30 +1,39 @@
 <script lang="ts">
 	// import Button from '../ui-primitives/Button.svelte';
 	import { Button, Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
-	import { ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
 	import { mixtureStore } from '$lib';
 	import { resolveUrl } from '$lib/local-storage.svelte';
 	import { urlEncode } from '$lib/mixture-store.js';
-	const modal = uiHelpers();
-	let modalStatus = $state(false);
-	$effect(() => {
-		modalStatus = modal.isOpen;
-	});
-	const closeModal = modal.close;
+	import { shareModal } from '$lib/share-modal-store.svelte';
 
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
 
-  const copyUrlToClipboard = async () => {
+	const copyUrlToClipboard = async () => {
 		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture())));
-    toastStatus = true;
-    setTimeout(() => {
-      toastStatus = false;
-    }, 2000);
+		toastStatus = true;
+		setTimeout(() => {
+			toastStatus = false;
+		}, 2000);
 	};
 
+	// close the modal on escape
+	const handleKeyDown = (event: KeyboardEvent) => {
+		if (event.key === 'Escape') {
+			shareModal.close();
+		}
+	};
+
+	$effect(() => {
+		if (shareModal.isOpen) {
+			window.addEventListener('keydown', handleKeyDown);
+			return () => {
+				window.removeEventListener('keydown', handleKeyDown);
+			};
+		}
+	});
 
 	const handleDownloadUrlGenerated = (url = '') => {
 		downloadUrl = url;
@@ -69,24 +78,15 @@
 		if (blob) {
 			await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 		}
-    toastStatus = true;
-    setTimeout(() => {
-      toastStatus = false;
-    }, 2000);
+		toastStatus = true;
+		setTimeout(() => {
+			toastStatus = false;
+		}, 2000);
 	};
 </script>
 
-<Tooltip
-  color="default"
-  offset={6}
-  triggeredBy="#share-button"
->
-Share the current mixture
-</Tooltip>
-<ArrowUpFromBracketOutline id="share-button" class="text-white" onclick={modal.toggle} />
-
 <Portal target="body">
-	<Modal size="sm" {modalStatus} {closeModal}>
+	<Modal size="sm" modalStatus={shareModal.isOpen}>
 		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
 				data={resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture()))}
@@ -95,7 +95,7 @@ Share the current mixture
 				dispatchDownloadUrl
 				on:downloadUrlGenerated={(event) => handleDownloadUrlGenerated(event.detail.url)}
 			/>
-				<Toast
+			<Toast
           bind:toastStatus={toastStatus}
           position="top-left"
         >Copied to clipboard</Toast>

@@ -11,7 +11,7 @@
 	import { starredIds } from '$lib/stars.svelte.js';
 
 	let files = $state([] as FileItem[]);
-	let drawerStatus = $state(false);
+	let drawerStatus = $state(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
 
 	function listFiles<T extends Record<string, unknown> = Record<string, never>>(
@@ -53,6 +53,9 @@
 			};
 			const handleKeyUp = (e: KeyboardEvent) => {
 				modifierKey = e.shiftKey || e.metaKey;
+				if (e.key === 'Escape') {
+					filesDrawer.close();
+				}
 			};
 
 			window.addEventListener('keydown', handleKeyDown);
@@ -86,10 +89,7 @@
 	}
 </script>
 
-<Tooltip color="default" offset={6} triggeredBy="#file-drawer-button">
-	Show saved mixture files
-</Tooltip>
-<ListOutline id="file-drawer-button" class="text-white" onclick={filesDrawer.toggle} />
+<ListOutline class="text-white" onclick={filesDrawer.toggle} />
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">

@@ -62,7 +62,7 @@ type PropKeys = keyof HTMLProps;
 	}
 
 	input[type='number'] {
-		appearance: textfield;
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 </style>
