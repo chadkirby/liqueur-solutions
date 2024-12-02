@@ -36,9 +36,8 @@
 	let input: HTMLInputElement | null = $state(null);
 
 	// Handle keyboard input
-	function handleKeyDown(e: Event) {
-		const { key } = e as KeyboardEvent;
-		console.log(key);
+	function handleKeyDown(e: KeyboardEvent) {
+		const { key, metaKey } = e;
 		if (key === 'Enter' || key === 'Escape' || key === 'Tab') {
 			handleBlur();
 		} else if (key === 'ArrowUp') {
@@ -49,7 +48,7 @@
 			if (isKeyboardEditing) finishEditing();
 			e.preventDefault();
 			decrementValue();
-		} else if (/^[^\d.]$/.test(key)) {
+		} else if (!metaKey && /^[^\d.]$/.test(key)) {
 			// ignore non-numeric keys
 			e.preventDefault();
 		} else if (!isKeyboardEditing) {
