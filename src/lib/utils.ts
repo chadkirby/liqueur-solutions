@@ -161,14 +161,38 @@ const candidates = [
 	xToY(7, 1),
 	xToY(8, 1),
 	xToY(9, 1),
-	xToY(10, 1)
-];
+	xToY(10, 1),
+	yToX(5, 4),
+	yToX(4, 3),
+	yToX(3, 2),
+	yToX(5, 3),
+	yToX(2, 1),
+	yToX(7, 3),
+	yToX(5, 2),
+	yToX(3, 1),
+	yToX(4, 1),
+	yToX(5, 1),
+	yToX(6, 1),
+	yToX(7, 1),
+	yToX(8, 1),
+	yToX(9, 1),
+	yToX(10, 1)
+].sort((a, b) => a.decimal - b.decimal);
 export function brixToSyrupProportion(brix: number) {
 	const diffs = candidates.map((x) => Math.abs(brix / 100 - x.decimal));
 	const min = Math.min(...diffs);
 	return candidates[diffs.indexOf(min)].ratio;
 }
 
+export function syrupProportionToBrix(proportion: string) {
+	const [x, y] = proportion.split(':').map(Number);
+	return (x / (x + y)) * 100;
+}
+
 function xToY(x: number, y: number) {
+	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
+}
+
+function yToX(y: number, x: number) {
 	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
 }

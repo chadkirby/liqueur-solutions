@@ -9,7 +9,7 @@
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { CircleMinusSolid, CirclePlusSolid, FileSolid } from 'flowbite-svelte-icons';
+	import { FileSolid } from 'flowbite-svelte-icons';
 	import AddComponent from './nav/AddComponent.svelte';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';

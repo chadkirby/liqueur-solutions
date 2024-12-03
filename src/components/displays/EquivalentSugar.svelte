@@ -14,6 +14,6 @@
 
 <div class="mx-1 min-w-0 w-full {classProp}">
 	<Helper>≈ Sugar</Helper>
-	<ReadOnlyValue>{format(esm, { unit: 'g' })}</ReadOnlyValue>
+	<ReadOnlyValue value={esm} type="mass" />
 	<Helper class="text-center">{format(equivCal, { unit: 'kcal' })}</Helper>
 </div>
