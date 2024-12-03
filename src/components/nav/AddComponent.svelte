@@ -40,30 +40,30 @@
 	}
 </script>
 
-<div class="flex flex-row flex-wrap gap-2">
+<div class="flex flex-row flex-wrap gap-1">
 	<Button class="p-1" onclick={addSpirit}>
-		<CirclePlusSolid size="sm" /> <span class="mx-1">spirit</span>
+		<CirclePlusSolid size="sm" /><span class="mr-1">spirit</span>
 	</Button>
 
 	<Button class="p-1" onclick={addSugar}>
-		<CirclePlusSolid size="sm" /> <span class="mx-1">sweetener</span>
+		<CirclePlusSolid size="sm" /><span class="mr-1">sweetener</span>
 	</Button>
 
 	<Button class="p-1" onclick={addSyrup}>
-		<CirclePlusSolid size="sm" /> <span class="mx-1">syrup</span>
+		<CirclePlusSolid size="sm" /><span class="mr-1">syrup</span>
 	</Button>
 
 	<Button class="p-1" onclick={addWater}>
-		<CirclePlusSolid size="sm" /> <span class="mx-1">water</span>
+		<CirclePlusSolid size="sm" /><span class="mr-1">water</span>
 	</Button>
 
 	{#if componentId === null}
 		<Button class="p-1" onclick={addEmpty}>
-			<CirclePlusSolid size="sm" /> <span class="mx-1">empty mixture</span>
+			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
 		</Button>
 
 		<Button class="p-1" onclick={openFilesDrawer}>
-			<CirclePlusSolid size="sm" /> <span class="mx-1">saved mixture</span>
+			<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>
 		</Button>
 	{/if}
 </div>
