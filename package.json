@@ -73,8 +73,8 @@
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
-		"@sentry/sveltekit": "^8",
 		"lodash.debounce": "^4.0.8",
+		"rollbar": "^2.26.4",
 		"svelte-portal": "^2.2.1"
 	}
 }

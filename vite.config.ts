@@ -1,17 +1,12 @@
-import { sentrySvelteKit } from '@sentry/sveltekit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-	plugins: [
-		sentrySvelteKit({
-			sourceMapsUploadOptions: {
-				org: 'ckirby',
-				project: 'javascript-sveltekit'
-			}
-		}),
-		sveltekit()
-	],
+	plugins: [sveltekit()],
+	build: {
+		// Required: tells Vite to create source maps
+		sourcemap: true
+	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	}
