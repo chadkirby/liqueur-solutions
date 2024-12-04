@@ -52,21 +52,20 @@
 	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
 		<Button
 			isActive={editMode}
-			class="py-0.5 px-1 border-1 !justify-start"
+			class="py-1 px-1.5 border-1 !justify-start"
 			onclick={toggleEditMode}
 		>
 			<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-				>Edit…</span
+				>Add/Remove</span
 			>
 		</Button>
 		{#if parentId !== null}
 			<Button
-				class="py-0 border-0 !justify-start gap-1"
+				class="py-1 px-1.5 border-1 !justify-start gap-1"
 				onclick={() => window.open(urlEncode(name, mixture), '_blank')}
 			>
-				<FileSolid size="xs" />
 				<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-					>Open</span
+					>Open a copy</span
 				>
 			</Button>
 		{/if}
