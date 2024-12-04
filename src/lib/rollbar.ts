@@ -1,11 +1,17 @@
 import Rollbar from 'rollbar';
 
+// check whether we're running on the server
+const isServer = typeof window === 'undefined'
+
 const ROLLBAR_TOKEN = import.meta.env.VITE_ROLLBAR_TOKEN;
 
 export const rollbar = new Rollbar({
 	accessToken: ROLLBAR_TOKEN,
-	captureUncaught: true,
-	captureUnhandledRejections: true,
+	// Disable client-side features when running on server
+	captureUncaught: !isServer,
+	captureUnhandledRejections: !isServer,
+	// Disable browser monitoring on server
+	addErrorContext: !isServer,
 	environment: import.meta.env.PROD ? 'production' : 'development',
 	enabled: import.meta.env.PROD, // Only enable in production
 	payload: {
