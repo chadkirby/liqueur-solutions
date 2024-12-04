@@ -1,34 +1,41 @@
-import {
-	type SpiritData,
-	type WaterData,
-	type SugarData,
-	type SyrupData,
-	dataToMixture,
-	deserialize
-} from '$lib';
+import { deserialize, newSpirit, Sweetener } from '$lib';
+import type { LoadDataFromUrl } from '$lib/load-data.js';
 
-export function load({ url, params }: { url: URL; params: { liqueur: string } }): {
-	liqueur: string;
-	components: Array<{ name: string; data: SpiritData | WaterData | SugarData | SyrupData }>;
-} {
+export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
+	const { url, params } = args;
+	// if (url.pathname.startsWith('/favicon')) return;
 	try {
-		const { components } = deserialize(url.searchParams);
+		const mixture = deserialize(url.searchParams);
 		// decode params.liqueur
 		const liqueur = decodeURIComponent(params.liqueur) ?? 'mixture';
-		const mixture = dataToMixture({ components });
 		if (!mixture.isValid) throw new Error('Invalid mixture');
+
 		return {
+			storeId: null,
 			liqueur,
-			components
+			components: mixture.data.components
 		};
 	} catch (err) {
 		console.error(err);
 		return {
-			liqueur: 'mixture',
+			storeId: null,
+			liqueur: '',
 			components: [
-				{ name: 'spirit', data: { volume: 100, abv: 40, type: 'spirit' } },
-				{ name: 'water', data: { volume: 100, type: 'water' } },
-				{ name: 'sugar', data: { mass: 50, type: 'sugar' } }
+				{
+					name: 'spirit',
+					id: 'spirit-0',
+					data: newSpirit(100, 40).data
+				},
+				{
+					name: 'water',
+					id: 'water-0',
+					data: { volume: 100, type: 'water' }
+				},
+				{
+					name: 'sugar',
+					id: 'sweetener-0',
+					data: new Sweetener('sucrose', 50).data
+				}
 			]
 		};
 	}

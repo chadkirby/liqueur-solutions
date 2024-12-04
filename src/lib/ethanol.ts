@@ -1,31 +1,37 @@
-import type { Component, SpiritData } from './component.js';
-import type { Target } from './solver.js';
-import { round, analyze } from './utils.js';
+import {
+	BaseComponent,
+	type EthanolData,
+	type Component,
+	type ComponentNumberKeys
+} from './component.js';
 
-export class Ethanol implements Component {
-	readonly type = 'spirit';
-	readonly hasWater = false;
-	readonly hasSugar = false;
+export class Ethanol extends BaseComponent implements Component {
+	readonly type = 'ethanol';
 	static density = 0.79;
 
 	readonly abv = 100;
 	readonly brix = 0;
-	readonly sugarVolume = 0;
-	readonly sugarMass = 0;
+	readonly equivalentSugarMass = 0;
 	readonly waterVolume = 0;
 	readonly waterMass = 0;
 
-	static is(component: unknown): component is Ethanol {
-		return component instanceof Ethanol;
+	constructor(public volume: number) {
+		super();
 	}
 
-	constructor(public volume: number) {}
-	get data(): SpiritData {
-		const { type, volume, abv } = this;
-		return { type, volume: round(volume, 1), abv: round(abv, 1) };
+	describe() {
+		return `ethanol`;
 	}
-	set data(data: SpiritData) {
+
+	get data(): EthanolData {
+		const { type, volume } = this;
+		return { type, volume };
+	}
+	set data(data: EthanolData) {
 		this.volume = data.volume;
+	}
+	get componentObjects() {
+		return [this];
 	}
 
 	clone() {
@@ -45,7 +51,20 @@ export class Ethanol implements Component {
 	get mass() {
 		return this.alcoholMass;
 	}
-	analyze(precision = 0): Target & { mass: number } {
-		return analyze(this, precision);
+
+	get kcal() {
+		return this.mass * 7.1;
+	}
+
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
+
+	setEquivalentSugarMass(): void {
+		// do nothing
+	}
+
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['volume', 'alcoholVolume'].includes(key);
 	}
 }

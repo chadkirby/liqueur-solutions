@@ -1,43 +1,147 @@
-import type { Component, ComponentNumberKeys } from './component.js';
-import type { Ethanol } from './ethanol.js';
-import { solver, type Target } from './solver.js';
-import type { Spirit } from './spirit.js';
-import { Sugar } from './sugar.js';
-import type { Syrup } from './syrup.js';
-import { analyze } from './utils.js';
+import { strToU8, strFromU8, compressSync } from 'fflate';
+import { isEthanolData, isSweetenerData, isMixtureData, isWaterData } from './component.js';
+import {
+	BaseComponent,
+	type MixtureData,
+	type Component,
+	type ComponentNumberKeys
+} from './component.js';
+import { Ethanol } from './ethanol.js';
+import { solver } from './solver.js';
+import { Sweetener } from './sweetener.js';
 import { Water } from './water.js';
+import { brixToSyrupProportion, format } from './utils.js';
 
-type AnyComponent = Spirit | Water | Sugar | Syrup | Ethanol;
+export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
-export class Mixture {
-	constructor(readonly components: Array<{ name: string; component: AnyComponent }> = []) {}
+export type MixtureComponent = { name: string; id: string; component: AnyComponent };
 
-	clone() {
+type Submixture = {
+	name: string;
+	id: string;
+	component: Mixture;
+};
+
+function isSubmixture(mixture: MixtureComponent): mixture is Submixture {
+	return mixture.component instanceof Mixture;
+}
+
+export function dataToMixture(d: {
+	components: Array<{ name: string; id: string; data: unknown }>;
+}) {
+	const ingredients: MixtureComponent[] = [];
+	for (const component of d.components) {
+		const { name, data } = component;
+		if (isEthanolData(data)) {
+			ingredients.push({ name, id: componentId(), component: new Ethanol(data.volume) });
+		} else if (isWaterData(data)) {
+			ingredients.push({ name, id: componentId(), component: new Water(data.volume) });
+		} else if (isSweetenerData(data)) {
+			ingredients.push({
+				name,
+				id: componentId(),
+				component: new Sweetener(data.subType, data.mass)
+			});
+		} else if (isMixtureData(data)) {
+			ingredients.push({ name, id: componentId(), component: dataToMixture(data) });
+		} else {
+			throw new Error('Unknown mixture type');
+		}
+	}
+	return new Mixture(ingredients);
+}
+
+export function getLabel(component: AnyComponent) {
+	if (component instanceof Water) {
+		return 'water';
+	}
+	if (component instanceof Sweetener) {
+		return 'sweetener';
+	}
+	if (component instanceof Ethanol) {
+		return 'ethanol';
+	}
+	if (component instanceof Mixture) {
+		if (isSpirit(component)) return 'spirit';
+		if (isSyrup(component)) return 'simple syrup';
+		if (isLiqueur(component)) return 'liqueur';
+		return 'mixture';
+	}
+	throw new Error('Unknown component type');
+}
+
+export class Mixture extends BaseComponent {
+	constructor(readonly components: MixtureComponent[] = []) {
+		super();
+	}
+
+	describe(): string {
+		if (isSyrup(this)) {
+			const sweetener = this.findByType((x) => x instanceof Sweetener);
+			const summary = [
+				brixToSyrupProportion(this.brix),
+				`${sweetener?.subType === 'sucrose' ? 'simple syrup' : `${sweetener?.subType} syrup`}`
+			];
+			return summary.join(' ');
+		}
+		if (isSpirit(this)) {
+			return `spirit`;
+		}
+		if (isLiqueur(this)) {
+			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
+		}
+		return this.components.map(({ component }) => component.describe()).join(', ');
+	}
+
+	get type() {
+		return 'mixture' as const;
+	}
+
+	get data(): MixtureData {
+		return {
+			type: this.type,
+			components: this.components.map(({ name, id, component }) => ({
+				name,
+				id,
+				data: component.data
+			}))
+		};
+	}
+
+	set data(data: MixtureData) {
+		const mx = dataToMixture(data);
+		this.components.splice(0, this.components.length, ...mx.components);
+	}
+
+	clone(newIds = false): Mixture {
 		return new Mixture(
 			this.components.map((item) => ({
 				name: item.name,
+				id: newIds ? componentId() : item.id,
 				component: item.component.clone()
 			}))
 		);
 	}
 
-	serialize(precision = 0): string {
-		const params = new URLSearchParams();
-		for (const { name, component } of this) {
-			params.append('name', name);
-			for (const [k, v] of Object.entries(component.data)) {
-				if (typeof v === 'number') {
-					params.append(k, v.toFixed(precision));
-				} else {
-					params.append(k, v);
-				}
-			}
-		}
-		return params.toString();
+	serialize(): string {
+		const buf = strToU8(JSON.stringify(this.data), true);
+		const compressed = compressSync(buf);
+		return btoa(strFromU8(compressed, true));
 	}
 
 	get componentObjects() {
 		return this.components.map(({ component }) => component);
+	}
+
+	*eachComponentAndSubmixture(): IterableIterator<MixtureComponent> {
+		for (const component of this.components) {
+			yield component;
+		}
+		for (const component of this.components) {
+			if (isSubmixture(component)) {
+				yield* component.component.eachComponentAndSubmixture();
+			}
+		}
 	}
 
 	findComponent(predicate: (component: AnyComponent) => boolean): AnyComponent | undefined {
@@ -48,71 +152,65 @@ export class Mixture {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-	// iterator to iterate over components
-	[Symbol.iterator]() {
-		return this.components[Symbol.iterator]();
+	addComponent({ name, component }: { name: string; component: AnyComponent }) {
+		const clone = component.clone(true);
+		this.components.push({ id: componentId(), name, component: clone });
 	}
-	get hasWater(): boolean {
-		return this.components.some(({ component }) => component.hasWater);
+
+	removeComponent(id: string) {
+		const index = this.components.findIndex((c) => c.id === id);
+		if (index >= 0) {
+			this.components.splice(index, 1);
+			return true;
+		}
+
+		for (const component of this.components) {
+			if (component.component instanceof Mixture) {
+				if (component.component.removeComponent(id)) return true;
+			}
+		}
+		return false;
 	}
-	get hasSugar(): boolean {
-		return this.components.some(({ component }) => component.hasSugar);
+
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		if (key === 'brix') {
+			return this.components.some(({ component }) => component.canEdit('equivalentSugarMass'));
+		}
+		if (key === 'abv') {
+			const hasEthanol = this.components.some(({ component }) => component instanceof Ethanol);
+			if (hasEthanol) return true;
+		}
+
+		return this.components.some(({ component }) => component.canEdit(key));
 	}
 
 	get abv() {
 		return (100 * this.alcoholVolume) / this.volume;
 	}
-	set abv(targetAbv: number) {
+	setAbv(targetAbv: number, maintainVolume = false) {
 		if (targetAbv === this.abv) return;
-		if (!this.hasWater) throw new Error('Cannot adjust ABV of a mixture with no water');
-		const working = solver(this, targetAbv, this.brix);
+		const working = solver(this, {
+			abv: targetAbv,
+			brix: this.brix,
+			volume: maintainVolume ? this.volume : null
+		});
 		for (const [i, obj] of this.componentObjects.entries()) {
 			obj.data = working.componentObjects[i].data;
 		}
 	}
-	get brix() {
-		return (100 * this.sugarMass) / this.mass;
-	}
-	set brix(newBrix: number) {
-		if (isClose(newBrix, this.brix)) return;
-		if (!this.hasSugar) throw new Error('Cannot adjust Brix of a mixture with no sugar');
-		const working = solver(this, this.abv, newBrix);
-		for (const [i, obj] of this.componentObjects.entries()) {
-			obj.data = working.componentObjects[i].data;
-		}
-	}
-
 	get volume() {
 		return this.sumComponents('volume');
 	}
-	set volume(newVolume: number) {
+	setVolume(newVolume: number) {
 		const originalVolume = this.volume;
-		if (isClose(originalVolume, newVolume)) return;
+		if (isClose(originalVolume, newVolume, 0.001)) return;
 		const factor = newVolume / originalVolume;
-		for (const { component } of this) {
-			component.volume *= factor;
+		for (const { component } of this.components) {
+			component.setVolume(component.volume * factor);
 		}
 	}
 	get waterVolume() {
 		return this.sumComponents('waterVolume');
-	}
-	set waterVolume(newVolume: number) {
-		if (isClose(this.waterVolume, newVolume)) return;
-		if (!this.hasWater) throw new Error('Cannot adjust water volume of a mixture with no water');
-
-		// try to effect the change using a water component
-		const waterComponent = this.findByType(Water.is);
-		if (waterComponent) {
-			waterComponent.volume += newVolume - this.waterVolume;
-			return;
-		}
-
-		const factor = newVolume / this.waterVolume;
-		for (const { component } of this) {
-			if (component.hasWater) {
-				component.waterVolume *= factor;
-			}
-		}
 	}
 
 	get waterMass() {
@@ -121,38 +219,48 @@ export class Mixture {
 	get alcoholVolume() {
 		return this.sumComponents('alcoholVolume');
 	}
-	set alcoholVolume(newVolume: number) {
-		const originalVolume = this.alcoholVolume;
-		if (isClose(originalVolume, newVolume)) return;
-		const factor = newVolume / originalVolume;
-		for (const { component } of this) {
-			component.volume *= factor;
-		}
-	}
 	get alcoholMass() {
 		return this.sumComponents('alcoholMass');
 	}
-	get sugarVolume() {
-		return this.sumComponents('sugarVolume');
-	}
-	get sugarMass() {
-		return this.sumComponents('sugarMass');
-	}
-	set sugarMass(newMass: number) {
-		if (isClose(this.sugarMass, newMass)) return;
-		if (!this.hasSugar) throw new Error('Cannot adjust sugar mass of a mixture with no sugar');
 
-		// try to effect the change using a sugar component
-		const sugarComponent = this.findByType(Sugar.is);
-		if (sugarComponent) {
-			sugarComponent.mass += newMass - this.sugarMass;
-			return;
+	adjustVolumeForEthanolTarget(targetEthanolVolume: number) {
+		const currentAlcoholVolume = this.alcoholVolume;
+		if (isClose(currentAlcoholVolume, targetEthanolVolume)) return;
+		const factor = targetEthanolVolume / currentAlcoholVolume;
+		for (const { component } of this.components) {
+			if (component.abv > 0) {
+				component.setVolume(component.volume * factor);
+			}
 		}
+	}
 
-		const factor = newMass / this.sugarMass;
-		for (const { component } of this) {
-			if (component.hasSugar && component !== sugarComponent) {
-				component.sugarMass *= factor;
+	get brix() {
+		return (100 * this.equivalentSugarMass) / this.mass;
+	}
+	setBrix(newBrix: number, maintainVolume = false) {
+		// change the ratio of sweetener to total mass
+		if (isClose(newBrix, this.brix)) return;
+		const working = solver(this, {
+			abv: this.abv,
+			brix: newBrix,
+			volume: maintainVolume ? this.volume : null
+		});
+		for (const [i, obj] of this.componentObjects.entries()) {
+			obj.data = working.componentObjects[i].data;
+		}
+	}
+
+	get equivalentSugarMass() {
+		return this.sumComponents('equivalentSugarMass');
+	}
+	setEquivalentSugarMass(newSugarEquivalent: number) {
+		const currentSugarEquivalent = this.equivalentSugarMass;
+		if (isClose(currentSugarEquivalent, newSugarEquivalent)) return;
+
+		const factor = newSugarEquivalent / this.equivalentSugarMass;
+		for (const { component } of this.components) {
+			if (component.brix > 0) {
+				component.setVolume(component.volume * factor);
 			}
 		}
 	}
@@ -160,14 +268,12 @@ export class Mixture {
 		return this.sumComponents('mass');
 	}
 
-	private sumComponents(key: ComponentNumberKeys): number {
-		return this.components.reduce((sum, { component }) => sum + component[key], 0);
+	get kcal() {
+		return this.sumComponents('kcal');
 	}
 
-	analyze(precision = 0): Target & {
-		mass: number;
-	} {
-		return analyze(this, precision);
+	private sumComponents(key: ComponentNumberKeys | 'kcal', components = this.components): number {
+		return components.reduce((sum, { component }) => sum + component[key], 0);
 	}
 
 	get isValid(): boolean {
@@ -175,6 +281,97 @@ export class Mixture {
 	}
 }
 
-function isClose(a: number, b: number) {
-	return Math.abs(a - b) < 0.01;
+function componentId(): string {
+	// return a random string
+	return Math.random().toString(36).slice(2);
+}
+
+function isClose(a: number, b: number, delta = 0.01) {
+	return Math.abs(a - b) < delta;
+}
+
+export function newSpirit(volume: number, abv: number): Mixture {
+	const mx = new Mixture([
+		{ name: 'ethanol', id: 'ethanol', component: new Ethanol(1) },
+		{ name: 'water', id: 'water', component: new Water(1) }
+	]);
+	mx.setVolume(volume);
+	mx.setAbv(abv, true);
+	return mx;
+}
+
+export function newSyrup(volume: number, brix: number): Mixture {
+	const mx = new Mixture([
+		{ name: 'sugar', id: 'sugar', component: new Sweetener('sucrose', 1) },
+		{ name: 'water', id: 'water', component: new Water(1) }
+	]);
+	mx.setVolume(volume);
+	mx.setBrix(brix, true);
+	return mx;
+}
+
+export function isSpirit(thing: Mixture): boolean;
+export function isSpirit(thing: AnyComponent): thing is Mixture;
+export function isSpirit(thing: AnyComponent) {
+	return Boolean(thing instanceof Mixture && thing.abv > 0 && thing.brix === 0);
+}
+
+export function isSimpleSpirit(thing: Mixture): boolean;
+export function isSimpleSpirit(thing: AnyComponent): thing is Mixture;
+export function isSimpleSpirit(thing: AnyComponent) {
+	return Boolean(
+		isSpirit(thing) &&
+			thing.components.length === 2 &&
+			thing.findByType((x) => x instanceof Ethanol) &&
+			thing.findByType((x) => x instanceof Water)
+	);
+}
+
+export function isSyrup(thing: Mixture): boolean;
+export function isSyrup(thing: AnyComponent): thing is Mixture;
+export function isSyrup(thing: AnyComponent) {
+	return Boolean(
+		thing instanceof Mixture &&
+			thing.abv === 0 &&
+			thing.brix > 0 &&
+			thing.findByType((x) => x instanceof Water)
+	);
+}
+
+export function isSimpleSyrup(thing: Mixture): boolean;
+export function isSimpleSyrup(thing: AnyComponent): thing is Mixture;
+export function isSimpleSyrup(thing: AnyComponent) {
+	// simple syrup is a mixture of sweetener and water
+	return Boolean(
+		isSyrup(thing) &&
+			thing.components.length === 2 &&
+			thing.findByType((x) => x instanceof Sweetener)
+	);
+}
+
+export function isLiqueur(thing: Mixture): boolean;
+export function isLiqueur(thing: AnyComponent): thing is Mixture;
+export function isLiqueur(thing: AnyComponent) {
+	return thing instanceof Mixture && thing.abv > 0 && thing.brix > 0;
+}
+
+/**
+ * Describes a component in a human-readable format.
+ * @param thing - The component to describe.
+ * @returns A human-readable description of the component.
+ */
+export function describe(thing: AnyComponent): string {
+	if (thing instanceof Mixture) {
+		return thing.describe();
+	}
+	if (thing instanceof Water) {
+		return `${format(thing.volume, { unit: 'ml' })} water`;
+	}
+	if (thing instanceof Sweetener) {
+		return `${format(thing.mass, { unit: 'g' })} ${thing.subType}`;
+	}
+	if (thing instanceof Ethanol) {
+		return `${format(thing.volume, { unit: 'ml' })} ethanol`;
+	}
+	return '???';
 }

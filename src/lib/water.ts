@@ -1,39 +1,45 @@
-import type { Component, WaterData } from './component.js';
-import type { Target } from './solver.js';
-import { round, analyze } from './utils.js';
+import {
+	BaseComponent,
+	type Component,
+	type ComponentNumberKeys,
+	type WaterData
+} from './component.js';
 
-export class Water implements Component {
+export class Water extends BaseComponent implements Component {
 	readonly type = 'water';
-	readonly hasWater = true;
-	readonly hasSugar = false;
 	static density = 1;
 
 	readonly abv = 0;
 	readonly brix = 0;
-	readonly sugarVolume = 0;
-	readonly sugarMass = 0;
+	readonly equivalentSugarMass = 0;
 	readonly alcoholVolume = 0;
 	readonly alcoholMass = 0;
 
-	static is(component: unknown): component is Water {
-		return component instanceof Water;
+	constructor(public volume: number) {
+		super();
 	}
 
-	constructor(public volume: number) {}
+	describe() {
+		return `water`;
+	}
 	get data(): WaterData {
 		const { type, volume } = this;
-		return { type, volume: round(volume, 1) };
+		return { type, volume };
 	}
 	set data(data: WaterData) {
 		this.volume = data.volume;
 	}
+	get componentObjects() {
+		return [this];
+	}
+
+	canEdit(key: ComponentNumberKeys | string): boolean {
+		return ['volume', 'waterVolume'].includes(key);
+	}
+
 	clone() {
 		return new Water(this.volume);
 	}
-	analyze(precision = 0): Target & { mass: number } {
-		return analyze(this, precision);
-	}
-
 	get isValid() {
 		return this.volume >= 0;
 	}
@@ -41,14 +47,21 @@ export class Water implements Component {
 	get waterVolume() {
 		return this.volume;
 	}
-	set waterVolume(volume: number) {
-		this.volume = volume;
-	}
-
 	get waterMass() {
 		return this.waterVolume * Water.density;
 	}
 	get mass() {
 		return this.waterMass;
+	}
+	get kcal() {
+		return 0;
+	}
+
+	setVolume(volume: number) {
+		this.volume = volume;
+	}
+
+	setEquivalentSugarMass(): void {
+		// do nothing
 	}
 }
