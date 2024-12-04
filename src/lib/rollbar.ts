@@ -7,7 +7,7 @@ export const rollbar = new Rollbar({
 	captureUncaught: true,
 	captureUnhandledRejections: true,
 	environment: import.meta.env.PROD ? 'production' : 'development',
-	enabled: true, // import.meta.env.PROD, // Only enable in production
+	enabled: import.meta.env.PROD, // Only enable in production
 	payload: {
 		client: {
 			javascript: {
