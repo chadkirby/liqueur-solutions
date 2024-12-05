@@ -12,12 +12,14 @@ type PropKeys = keyof HTMLProps;
 		type = 'text',
 		class: classProp,
 		id,
+    placeholder='',
 		...handlers
 	}: {
 		value: string;
 		type?: 'text' | 'number';
 		class?: string;
 		id?: string;
+    placeholder?: string
 	} & Pick<HTMLProps, EventKeys> = $props();
 </script>
 
@@ -25,6 +27,7 @@ type PropKeys = keyof HTMLProps;
 	{type}
 	{value}
 	{id}
+  {placeholder}
 	autocomplete="off"
 	class="
     block

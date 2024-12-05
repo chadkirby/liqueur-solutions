@@ -78,18 +78,15 @@
 	// Handle direct input
 	function handleInput(event: Event) {
 		const target = event.target as HTMLInputElement;
+		if (!/\d/.test(target.value)) return;
+
 		if (isKeyboardEditing) {
 			rawInputValue = target.value;
-			const newValue = Number(target.value);
-			if (!isNaN(newValue)) {
-				// Update the value but keep editing
-				setValue(newValue);
-			}
-		} else {
-			const newValue = Number(target.value);
-			if (!isNaN(newValue)) {
-				setValue(newValue);
-			}
+		}
+		const newValue = Number(target.value);
+		if (!isNaN(newValue)) {
+			// Update the value but keep editing
+			setValue(newValue);
 		}
 	}
 

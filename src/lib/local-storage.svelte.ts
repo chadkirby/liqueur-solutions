@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { browser } from '$app/environment';
-import { deleteStar } from './stars.svelte.js';
+import { deleteStar, starredIds } from './stars.svelte.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 
 // Create a function that returns the appropriate storage object
@@ -9,7 +9,8 @@ const deviceStorage = browser
 	: {
 			getItem: () => null,
 			setItem: () => {},
-			removeItem: () => {}
+			removeItem: () => {},
+			length: 0
 		};
 
 /**
@@ -124,7 +125,7 @@ class FilesDb {
 		if (!browser) return;
 		const { id, ...data } = item;
 		if (!isStorageId(id)) throw new Error('Invalid LocalStorageId');
-		if (!data.name) throw new Error('Invalid name');
+		if (typeof data.name !== 'string') throw new Error('Invalid name');
 		if (!data.href) throw new Error('Invalid href');
 
 		deviceStorage.setItem(id, JSON.stringify(data));
@@ -146,3 +147,20 @@ class FilesDb {
 }
 
 export const filesDb = new FilesDb();
+
+// Run the janitor once after page load to clean up unstarred items
+if (browser) {
+	// Use setTimeout to ensure this runs after initial page load
+	setTimeout(() => {
+		const MAX_UNSTARRED_ITEMS = 100;
+		const items = [...filesDb.scan()];
+		const unstarredItems = items.filter(([id]) => !starredIds.includes(id));
+
+		// If we have more unstarred items than our limit, delete the oldest ones
+		if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
+			// Sort by access time is already done by scan()
+			// Delete all items after the first MAX_UNSTARRED_ITEMS
+			unstarredItems.slice(MAX_UNSTARRED_ITEMS).forEach(([id]) => filesDb.delete(id));
+		}
+	}, 1000); // Wait 1 second after page load to avoid impacting initial render
+}

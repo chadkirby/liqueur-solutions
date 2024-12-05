@@ -1,4 +1,4 @@
-import { deserialize, newSpirit, Sweetener } from '$lib';
+import { componentId, deserialize, newSpirit, Sweetener } from '$lib';
 import type { LoadDataFromUrl } from '$lib/load-data.js';
 
 export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
@@ -22,18 +22,18 @@ export function load(args: { url: URL; params: { liqueur: string } }): LoadDataF
 			liqueur: '',
 			components: [
 				{
-					name: 'spirit',
-					id: 'spirit-0',
+					name: '',
+					id: componentId(),
 					data: newSpirit(100, 40).data
 				},
 				{
-					name: 'water',
-					id: 'water-0',
+					name: '',
+					id: componentId(),
 					data: { volume: 100, type: 'water' }
 				},
 				{
-					name: 'sugar',
-					id: 'sweetener-0',
+					name: '',
+					id: componentId(),
 					data: new Sweetener('sucrose', 50).data
 				}
 			]
