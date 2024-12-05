@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Drawer, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
-	import { CloseCircleSolid, ListOutline, ArrowRightAltSolid } from 'flowbite-svelte-icons';
+	import { CloseCircleSolid, ListOutline, ArrowRightOutline, ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
@@ -9,6 +9,7 @@
 	import { asStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { starredIds } from '$lib/stars.svelte.js';
+	import Button from '../ui-primitives/Button.svelte';
 
 	let files = $state([] as FileItem[]);
 	let drawerStatus = $state(filesDrawer.isOpen);
@@ -74,7 +75,8 @@
 			if (modifierKey) {
 				openFileInNewTab(id);
 			} else {
-				openFile(id);}
+				openFile(id);
+			}
 		};
 	};
 
@@ -93,7 +95,15 @@
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
-		<div class="sticky top-0 bg-white border-b border-primary-200 z-10">
+		<div class="
+			sticky
+			top-0
+			bg-white
+			border-primary-200
+			dark:bg-primary-700
+			dark:border-primary-600
+			border-b
+			z-10">
 			<Drawerhead onclick={closeDrawer}>
 				<h5
 					id="drawer-label"
@@ -111,44 +121,66 @@
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 mt-2">
-			{#each files as { name, id, desc, href }}
-				<div class="flex flex-row items-center gap-2">
-					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
-						Delete {name}
-					</Tooltip>
-					<CloseCircleSolid
-						id={domIdFor('remove', id)}
-						role="button"
-						size="sm"
-						onclick={() => removeItem(id)}
-					/>
-					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('link', id)}`}>
-						Open {name} {#if modifierKey}in new tab{/if}
-					</Tooltip>
-					<button
-						id={domIdFor('link', id)}
+			{#each files as { name, id, desc }}
+				<div class="
+					flex flex-col
+					pb-1
+					border-b-secondary-200
+					dark:border-b-primary-600
+					border-b-2
+					">
+					<div
 						class="
 							flex flex-col
 							items-start
-							mb-2
+							mb-1
 							cursor-pointer
 							w-full
 							text-sm
 						"
-						onclick={goToFile(id)}
 					>
-						<span>{name}</span>
-						<span>{desc}</span>
-					</button>
-					<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('add', id)}`}>
-						Add {name} to current mixture
-					</Tooltip>
-					<ArrowRightAltSolid
-						id={domIdFor('add', id)}
-						role="button"
-						size="sm"
-						onclick={addToMixture(id, name)}
-					/>
+						<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
+						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
+					</div>
+					<div class="flex flex-row justify-around">
+						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
+							Delete {name}
+						</Tooltip>
+						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('open', id)}`}>
+							Open {name}
+							{#if modifierKey}in new tab{/if}
+						</Tooltip>
+						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('add', id)}`}>
+							Add {name} into current mixture
+						</Tooltip>
+						<Button
+							id={domIdFor('remove', id)}
+							onclick={() => removeItem(id)}
+							onkeydown={goToFile(id)}
+							class="px-1.5 text-primary-600 dark:text-primary-400"
+						>
+							<CloseCircleSolid size="sm" />
+							Delete
+						</Button>
+						<Button
+							id={domIdFor('open', id)}
+							onclick={goToFile(id)}
+							onkeydown={goToFile(id)}
+							class="px-1.5 text-primary-600 dark:text-primary-400"
+						>
+							Open
+							<ArrowUpRightFromSquareOutline size="sm" />
+						</Button>
+						<Button
+							id={domIdFor('add', id)}
+							onclick={addToMixture(id, name)}
+							onkeydown={addToMixture(id, name)}
+							class="px-1.5 text-primary-600 dark:text-primary-400"
+						>
+							Add
+							<ArrowRightOutline size="md" />
+						</Button>
+					</div>
 				</div>
 			{/each}
 		</div>
