@@ -8,30 +8,30 @@
 
 	function addSpirit() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: 'spirit', component: newSpirit(100, 40) });
+		mixtureStore.addComponentTo(componentId, { name: '', component: newSpirit(100, 40) });
 	}
 	function addWater() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: 'water', component: new Water(100) });
+		mixtureStore.addComponentTo(componentId, { name: '', component: new Water(100) });
 	}
 	function addSugar() {
 		if (callback) callback();
 		mixtureStore.addComponentTo(componentId, {
-			name: 'sugar',
+			name: '',
 			component: new Sweetener('sucrose', 100)
 		});
 	}
 	function addSyrup() {
 		if (callback) callback();
 		mixtureStore.addComponentTo(componentId, {
-			name: 'simple syrup',
+			name: '',
 			component: newSyrup(100, 50)
 		});
 	}
 
 	function addEmpty() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: 'mixture', component: new Mixture([]) });
+		mixtureStore.addComponentTo(componentId, { name: '', component: new Mixture([]) });
 	}
 
 	function openFilesDrawer() {

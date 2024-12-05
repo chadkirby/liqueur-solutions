@@ -116,6 +116,7 @@
 						<TextInput
 							type="text"
 							value={name}
+							placeholder={entry.describe()}
 							class="
              mr-2
              {entry instanceof Sweetener || isSimpleSyrup(entry)

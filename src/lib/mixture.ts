@@ -288,7 +288,7 @@ export class Mixture extends BaseComponent {
 	}
 }
 
-function componentId(): string {
+export function componentId(): string {
 	// return a random string
 	return Math.random().toString(36).slice(2);
 }
