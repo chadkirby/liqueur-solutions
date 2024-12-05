@@ -24,6 +24,7 @@
 		desc: mixture.describe(),
 		href: urlEncode(name, mixture)
 	});
+
 </script>
 
 <NewMixture {item} />
