@@ -1,5 +1,5 @@
 import type { SerializedComponent } from './component.js';
-import type { StorageId } from './local-storage.svelte';
+import type { StorageId } from './storage-id.js';
 
 export type LoadDataFromStore = {
 	storeId: StorageId;
