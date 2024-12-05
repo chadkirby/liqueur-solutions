@@ -12,7 +12,7 @@ export function deserializeFromLocalStorage(id: string): Mixture {
 	if (!item) {
 		throw new Error('No item found');
 	}
-	const mixture = decompress(new URL(`file:${item.href}`).searchParams);
+	const mixture = decompress(new URL(item.href, 'http://liqueur-solutions.com').searchParams);
 	return mixture;
 }
 

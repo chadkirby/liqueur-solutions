@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
 	import { mixtureStore } from '$lib';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
 	import type { LoadDataFromStore } from '$lib/load-data.js';
@@ -27,7 +26,8 @@
 				mixtureStore.load({ storeId, name, mixture });
 				title = name;
 			} catch (error) {
-				goto('/new');
+				console.error(error);
+				throw error;
 			}
 		});
 	}
@@ -43,4 +43,3 @@
 	<MixtureList {storeId} />
 	<BottomNav />
 </div>
-

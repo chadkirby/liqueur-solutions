@@ -212,6 +212,7 @@ export class Mixture extends BaseComponent {
 	}
 	setVolume(newVolume: number) {
 		const originalVolume = this.volume;
+		if (isClose(originalVolume, newVolume, 0.001)) return;
 		// ensure we don't go to zero volume otherwise we lose the
 		// proportions of the components. Set a value that rounds to 0.
 		const factor = Math.max(0.004999, newVolume) / originalVolume;
@@ -235,6 +236,7 @@ export class Mixture extends BaseComponent {
 
 	adjustVolumeForEthanolTarget(targetEthanolVolume: number) {
 		const currentAlcoholVolume = this.alcoholVolume;
+		if (isClose(currentAlcoholVolume, targetEthanolVolume)) return;
 		const factor = targetEthanolVolume / currentAlcoholVolume;
 		for (const { component } of this.components) {
 			if (component.abv > 0) {
@@ -247,6 +249,7 @@ export class Mixture extends BaseComponent {
 		return (100 * this.equivalentSugarMass) / this.mass;
 	}
 	setBrix(newBrix: number, maintainVolume = false) {
+		if (isClose(newBrix, this.brix)) return;
 		// change the ratio of sweetener to total mass
 		const working = solver(this, {
 			abv: this.abv,
@@ -263,6 +266,7 @@ export class Mixture extends BaseComponent {
 	}
 	setEquivalentSugarMass(newSugarEquivalent: number) {
 		const currentSugarEquivalent = this.equivalentSugarMass;
+		if (isClose(currentSugarEquivalent, newSugarEquivalent)) return;
 
 		const factor = newSugarEquivalent / currentSugarEquivalent;
 		for (const { component } of this.components) {
@@ -292,6 +296,11 @@ export function componentId(): string {
 	// return a random string
 	return Math.random().toString(36).slice(2);
 }
+
+function isClose(a: number, b: number, delta = 0.01) {
+	return Math.abs(a - b) < delta;
+}
+
 
 export function newSpirit(volume: number, abv: number): Mixture {
 	const mx = new Mixture([
