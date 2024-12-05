@@ -181,7 +181,7 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value).toString();
+			input.value = format(value, (type === 'abv' || type === 'brix') ? {digits: 1} : {}).toString();
 		}
 	});
 </script>

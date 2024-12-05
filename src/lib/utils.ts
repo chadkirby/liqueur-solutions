@@ -31,8 +31,11 @@ export function analyze(
 	};
 }
 
-export function digitsForDisplay(value: number) {
-	return value === 0 ? 0 : value <= 1 ? 2 : value < 10 ? 1 : 0;
+export function digitsForDisplay(value: number, maxVal = Infinity) {
+	if (maxVal <= 100) return 1;
+
+	const digits = value === 0 ? 0 : value <= 1 ? 2 : value < 10 ? 1 : 0;
+	return digits;
 }
 
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
@@ -42,6 +45,7 @@ export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
 	unit?: VolumeUnit | MassUnit | OtherUnit | '';
+	digits?: number;
 };
 
 export const thinsp = '\u2009';
@@ -76,7 +80,7 @@ export function format(value: number | string, options: FormatOptions = {}) {
 	const formatted =
 		options.decimal === 'fraction'
 			? convertToFraction(value)
-			: value.toFixed(digitsForDisplay(value) + (options.unit === '%' ? 1 : 0));
+			: value.toFixed((options.digits || digitsForDisplay(value)) + (options.unit === '%' ? 1 : 0));
 	const suffix = options.unit ? `${thinsp}${suffixForUnit(options.unit)}` : '';
 	const str = Object.assign(new String(`${formatted}${suffix}`), {
 		value: formatted,
