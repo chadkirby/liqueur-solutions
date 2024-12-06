@@ -11,6 +11,9 @@ import { asStorageId, type StorageId } from './storage-id.js';
 export type ComponentValueKey = keyof Analysis;
 
 function findById(mixture: Mixture, id: string): MixtureComponent | null {
+	if (id === 'totals') {
+		return { id, name: 'totals', component: mixture };
+	}
 	for (const component of mixture.eachComponentAndSubmixture()) {
 		if (component.id === id) {
 			return component;
@@ -131,6 +134,13 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		getVolume(componentId: string) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			return mxc.component.volume;
+		},
 		setVolume(componentId: string, newVolume: number): void {
 			if (componentId === 'totals') {
 				this.solveTotal('volume', newVolume);
@@ -176,6 +186,13 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		getAbv(componentId: string) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			return mxc.component.abv;
+		},
 		setAbv(componentId: string, newAbv: number): void {
 			if (componentId === 'totals') {
 				this.solveTotal('abv', newAbv);
@@ -206,6 +223,13 @@ export function createMixtureStore() {
 				return data;
 			});
 		},
+		getMass(componentId: string) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			return mxc.component.mass;
+		},
 		setMass(componentId: string, newMass: number): void {
 			if (componentId === 'totals') {
 				throw new Error('Cannot set mass of totals');
@@ -229,6 +253,13 @@ export function createMixtureStore() {
 
 				return data;
 			});
+		},
+		getBrix(componentId: string) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			return mxc.component.brix;
 		},
 		setBrix(componentId: string, newBrix: number): void {
 			if (componentId === 'totals') {

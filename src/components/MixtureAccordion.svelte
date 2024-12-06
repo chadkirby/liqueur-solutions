@@ -100,7 +100,7 @@
 							/>
 						{/if}
 						{#if isSimpleSpirit(entry)}
-							<NumberSpinner class="basis-1/5" value={entry.abv} type="abv" componentId={id} />
+							<NumberSpinner class="basis-1/6" value={entry.abv} type="abv" componentId={id} />
 						{/if}
 
 						{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
@@ -155,17 +155,28 @@
 					<VolumeComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
+						class="basis-1/4"
 					/>
 					<MassComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
+						class="basis-1/4"
 					/>
-					<ABVComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
+					<ABVComponent
+						componentId={parentId === null ? 'totals' : parentId}
+						component={mixture}
+						class="basis-1/6"
+					/>
 					<BrixComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
+						class="basis-1/6"
 					/>
-					<CalComponent componentId={parentId === null ? 'totals' : parentId} component={mixture} />
+					<CalComponent
+						componentId={parentId === null ? 'totals' : parentId}
+						component={mixture}
+						class="basis-1/5"
+						/>
 				</div>
 			</div>
 		</h2>

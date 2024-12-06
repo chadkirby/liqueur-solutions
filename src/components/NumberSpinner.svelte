@@ -16,16 +16,23 @@
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
-	function changeValue(v: number) {
+	function changeValue(v: number): number {
 		if (type === 'brix') {
 			mixtureStore.setBrix(componentId, v);
-		} else if (type === 'abv') {
-			mixtureStore.setAbv(componentId, v);
-		} else if (type === 'volume') {
-			mixtureStore.setVolume(componentId, v);
-		} else if (type === 'mass') {
-			mixtureStore.setMass(componentId, v);
+			return mixtureStore.getBrix(componentId);
 		}
+		if (type === 'abv') {
+			mixtureStore.setAbv(componentId, v);
+			return mixtureStore.getAbv(componentId);
+		}
+		if (type === 'volume') {
+			mixtureStore.setVolume(componentId, v);
+			return mixtureStore.getVolume(componentId);
+		}
+
+		// type === 'mass'
+		mixtureStore.setMass(componentId, v);
+		return mixtureStore.getMass(componentId);
 	}
 
 	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
@@ -154,9 +161,11 @@
 		// Clamp the value between min and max
 		const clampedValue = Math.max(min, Math.min(max, newValue));
 		if (clampedValue !== value) {
-			changeValue(clampedValue);
-			value = clampedValue;
+			const newVal = changeValue(clampedValue);
+			value = newVal;
+			return newVal;
 		}
+		return value;
 	}
 
 	/**
@@ -183,12 +192,12 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value, {unit}).value;
+			input.value = format(value, { unit }).value;
 		}
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono leading-[18px]{classProp}">
+<div class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
