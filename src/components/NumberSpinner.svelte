@@ -26,7 +26,7 @@
 		}
 	}
 
-	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : type === 'abv' ? '%' : 'ºBx';
+	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
 
 	// Internal state
 	let touchStartY = $state(0);
@@ -181,12 +181,12 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value, (type === 'abv' || type === 'brix') ? {digits: 1} : {}).toString();
+			input.value = format(value, (type === 'abv' || type === 'brix') ? {digits: 1} : {}).value;
 		}
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap {classProp}">
+<div class="flex items-center whitespace-nowrap font-mono {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
@@ -214,18 +214,12 @@
 				dark:text-white
 				dark:placeholder-primary-400
 				rounded-md
-				text-sm
+				text-xs
 				px-0.5
 				py-0.5
 				focus:ring-2
 				focus:border-blue-200
 				focus:ring-blue-200
 			"
-	/>&thinsp;<span class="unit">{unit}</span>
+	/><span class="ml-0.5 text-xs">{unit}</span>
 </div>
-
-<style>
-	span.unit {
-		font-size: 0.8em;
-	}
-</style>

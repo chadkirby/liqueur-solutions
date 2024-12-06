@@ -49,38 +49,27 @@
 
 	let { fn, options } = $derived(alternates[altIndex]);
 	let formatted = $derived(format(fn(value), options));
+	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
-<button
-	onclick={rotateAlternates}
-	class="
-	cursor-pointer
-	text-xs font-normal
-  min-w-16 w-full px-1 py-1
-  border
-	border-primary-200
-	dark:border-primary-800
-	rounded-md
-  text-center
-  text-primary-600
-	dark:text-primary-400
-	one-line-max
+<div class="flex items-center whitespace-nowrap font-mono text-xs ">
+	<button
+		onclick={rotateAlternates}
+		class="
+		cursor-pointer
+		font-normal font-mono
+		text-right
+		w-full px-0.5 py-0.5
+		border
+		border-primary-200
+		dark:border-primary-800
+		rounded-md
+		text-primary-600
+		dark:text-primary-400
   "
->
-		<span class="alt-value">
+	>
 			{formatted.value}
-		</span><span class="alt-suffix text-xs italic">
-			{formatted.suffix}
-		</span>
-</button>
-
-<style>
-	.one-line-max {
-		display: -webkit-box;
-		-webkit-line-clamp: 1;
-		line-clamp: 1;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-</style>
+	</button><span class="{suffixSize} ml-0.5">
+		{formatted.suffix}
+	</span>
+</div>

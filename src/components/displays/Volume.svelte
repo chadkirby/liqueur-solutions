@@ -12,7 +12,7 @@
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}">
-	<Helper>Volume</Helper>
+	<Helper class="tracking-tight">Volume</Helper>
 	{#if component instanceof Sweetener || readonly}
 		<ReadOnlyValue value={ml} type="volume" />
 	{:else}

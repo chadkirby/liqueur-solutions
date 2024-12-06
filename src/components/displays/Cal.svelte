@@ -8,6 +8,6 @@
 </script>
 
 <div class="mx-1 grow {classProp}">
-	<Helper>kcal</Helper>
+	<Helper class="tracking-tight">Calories</Helper>
 	<ReadOnlyValue type="kcal" {value}/>
 </div>
