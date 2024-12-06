@@ -1,6 +1,11 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 
+/**
+ * Vite configuration.
+ *
+ * @see https://vitest.dev/config
+ */
 export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
