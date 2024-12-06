@@ -72,6 +72,8 @@
 		e.stopPropagation();
 		isKeyboardEditing = true;
 		rawInputValue = value.toFixed(digitsForDisplay(value, maxVal));
+		// Select the entire input value
+		setTimeout(() => input?.select(), 1);
 	}
 
 	function handleBlur() {
@@ -213,7 +215,7 @@
 		class="
 				block
 				w-full
-				text-right
+				{isKeyboardEditing ? 'text-center' : 'text-right'}
 				focus:outline-2
 				border
 				border-primary-300
