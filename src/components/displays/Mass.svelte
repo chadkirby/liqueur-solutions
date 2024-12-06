@@ -12,7 +12,7 @@
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}">
-	<Helper>Mass</Helper>
+	<Helper class="tracking-tight">Mass</Helper>
 	{#if component instanceof Sweetener && !readonly}
 		<NumberSpinner
 			value={grams}

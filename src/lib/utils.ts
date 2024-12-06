@@ -45,7 +45,6 @@ export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
 	unit?: VolumeUnit | MassUnit | OtherUnit | '';
-	digits?: number;
 };
 
 export const thinsp = '\u2009';
@@ -77,16 +76,17 @@ export function format(value: number | string, options: FormatOptions = {}) {
 	if (typeof value === 'string') {
 		return Object.assign(new String(value), { value, suffix: '' });
 	}
+	const unit = options.unit;
+	const maxVal = unit === 'proof' || unit === '%' || unit === 'brix' ? 100 : Infinity;
+	const digits = digitsForDisplay(value, maxVal);
 	const formatted =
-		options.decimal === 'fraction'
-			? convertToFraction(value)
-			: value.toFixed((options.digits || digitsForDisplay(value)) + (options.unit === '%' ? 1 : 0));
-	const suffix = options.unit ? `${thinsp}${suffixForUnit(options.unit)}` : '';
-	const str = Object.assign(new String(`${formatted}${suffix}`), {
+		options.decimal === 'fraction' ? convertToFraction(value) : value.toFixed(digits);
+	const suffix = unit ? `${suffixForUnit(unit)}` : '';
+	const str = `${formatted}${suffix ? thinsp + suffix : suffix}`;
+	return Object.assign(new String(str), {
 		value: formatted,
 		suffix
 	});
-	return str;
 }
 
 export function convertToFraction(input: number): string {

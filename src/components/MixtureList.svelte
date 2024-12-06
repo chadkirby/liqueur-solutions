@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { accordionitem, Input, Tooltip } from 'svelte-5-ui-lib';
+	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
@@ -11,6 +11,7 @@
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import type { StorageId } from '$lib/storage-id.js';
 	import { starredIds, toggleStar } from '$lib/stars.svelte.js';
+	import TextInput from './ui-primitives/TextInput.svelte';
 
 	interface Props {
 		storeId: StorageId;
@@ -47,13 +48,14 @@
 	}
 </script>
 
-<div class="flex flex-col gap-x-2 gap-y-2">
+<div class="flex flex-col gap-x-2 gap-y-2 mt-2">
 	<div
 		class="
-					flex flex-row
-					items-center
-					gap-x-2
-					"
+			flex flex-row
+			items-center
+			gap-x-2
+			mb-2
+			"
 	>
 		<Button onclick={handleToggleStar}>
 			{#if isStarred}
@@ -68,15 +70,13 @@
 				<StarOutline id="unsaved-star" />
 			{/if}
 		</Button>
-		<div class="w-full">
-			<Helper>Mixture name</Helper>
-			<Input
+		<div class="w-full relative">
+			<Helper class="absolute left-0 -top-[67%] ">Mixture name</Helper>
+			<TextInput
 				value={$mixtureStore.name}
 				oninput={handleTitleInput()}
 				placeholder="Name your mixture"
-				autocomplete="off"
-				required
-				class="text-l font-bold mb-2"
+				class="text-l font-bold leading-normal"
 			/>
 		</div>
 	</div>

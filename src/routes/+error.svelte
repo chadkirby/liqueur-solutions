@@ -25,9 +25,4 @@
         margin-bottom: 1rem;
         color: #e74c3c;
     }
-
-    p {
-        margin-bottom: 2rem;
-        color: #666;
-    }
 </style>

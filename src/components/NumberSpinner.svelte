@@ -14,19 +14,28 @@
 
 	let { value, type, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
-	function changeValue(v: number) {
+	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
+
+	function changeValue(v: number): number {
 		if (type === 'brix') {
 			mixtureStore.setBrix(componentId, v);
-		} else if (type === 'abv') {
-			mixtureStore.setAbv(componentId, v);
-		} else if (type === 'volume') {
-			mixtureStore.setVolume(componentId, v);
-		} else if (type === 'mass') {
-			mixtureStore.setMass(componentId, v);
+			return mixtureStore.getBrix(componentId);
 		}
+		if (type === 'abv') {
+			mixtureStore.setAbv(componentId, v);
+			return mixtureStore.getAbv(componentId);
+		}
+		if (type === 'volume') {
+			mixtureStore.setVolume(componentId, v);
+			return mixtureStore.getVolume(componentId);
+		}
+
+		// type === 'mass'
+		mixtureStore.setMass(componentId, v);
+		return mixtureStore.getMass(componentId);
 	}
 
-	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : type === 'abv' ? '%' : 'ºBx';
+	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
 
 	// Internal state
 	let touchStartY = $state(0);
@@ -62,7 +71,7 @@
 		e.preventDefault();
 		e.stopPropagation();
 		isKeyboardEditing = true;
-		rawInputValue = value.toString();
+		rawInputValue = value.toFixed(digitsForDisplay(value, maxVal));
 	}
 
 	function handleBlur() {
@@ -152,9 +161,11 @@
 		// Clamp the value between min and max
 		const clampedValue = Math.max(min, Math.min(max, newValue));
 		if (clampedValue !== value) {
-			changeValue(clampedValue);
-			value = clampedValue;
+			const newVal = changeValue(clampedValue);
+			value = newVal;
+			return newVal;
 		}
+		return value;
 	}
 
 	/**
@@ -181,12 +192,12 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value, (type === 'abv' || type === 'brix') ? {digits: 1} : {}).toString();
+			input.value = format(value, { unit }).value;
 		}
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap {classProp}">
+<div class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
@@ -214,18 +225,12 @@
 				dark:text-white
 				dark:placeholder-primary-400
 				rounded-md
-				text-sm
+				text-xs
 				px-0.5
 				py-0.5
 				focus:ring-2
 				focus:border-blue-200
 				focus:ring-blue-200
 			"
-	/>&thinsp;<span class="unit">{unit}</span>
+	/><span class="ml-0.5 text-xs">{unit}</span>
 </div>
-
-<style>
-	span.unit {
-		font-size: 0.8em;
-	}
-</style>

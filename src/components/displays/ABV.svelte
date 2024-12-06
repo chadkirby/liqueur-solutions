@@ -14,7 +14,7 @@
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}">
-	<Helper>ABV</Helper>
+	<Helper class="tracking-tight">ABV</Helper>
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner
 			value={abv}

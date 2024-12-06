@@ -28,6 +28,7 @@
       appearance-none
       rounded-md border
 			text-sm
+			leading-[18px]
       border-primary-300
       bg-primary-50
       px-6 py-0.5
@@ -46,6 +47,6 @@
 			class="
       pointer-events-none
       absolute
-      left-1 top-1 h-5 w-5 text-primary-500"
+      left-1 top-0.5 h-5 w-5 text-primary-500"
 		/>
 </div>
