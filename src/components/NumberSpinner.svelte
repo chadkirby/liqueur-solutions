@@ -14,6 +14,8 @@
 
 	let { value, type, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
+	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
+
 	function changeValue(v: number) {
 		if (type === 'brix') {
 			mixtureStore.setBrix(componentId, v);
@@ -62,7 +64,7 @@
 		e.preventDefault();
 		e.stopPropagation();
 		isKeyboardEditing = true;
-		rawInputValue = value.toString();
+		rawInputValue = value.toFixed(digitsForDisplay(value, maxVal));
 	}
 
 	function handleBlur() {
@@ -181,7 +183,7 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			input.value = format(value, (type === 'abv' || type === 'brix') ? {digits: 1} : {}).value;
+			input.value = format(value, {unit}).value;
 		}
 	});
 </script>
