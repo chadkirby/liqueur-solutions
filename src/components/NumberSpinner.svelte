@@ -17,22 +17,20 @@
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
 	function changeValue(v: number): number {
-		if (type === 'brix') {
-			mixtureStore.setBrix(componentId, v);
-			return mixtureStore.getBrix(componentId);
-		}
-		if (type === 'abv') {
-			mixtureStore.setAbv(componentId, v);
-			return mixtureStore.getAbv(componentId);
-		}
-		if (type === 'volume') {
-			mixtureStore.setVolume(componentId, v);
-			return mixtureStore.getVolume(componentId);
-		}
+		const getKey =
+			`get${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		getKey satisfies keyof typeof mixtureStore;
 
-		// type === 'mass'
-		mixtureStore.setMass(componentId, v);
-		return mixtureStore.getMass(componentId);
+		const setKey =
+			`set${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		setKey satisfies keyof typeof mixtureStore;
+
+		try {
+			mixtureStore[setKey](componentId, v);
+		} catch (e) {
+			// can't always set the requested value
+		}
+		return mixtureStore[getKey](componentId);
 	}
 
 	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
@@ -183,12 +181,12 @@
 		const digits = digitsForDisplay(value);
 		// increment by the least significant that is shown
 		const step = Math.max(1 / 10 ** digits);
-		return value + step;
+		return Number(value.toFixed(digits)) + step;
 	}
 	function decrement(value: number) {
 		const digits = digitsForDisplay(value);
 		const step = 1 / 10 ** digits;
-		return value - step;
+		return Number(value.toFixed(digits)) - step;
 	}
 
 	// Display either the formatted value or raw input value based on editing state
