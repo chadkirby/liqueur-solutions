@@ -52,7 +52,7 @@
 	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono text-xs ">
+<div class="flex items-center whitespace-nowrap font-mono leading-[18px] text-xs ">
 	<button
 		onclick={rotateAlternates}
 		class="

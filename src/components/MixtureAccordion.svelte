@@ -9,7 +9,6 @@
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import NumberSpinner from './NumberSpinner.svelte';
-	import { FileSolid } from 'flowbite-svelte-icons';
 	import AddComponent from './nav/AddComponent.svelte';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';
@@ -18,7 +17,6 @@
 	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
-	import { goto } from '$app/navigation';
 	import { urlEncode } from '$lib/mixture-store.js';
 
 	let {
@@ -118,17 +116,18 @@
 							value={name}
 							placeholder={entry.describe()}
 							class="
-             mr-2
-             {entry instanceof Sweetener || isSimpleSyrup(entry)
-								? 'basis-1/3'
-								: isSimpleSpirit(entry)
-									? 'basis-1/2'
-									: 'basis-3/4'}
-             text-sm
-             focus:ring-2
-             focus:border-blue-200
-             focus:ring-blue-200
-             "
+								mr-2
+								{entry instanceof Sweetener || isSimpleSyrup(entry)
+										? 'basis-1/3'
+										: isSimpleSpirit(entry)
+											? 'basis-1/2'
+											: 'basis-3/4'}
+								text-sm
+								leading-[18px]
+								focus:ring-2
+								focus:border-blue-200
+								focus:ring-blue-200
+								"
 							onclick={(e) => e.stopPropagation()}
 							oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
 						/>
@@ -151,7 +150,7 @@
 		{/each}
 		<h2 class="group">
 			<div class="items-center gap-x-2 gap-y-2">
-				<div class="text-sm p-2 font-medium text-primary-600">{name} totals</div>
+				<div class="text-xs p-1 pt-2 text-primary-600">Totals ({name})</div>
 				<div class="flex flex-row">
 					<VolumeComponent
 						componentId={parentId === null ? 'totals' : parentId}

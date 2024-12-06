@@ -186,7 +186,7 @@
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono {classProp}">
+<div class="flex items-center whitespace-nowrap font-mono leading-[18px]{classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
