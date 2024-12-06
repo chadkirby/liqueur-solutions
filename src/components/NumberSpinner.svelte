@@ -201,7 +201,8 @@
 	<input
 		bind:this={input}
 		use:touchHandler
-		type="text"
+		inputmode="decimal"
+		pattern="[0-9]*[.]?[0-9]*"
 		value={rawInputValue}
 		oninput={handleInput}
 		onkeydown={handleKeyDown}
