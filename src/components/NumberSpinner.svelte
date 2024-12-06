@@ -72,6 +72,8 @@
 		e.stopPropagation();
 		isKeyboardEditing = true;
 		rawInputValue = value.toFixed(digitsForDisplay(value, maxVal));
+		// Select the entire input value
+		setTimeout(() => input?.select(), 1);
 	}
 
 	function handleBlur() {
@@ -201,7 +203,8 @@
 	<input
 		bind:this={input}
 		use:touchHandler
-		type="text"
+		inputmode="decimal"
+		pattern="[0-9]*[.]?[0-9]*"
 		value={rawInputValue}
 		oninput={handleInput}
 		onkeydown={handleKeyDown}
@@ -212,7 +215,7 @@
 		class="
 				block
 				w-full
-				text-right
+				{isKeyboardEditing ? 'text-center' : 'text-right'}
 				focus:outline-2
 				border
 				border-primary-300
