@@ -16,7 +16,7 @@
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}">
-	<Helper>Sweetness</Helper>
+	<Helper class="tracking-tight">Sweetness</Helper>
 
 	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
