@@ -85,7 +85,7 @@
 	}
 
 	// Handle direct input
-	function handleInput(event: Event) {
+	function handleChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		if (!/\d/.test(target.value)) return;
 
@@ -204,7 +204,7 @@
 		inputmode="decimal"
 		pattern="[0-9]*[.]?[0-9]*"
 		value={rawInputValue}
-		oninput={handleInput}
+		onchange={handleChange}
 		onkeydown={handleKeyDown}
 		onfocus={handleFocus}
 		onblur={handleBlur}
