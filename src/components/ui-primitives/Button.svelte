@@ -1,25 +1,22 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { SvelteHTMLElements} from 'svelte/elements';
+	import type { SvelteHTMLElements } from 'svelte/elements';
 
 	type HTMLProps = SvelteHTMLElements['button'];
-type PropKeys = keyof HTMLProps;
-type EventKeys = Extract<PropKeys, `on${string}`> extends infer K
-  ? K extends `on:${string}` ? never : K
-  : never;
-
-	let {
-		children,
-		class: classProp,
-		id,
-		isActive,
-		...handlers
-	}: {
+	type PropKeys = keyof HTMLProps;
+	type EventKeys =
+		Extract<PropKeys, `on${string}`> extends infer K
+			? K extends `on:${string}`
+				? never
+				: K
+			: never;
+	type Props = {
 		children: Snippet;
 		isActive?: boolean;
 		class?: string;
 		id?: string;
-	} & Pick<HTMLProps, EventKeys> = $props();
+	} & Pick<HTMLProps, EventKeys>;
+	let { children, class: classProp, id, isActive, ...handlers }: Props = $props();
 	let activeClass = $derived(
 		isActive ? `!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600` : ''
 	);

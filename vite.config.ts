@@ -14,8 +14,14 @@ export default defineConfig({
 		sourcemap: true
 	},
 	test: {
-		include: ['src/**/*.{test,spec}.{js,ts}'],
+		include: ['src/**/*.{test,spec}.{js,ts}', 'src/**/*.{test,spec}.svelte.{js,ts}'],
 		environment: 'jsdom',
 		setupFiles: ['./vitest-setup.js']
-	}
+	},
+	// Tell Vitest to use the `browser` entry points in `package.json` files, even though it's running in Node
+	resolve: process.env.VITEST
+		? {
+				conditions: ['browser']
+			}
+		: undefined
 });

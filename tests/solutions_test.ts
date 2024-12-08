@@ -1,27 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { Spirit, Syrup, Water } from '$lib';
+import { isSpirit, isSyrup, newSpirit, Water } from '$lib';
 import { solver } from '$lib/solver.js';
 
 test('solve solves 80ABV', () => {
-	const mixture = solver(new Spirit(250, 80), { abv: 30, brix: 20, volume: null });
+	const mixture = solver(newSpirit(250, 80), { abv: 30, brix: 20, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 30,
 		brix: 20,
 		mass: 675,
 		volume: 667
 	});
-	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 332, 'water volume');
-	assert.deepEqual(
-		mixture.findByType((o) => o instanceof Syrup)?.equivalentSugarMass,
-		135,
-		'sugar mass'
-	);
+	assert.deepEqual(mixture.findComponent(isSpirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findComponent((o) => o instanceof Water)?.volume, 332, 'water volume');
+	assert.deepEqual(mixture.findComponent(isSyrup)?.equivalentSugarMass, 135, 'sugar mass');
 });
 
 test('solve solves 40ABV', () => {
-	const mixture = solver(new Spirit(250, 40), { abv: 30, brix: 30, volume: null });
+	const mixture = solver(newSpirit(250, 40), { abv: 30, brix: 30, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 30,
 		brix: 30,
@@ -29,30 +25,26 @@ test('solve solves 40ABV', () => {
 		volume: 333
 	});
 
-	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 17, 'water volume');
-	assert.deepEqual(
-		mixture.findByType((o) => o instanceof Syrup)?.equivalentSugarMass,
-		105,
-		'sugar mass'
-	);
+	assert.deepEqual(mixture.findComponent(isSpirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findComponent((o) => o instanceof Water)?.volume, 17, 'water volume');
+	assert.deepEqual(mixture.findComponent(isSyrup)?.equivalentSugarMass, 105, 'sugar mass');
 });
 
 test('solve solves 10brix', () => {
-	const mixture = solver(new Spirit(250, 40), { abv: 25, brix: 10, volume: null });
+	const mixture = solver(newSpirit(250, 40), { abv: 25, brix: 10, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 25,
 		brix: 10,
 		mass: 393,
 		volume: 400
 	});
-	assert.deepEqual(mixture.findByType((o) => o instanceof Spirit)?.volume, 250, 'spirit volume');
-	assert.deepEqual(mixture.findByType((o) => o instanceof Water)?.volume, 125, 'water volume');
-	assert.deepEqual(mixture.findByType((o) => o instanceof Syrup)?.mass, 39, 'sugar mass');
+	assert.deepEqual(mixture.findComponent(isSpirit)?.volume, 250, 'spirit volume');
+	assert.deepEqual(mixture.findComponent((o) => o instanceof Water)?.volume, 125, 'water volume');
+	assert.deepEqual(mixture.findComponent(isSyrup)?.mass, 39, 'sugar mass');
 });
 
 test('solve solves with syrup', () => {
-	const mixture = solver(new Spirit(250, 40), { abv: 25, brix: 20, volume: null });
+	const mixture = solver(newSpirit(250, 40), { abv: 25, brix: 20, volume: null });
 	assert.deepEqual(mixture.analyze(0), {
 		abv: 25,
 		brix: 20,
@@ -67,15 +59,15 @@ test('solve solves with syrup', () => {
 });
 
 test('grapefruit', () => {
-	const mixture = solver(new Spirit(900, 80), { abv: 40, brix: 10, volume: null });
+	const mixture = solver(newSpirit(900, 80), { abv: 40, brix: 10, volume: null });
 	assert.deepEqual(
 		{
 			abv: Math.round(mixture.abv),
 			brix: Math.round(mixture.brix),
 			totalVolume: Math.round(mixture.volume),
-			sugar: mixture.findByType((o) => o instanceof Syrup)?.equivalentSugarMass,
-			water: mixture.findByType((o) => o instanceof Water)?.volume,
-			spirit: mixture.findByType((o) => o instanceof Spirit)?.volume
+			sugar: mixture.findComponent(isSyrup)?.equivalentSugarMass,
+			water: mixture.findComponent((o) => o instanceof Water)?.volume,
+			spirit: mixture.findComponent(isSpirit)?.volume
 		},
 		{
 			abv: 30,
