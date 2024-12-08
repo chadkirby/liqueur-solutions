@@ -5,6 +5,7 @@
 
 	interface Props {
 		value: number;
+		id?: string;
 		componentId: string;
 		type: 'brix' | 'abv' | 'volume' | 'mass';
 		min?: number;
@@ -12,7 +13,7 @@
 		class?: string;
 	}
 
-	let { value, type, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+	let { value, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
@@ -197,7 +198,7 @@
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
+<div {id} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { isSimpleSpirit, isSimpleSyrup, mixtureStore, Mixture, Sweetener, Water } from '$lib';
-	import { Accordion, AccordionItem } from 'svelte-5-ui-lib';
+	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
@@ -48,11 +48,7 @@
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
-		<Button
-			isActive={editMode}
-			class="py-1 px-4 border-1 !justify-start"
-			onclick={toggleEditMode}
-		>
+		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
 			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 				>Add/Remove</span
 			>
@@ -102,10 +98,26 @@
 						{/if}
 
 						{#if isSimpleSpirit(entry)}
-							<NumberSpinner class="basis-1/6" value={entry.abv} type="abv" componentId={id} />
+							<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${id}`}>ABV</Tooltip>
+							<NumberSpinner
+								id={`edit-abv-${id}`}
+								class="basis-1/6"
+								value={entry.abv}
+								type="abv"
+								componentId={id}
+							/>
 						{/if}
 						{#if isSimpleSyrup(entry)}
-							<NumberSpinner class="basis-1/6" value={entry.brix} type="brix" componentId={id} />
+							<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${id}`}>
+								Sweetness
+							</Tooltip>
+							<NumberSpinner
+								id={`edit-brix-${id}`}
+								class="basis-1/6"
+								value={entry.brix}
+								type="brix"
+								componentId={id}
+							/>
 						{/if}
 
 						{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
