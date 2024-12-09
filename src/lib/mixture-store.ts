@@ -1,8 +1,7 @@
-import { writable, get, derived } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import { isSweetenerData, SweetenerTypes } from './component.js';
 import { Sweetener } from './sweetener.js';
-import { Water } from './water.js';
-import { type Analysis } from './utils.js';
+import { digitsForDisplay, type Analysis } from './utils.js';
 import { isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
 import { filesDb } from './local-storage.svelte';
@@ -27,7 +26,6 @@ export function createMixtureStore() {
 		storeId: '/0' as StorageId,
 		name: `Mixture-0`,
 		mixture: new Mixture([]),
-		errors: [] as Array<{ componentId: string; key: ComponentValueKey }>,
 		totals: getTotals(new Mixture([]))
 	});
 	const { subscribe, set } = store;
@@ -91,17 +89,6 @@ export function createMixtureStore() {
 		getMixture() {
 			return get(store).mixture;
 		},
-		errorStore(componentId: string, key: ComponentValueKey) {
-			return derived(store, ($store) => {
-				return $store.errors.some((e) => e.componentId === componentId && e.key === key);
-			});
-		},
-		resetError(componentId: string, key: ComponentValueKey) {
-			update((data) => {
-				data.errors = data.errors.filter((e) => e.componentId !== componentId || e.key !== key);
-				return data;
-			});
-		},
 		getName() {
 			return get(store).name;
 		},
@@ -150,36 +137,16 @@ export function createMixtureStore() {
 				const working = data.mixture.clone();
 				const mxc = findById(working, componentId);
 				const component = mxc?.component;
-				// clear any errors
-				data.errors = data.errors.filter(
-					(e) => `${e.componentId}-${e.key}` !== `${componentId}-volume`
-				);
-
-				if (component instanceof Water) {
-					const water = component.clone();
-					water.setVolume(newVolume);
-					if (!roundEq(water.volume, newVolume)) {
-						data.errors.push({ componentId, key: 'volume' });
-						return data;
-					}
-					component.data = water.data;
-				} else if (component instanceof Mixture) {
-					const mx = component.clone();
-					mx.setVolume(newVolume);
-					if (!roundEq(mx.volume, newVolume)) {
-						data.errors.push({ componentId, key: 'volume' });
-						return data;
-					}
-					component.data = mx.data;
-				} else if (component instanceof Sweetener) {
-					const sweetener = component.clone();
-					sweetener.setVolume(newVolume);
-					if (!roundEq(sweetener.volume, newVolume)) {
-						data.errors.push({ componentId, key: 'volume' });
-						return data;
-					}
-					component.data = sweetener.data;
+				if (!component) {
+					throw new Error(`Unable to find component ${componentId}`);
 				}
+
+				const clone = component.clone();
+				clone.setVolume(newVolume);
+				if (!roundEq(clone.volume, newVolume)) {
+					throw new Error(`Unable to set requested volume of component ${componentId}`);
+				}
+				component.data = clone.data;
 
 				data.mixture = working;
 
@@ -204,16 +171,11 @@ export function createMixtureStore() {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
 				const { component } = mxc;
-				// clear any errors
-				data.errors = data.errors.filter(
-					(e) => `${e.componentId}-${e.key}` !== `${componentId}-abv`
-				);
 				if (component instanceof Mixture && component.findComponent((c) => c.abv > 0)) {
 					const spirit = component.clone();
 					spirit.setAbv(newAbv);
 					if (!roundEq(spirit.abv, newAbv)) {
-						data.errors.push({ componentId, key: 'abv' });
-						return data;
+						throw new Error(`Unable to set requested abv of component ${componentId}`);
 					}
 					component.data = spirit.data;
 				} else {
@@ -240,10 +202,7 @@ export function createMixtureStore() {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
 				const { component } = mc;
-				// clear any errors
-				data.errors = data.errors.filter(
-					(e) => `${e.componentId}-${e.key}` !== `${componentId}-mass`
-				);
+
 				if (isSweetenerData(component.data)) {
 					const sweetener = new Sweetener(component.data.subType, newMass);
 					component.data = sweetener.data;
@@ -272,17 +231,12 @@ export function createMixtureStore() {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
 				const { component } = mxc;
-				// clear any errors
-				data.errors = data.errors.filter(
-					(e) => `${e.componentId}-${e.key}` !== `${componentId}-brix`
-				);
 
 				if (component instanceof Mixture) {
 					const syrup = component.clone();
 					syrup.setBrix(newBrix);
 					if (!roundEq(syrup.brix, newBrix)) {
-						data.errors.push({ componentId, key: 'brix' });
-						return data;
+						throw new Error(`Unable to set requested brix of component ${componentId}`);
 					}
 					component.data = syrup.data;
 				} else {
@@ -326,18 +280,14 @@ export function createMixtureStore() {
 
 		solveTotal(key: keyof Analysis, requestedValue: number): void {
 			update((data) => {
-				// remove any totals errors
-				data.errors = data.errors.filter((e) => `${e.componentId}-${e.key}` !== `totals-${key}`);
 				const mixture = this.getMixture().clone();
 				try {
 					solveTotal(mixture, key, requestedValue);
 				} catch (error) {
-					data.errors.push({ componentId: 'totals', key });
-					return data;
+					throw new Error(`Unable to solve for ${key} = ${requestedValue}`);
 				}
 				if (!roundEq(mixture[key], requestedValue)) {
-					data.errors.push({ componentId: 'totals', key });
-					return data;
+					throw new Error(`Unable to solve for ${key} = ${requestedValue}`);
 				}
 
 				data.mixture = mixture;
@@ -350,8 +300,7 @@ export function createMixtureStore() {
 				storeId: asStorageId(storeId),
 				name,
 				mixture,
-				totals: getTotals(mixture),
-				errors: []
+				totals: getTotals(mixture)
 			});
 			filesDb.write({
 				id: storeId,
@@ -372,8 +321,10 @@ export function urlEncode(title: string, mixture: Mixture) {
 	return `/${encodeURIComponent(title)}?gz=${encodeURIComponent(mixture.serialize())}`;
 }
 
-function roundEq(a: number, b: number) {
-	return Math.round(a) === Math.round(b);
+function roundEq(a: number, b: number, maxVal = Infinity) {
+	const smaller = Math.min(a, b);
+	const digits = digitsForDisplay(smaller, maxVal);
+	return a.toFixed(digits) === b.toFixed(digits);
 }
 
 export const mixtureStore = createMixtureStore();

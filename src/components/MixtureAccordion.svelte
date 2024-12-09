@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { isSimpleSpirit, isSimpleSyrup, mixtureStore, Mixture, Sweetener, Water } from '$lib';
-	import { Accordion, AccordionItem } from 'svelte-5-ui-lib';
+	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
 	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
@@ -48,12 +48,8 @@
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
-		<Button
-			isActive={editMode}
-			class="py-1 px-1.5 border-1 !justify-start"
-			onclick={toggleEditMode}
-		>
-			<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
+		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
+			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 				>Add/Remove</span
 			>
 		</Button>
@@ -89,6 +85,7 @@
 						{#if editMode}
 							<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 						{/if}
+
 						{#if entry instanceof Sweetener}
 							<NumberSpinner class="basis-1/5" value={entry.mass} type="mass" componentId={id} />
 						{:else}
@@ -99,8 +96,28 @@
 								componentId={id}
 							/>
 						{/if}
+
 						{#if isSimpleSpirit(entry)}
-							<NumberSpinner class="basis-1/6" value={entry.abv} type="abv" componentId={id} />
+							<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${id}`}>ABV</Tooltip>
+							<NumberSpinner
+								id={`edit-abv-${id}`}
+								class="basis-1/6"
+								value={entry.abv}
+								type="abv"
+								componentId={id}
+							/>
+						{/if}
+						{#if isSimpleSyrup(entry)}
+							<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${id}`}>
+								Sweetness
+							</Tooltip>
+							<NumberSpinner
+								id={`edit-brix-${id}`}
+								class="basis-1/6"
+								value={entry.brix}
+								type="brix"
+								componentId={id}
+							/>
 						{/if}
 
 						{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
@@ -118,10 +135,10 @@
 							class="
 								mr-2
 								{entry instanceof Sweetener || isSimpleSyrup(entry)
-										? 'basis-1/3'
-										: isSimpleSpirit(entry)
-											? 'basis-1/2'
-											: 'basis-3/4'}
+								? 'basis-1/3'
+								: isSimpleSpirit(entry)
+									? 'basis-1/2'
+									: 'basis-3/4'}
 								text-sm
 								leading-[18px]
 								focus:ring-2
@@ -155,12 +172,7 @@
 					<VolumeComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/4"
-					/>
-					<MassComponent
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/4"
+						class="basis-1/5"
 					/>
 					<ABVComponent
 						componentId={parentId === null ? 'totals' : parentId}
@@ -172,11 +184,16 @@
 						component={mixture}
 						class="basis-1/6"
 					/>
+					<MassComponent
+						componentId={parentId === null ? 'totals' : parentId}
+						component={mixture}
+						class="basis-1/6"
+					/>
 					<CalComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
 						class="basis-1/5"
-						/>
+					/>
 				</div>
 			</div>
 		</h2>

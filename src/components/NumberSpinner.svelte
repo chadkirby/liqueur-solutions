@@ -5,6 +5,7 @@
 
 	interface Props {
 		value: number;
+		id?: string;
 		componentId: string;
 		type: 'brix' | 'abv' | 'volume' | 'mass';
 		min?: number;
@@ -12,27 +13,25 @@
 		class?: string;
 	}
 
-	let { value, type, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+	let { value, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
 	function changeValue(v: number): number {
-		if (type === 'brix') {
-			mixtureStore.setBrix(componentId, v);
-			return mixtureStore.getBrix(componentId);
-		}
-		if (type === 'abv') {
-			mixtureStore.setAbv(componentId, v);
-			return mixtureStore.getAbv(componentId);
-		}
-		if (type === 'volume') {
-			mixtureStore.setVolume(componentId, v);
-			return mixtureStore.getVolume(componentId);
-		}
+		const getKey =
+			`get${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		getKey satisfies keyof typeof mixtureStore;
 
-		// type === 'mass'
-		mixtureStore.setMass(componentId, v);
-		return mixtureStore.getMass(componentId);
+		const setKey =
+			`set${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		setKey satisfies keyof typeof mixtureStore;
+
+		try {
+			mixtureStore[setKey](componentId, v);
+		} catch (e) {
+			// can't always set the requested value
+		}
+		return mixtureStore[getKey](componentId);
 	}
 
 	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
@@ -87,7 +86,7 @@
 	}
 
 	// Handle direct input
-	function handleInput(event: Event) {
+	function handleChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		if (!/\d/.test(target.value)) return;
 
@@ -183,12 +182,12 @@
 		const digits = digitsForDisplay(value);
 		// increment by the least significant that is shown
 		const step = Math.max(1 / 10 ** digits);
-		return value + step;
+		return Number(value.toFixed(digits)) + step;
 	}
 	function decrement(value: number) {
 		const digits = digitsForDisplay(value);
 		const step = 1 / 10 ** digits;
-		return value - step;
+		return Number(value.toFixed(digits)) - step;
 	}
 
 	// Display either the formatted value or raw input value based on editing state
@@ -199,14 +198,14 @@
 	});
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
+<div {id} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
 		inputmode="decimal"
 		pattern="[0-9]*[.]?[0-9]*"
 		value={rawInputValue}
-		oninput={handleInput}
+		onchange={handleChange}
 		onkeydown={handleKeyDown}
 		onfocus={handleFocus}
 		onblur={handleBlur}
