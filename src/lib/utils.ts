@@ -34,7 +34,7 @@ export function analyze(
 export function digitsForDisplay(value: number, maxVal = Infinity) {
 	if (maxVal <= 100) return 1;
 
-	const digits = value === 0 ? 0 : value <= 1 ? 2 : value < 10 ? 1 : 0;
+	const digits = value === 0 ? 0 : value < 10 ? 2 : value < 100 ? 1 : 0;
 	return digits;
 }
 

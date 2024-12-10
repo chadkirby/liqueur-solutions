@@ -185,17 +185,36 @@
 	 * @returns The incremented number.
 	 */
 	function increment(value: number) {
-		// how many digits to the left of the decimal point are shown for
-		// this value?
-		const digits = digitsForDisplay(value);
-		// increment by the least significant that is shown
-		const step = Math.max(1 / 10 ** digits);
-		return Number(value.toFixed(digits)) + step;
+		const step = value * 0.01;
+		const roundTo =
+			step > 8
+				? 10
+				: step > 4
+					? 5
+					: step > 0.8
+						? 1
+						: step > 0.4
+							? 0.5
+							: step > 0.08
+								? 0.1
+								: 0.01;
+		return Math.round((value + step) / roundTo) * roundTo;
 	}
 	function decrement(value: number) {
-		const digits = digitsForDisplay(value);
-		const step = 1 / 10 ** digits;
-		return Number(value.toFixed(digits)) - step;
+		const step = value * 0.01;
+		const roundTo =
+			step > 8
+				? 10
+				: step > 4
+					? 5
+					: step > 0.8
+						? 1
+						: step > 0.4
+							? 0.5
+							: step > 0.08
+								? 0.1
+								: 0.01;
+		return Math.round((value - step) / roundTo) * roundTo;
 	}
 
 	// Display either the formatted value or raw input value based on editing state
