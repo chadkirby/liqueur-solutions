@@ -47,7 +47,7 @@
 </script>
 
 <div>
-	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
+	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
 		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
 			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 				>Add/Remove</span
@@ -74,20 +74,24 @@
 	<Accordion flush={false} isSingle={false} class="mt-1">
 		{#each mixture.components.entries() as [index, { name, id, component: entry }] (id)}
 			<AccordionItem
-				class="py-2"
+				class="py-2 pl-1 pr-2"
 				open={openStates.get(id) ?? false}
 				onclick={() => setOpen(id, !openStates.get(id))}
 			>
 				{#snippet header()}
 					<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
 						<div class="absolute txt-xxs text-primary-500">{entry.describe()}</div>
-
 						{#if editMode}
 							<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 						{/if}
 
 						{#if entry instanceof Sweetener}
-							<NumberSpinner class="basis-1/5" value={entry.mass} type="mass" componentId={id} />
+							<NumberSpinner
+								class="basis-1/5"
+								value={entry.mass}
+								type="mass"
+								componentId={id}
+							/>
 						{:else}
 							<NumberSpinner
 								class="basis-1/5"
@@ -124,7 +128,7 @@
 							<SweetenerDropdown
 								componentId={id}
 								component={entry}
-								basis="basis-1/2"
+								basis="basis-1/3"
 								onclick={(e) => e.stopPropagation()}
 							/>
 						{/if}
@@ -168,31 +172,31 @@
 		<h2 class="group">
 			<div class="items-center gap-x-2 gap-y-2">
 				<div class="text-xs p-1 pt-2 text-primary-600">Totals ({name})</div>
-				<div class="flex flex-row">
+				<div class="flex flex-row flex-wrap mb-1">
 					<VolumeComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/5"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<ABVComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<BrixComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<MassComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<CalComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/5"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 				</div>
 			</div>
@@ -205,12 +209,32 @@
 </div>
 
 <style>
+	/* Small label that appears above each accordion item */
 	.txt-xxs {
 		top: -7px;
 		left: 2px;
 		font-weight: 300;
 		font-size: 0.65rem;
 		line-height: 1rem;
+	}
+
+	/* Style the accordion button container to make room for the arrow
+	   Using h2.group to match the exact structure from svelte-5-ui-lib */
+	:global(h2.group button) {
+		position: relative;  /* Needed for absolute positioning of the arrow */
+		padding-right: 1.5rem !important;  /* Reserve fixed space for the arrow */
+	}
+
+	/* Position and size the arrow SVG consistently across all accordion items
+	   The arrow is an SVG element directly inside the button */
+	:global(h2.group button > svg) {
+		position: absolute;  /* Take it out of normal flow */
+		right: 0.5rem;      /* Fixed distance from right edge */
+		top: 50%;           /* Center vertically... */
+		transform: translateY(-50%);  /* ...with perfect centering */
+		width: 0.75rem;     /* Fixed size for consistency */
+		height: 0.75rem;
+		flex-shrink: 0;     /* Prevent arrow from shrinking if space is tight */
 	}
 
 	@media print {

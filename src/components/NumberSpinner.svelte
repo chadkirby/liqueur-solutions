@@ -46,8 +46,16 @@
 	// Handle keyboard input
 	function handleKeyDown(e: KeyboardEvent) {
 		const { key, metaKey } = e;
+		if (key === 'Enter' || key === 'Tab') {
+			const newValue = Number((e.target as HTMLInputElement).value);
+		if (!isNaN(newValue)) {
+			// Update the value but keep editing
+			setValue(newValue);
+		}
+		}
 		if (key === 'Enter' || key === 'Escape' || key === 'Tab') {
-			handleBlur();
+			finishEditing();
+			// Don't call handleBlur() - it will be called automatically by the browser
 		} else if (key === 'ArrowUp') {
 			if (isKeyboardEditing) finishEditing();
 			e.preventDefault();
@@ -177,17 +185,36 @@
 	 * @returns The incremented number.
 	 */
 	function increment(value: number) {
-		// how many digits to the left of the decimal point are shown for
-		// this value?
-		const digits = digitsForDisplay(value);
-		// increment by the least significant that is shown
-		const step = Math.max(1 / 10 ** digits);
-		return Number(value.toFixed(digits)) + step;
+		const step = value * 0.01;
+		const roundTo =
+			step > 8
+				? 10
+				: step > 4
+					? 5
+					: step > 0.8
+						? 1
+						: step > 0.4
+							? 0.5
+							: step > 0.08
+								? 0.1
+								: 0.01;
+		return Math.round((value + step) / roundTo) * roundTo;
 	}
 	function decrement(value: number) {
-		const digits = digitsForDisplay(value);
-		const step = 1 / 10 ** digits;
-		return Number(value.toFixed(digits)) - step;
+		const step = value * 0.01;
+		const roundTo =
+			step > 8
+				? 10
+				: step > 4
+					? 5
+					: step > 0.8
+						? 1
+						: step > 0.4
+							? 0.5
+							: step > 0.08
+								? 0.1
+								: 0.01;
+		return Math.round((value - step) / roundTo) * roundTo;
 	}
 
 	// Display either the formatted value or raw input value based on editing state
