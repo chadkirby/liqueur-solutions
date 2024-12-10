@@ -209,12 +209,32 @@
 </div>
 
 <style>
+	/* Small label that appears above each accordion item */
 	.txt-xxs {
 		top: -7px;
 		left: 2px;
 		font-weight: 300;
 		font-size: 0.65rem;
 		line-height: 1rem;
+	}
+
+	/* Style the accordion button container to make room for the arrow
+	   Using h2.group to match the exact structure from svelte-5-ui-lib */
+	:global(h2.group button) {
+		position: relative;  /* Needed for absolute positioning of the arrow */
+		padding-right: 1.5rem !important;  /* Reserve fixed space for the arrow */
+	}
+
+	/* Position and size the arrow SVG consistently across all accordion items
+	   The arrow is an SVG element directly inside the button */
+	:global(h2.group button > svg) {
+		position: absolute;  /* Take it out of normal flow */
+		right: 0.5rem;      /* Fixed distance from right edge */
+		top: 50%;           /* Center vertically... */
+		transform: translateY(-50%);  /* ...with perfect centering */
+		width: 0.75rem;     /* Fixed size for consistency */
+		height: 0.75rem;
+		flex-shrink: 0;     /* Prevent arrow from shrinking if space is tight */
 	}
 
 	@media print {
