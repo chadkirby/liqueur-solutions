@@ -39,7 +39,7 @@
 </svelte:head>
 
 
-<div class="p-4 max-w-lg mx-auto font-sans">
+<div class="p-2 max-w-lg mx-auto font-sans">
 	<MixtureList {storeId} />
 	<BottomNav />
 </div>

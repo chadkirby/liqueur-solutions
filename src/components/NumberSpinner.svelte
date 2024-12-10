@@ -46,8 +46,16 @@
 	// Handle keyboard input
 	function handleKeyDown(e: KeyboardEvent) {
 		const { key, metaKey } = e;
+		if (key === 'Enter' || key === 'Tab') {
+			const newValue = Number((e.target as HTMLInputElement).value);
+		if (!isNaN(newValue)) {
+			// Update the value but keep editing
+			setValue(newValue);
+		}
+		}
 		if (key === 'Enter' || key === 'Escape' || key === 'Tab') {
-			handleBlur();
+			finishEditing();
+			// Don't call handleBlur() - it will be called automatically by the browser
 		} else if (key === 'ArrowUp') {
 			if (isKeyboardEditing) finishEditing();
 			e.preventDefault();

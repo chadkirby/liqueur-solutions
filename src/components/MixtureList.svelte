@@ -48,7 +48,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-x-2 gap-y-2 mt-2">
+<div class="flex flex-col gap-x-2 gap-y-2 mt-4">
 	<div
 		class="
 			flex flex-row

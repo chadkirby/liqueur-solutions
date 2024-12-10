@@ -47,7 +47,7 @@
 </script>
 
 <div>
-	<div class="flex flex-row justify-start items-center gap-3 mb-1 no-print">
+	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
 		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
 			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 				>Add/Remove</span
@@ -74,14 +74,13 @@
 	<Accordion flush={false} isSingle={false} class="mt-1">
 		{#each mixture.components.entries() as [index, { name, id, component: entry }] (id)}
 			<AccordionItem
-				class="py-2"
+				class="py-2 pl-1 pr-2"
 				open={openStates.get(id) ?? false}
 				onclick={() => setOpen(id, !openStates.get(id))}
 			>
 				{#snippet header()}
 					<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
 						<div class="absolute txt-xxs text-primary-500">{entry.describe()}</div>
-
 						{#if editMode}
 							<RemoveButton componentId={id} {name} onRemove={() => openStates.delete(id)} />
 						{/if}
@@ -173,31 +172,31 @@
 		<h2 class="group">
 			<div class="items-center gap-x-2 gap-y-2">
 				<div class="text-xs p-1 pt-2 text-primary-600">Totals ({name})</div>
-				<div class="flex flex-row">
+				<div class="flex flex-row flex-wrap mb-1">
 					<VolumeComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/5"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<ABVComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<BrixComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<MassComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/6"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 					<CalComponent
 						componentId={parentId === null ? 'totals' : parentId}
 						component={mixture}
-						class="basis-1/5"
+						class="basis-1/6 min-w-20 grow-0"
 					/>
 				</div>
 			</div>
