@@ -87,7 +87,12 @@
 						{/if}
 
 						{#if entry instanceof Sweetener}
-							<NumberSpinner class="basis-1/5" value={entry.mass} type="mass" componentId={id} />
+							<NumberSpinner
+								class="basis-1/5"
+								value={entry.mass}
+								type="mass"
+								componentId={id}
+							/>
 						{:else}
 							<NumberSpinner
 								class="basis-1/5"
@@ -124,7 +129,7 @@
 							<SweetenerDropdown
 								componentId={id}
 								component={entry}
-								basis="basis-1/2"
+								basis="basis-1/3"
 								onclick={(e) => e.stopPropagation()}
 							/>
 						{/if}
