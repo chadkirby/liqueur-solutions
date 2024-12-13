@@ -187,36 +187,24 @@
 	 * @returns The incremented number.
 	 */
 	function increment(value: number) {
-		const step = value * 0.01;
-		const roundTo =
-			step > 8
-				? 10
-				: step > 4
-					? 5
-					: step > 0.8
-						? 1
-						: step > 0.4
-							? 0.5
-							: step > 0.08
-								? 0.1
-								: 0.01;
-		return Math.round((value + step) / roundTo) * roundTo;
+		const step = findStep(value);
+		return value + step;
 	}
 	function decrement(value: number) {
-		const step = value * 0.01;
-		const roundTo =
-			step > 8
-				? 10
-				: step > 4
-					? 5
-					: step > 0.8
-						? 1
-						: step > 0.4
-							? 0.5
-							: step > 0.08
-								? 0.1
-								: 0.01;
-		return Math.round((value - step) / roundTo) * roundTo;
+		const step = findStep(value);
+		return value - step;
+	}
+
+	/** return a power of 10 or 5 that close to 1% of the given value
+	 */
+	function findStep(value: number) {
+		const step = Math.max(0.01, value * 0.01);
+		const closest10 = Math.pow(10, Math.round(Math.log10(step)));
+		if (step < 1) return closest10;
+		const closest5 = Math.pow(5, Math.round(Math.log10(step)));
+		const diff10 = Math.abs(closest10 - step);
+		const diff5 = Math.abs(closest5 - step);
+		return diff10 <= diff5 ? closest10 : closest5;
 	}
 
 	// Display either the formatted value or raw input value based on editing state
