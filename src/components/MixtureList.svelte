@@ -48,8 +48,8 @@
 	}
 </script>
 
-<div class="flex flex-col gap-x-2 gap-y-2 mt-4">
-	<div
+<main class="flex flex-col gap-x-2 gap-y-2 mt-4" data-testid="mixture-list">
+	<section
 		class="
 			flex flex-row
 			items-center
@@ -79,10 +79,10 @@
 				class="text-l font-bold leading-normal"
 			/>
 		</div>
-	</div>
+	</section>
 
 	<MixtureAccordion mixture={$mixtureStore.mixture} id={null} name={$mixtureStore.name} />
-</div>
+</main>
 
 <style>
 	:root {

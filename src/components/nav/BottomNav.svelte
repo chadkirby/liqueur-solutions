@@ -35,7 +35,7 @@
 
 </script>
 
-<div
+<nav
 	class="
 		w-full
 		z-30
@@ -54,7 +54,7 @@
 		start-1/2
 		"
 >
-	<div class="h-full max-w-lg mx-auto flex items-center justify-around">
+	<section class="h-full max-w-lg mx-auto flex items-center justify-around">
 		<button
 			id="file-drawer-button"
 			aria-label="Files"
@@ -67,7 +67,7 @@
 
 		<button
 			id="new-button"
-			aria-label="New"
+			aria-label="New File"
 			class={btnClass}
 			onclick={() => goto('/new', { replaceState: true, invalidateAll: true })}
 		>
@@ -82,8 +82,8 @@
 		>
 			<ArrowUpFromBracketOutline class="text-white" />
 		</button>
-	</div>
-</div>
+	</section>
+</nav>
 
 <ShareModal />
 
