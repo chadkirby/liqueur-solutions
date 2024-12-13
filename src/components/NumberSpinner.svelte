@@ -48,10 +48,12 @@
 		const { key, metaKey } = e;
 		if (key === 'Enter' || key === 'Tab') {
 			const newValue = Number((e.target as HTMLInputElement).value);
-		if (!isNaN(newValue)) {
-			// Update the value but keep editing
-			setValue(newValue);
-		}
+			if (!isNaN(newValue)) {
+				// Update the value but keep editing
+				setValue(newValue);
+			}
+			handleBlur();
+			return;
 		}
 		if (key === 'Enter' || key === 'Escape' || key === 'Tab') {
 			finishEditing();
