@@ -11,7 +11,7 @@
 	let grams = $derived(component.mass);
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class="mx-1 min-w-0 w-full {classProp}" data-testid="mass-{componentId}">
 	<Helper class="tracking-tight">Mass</Helper>
 	{#if component instanceof Sweetener && !readonly}
 		<NumberSpinner

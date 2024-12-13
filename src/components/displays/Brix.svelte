@@ -15,7 +15,7 @@
 	let parts = $derived(brix < 100 && brix >= 50 ? brixToSyrupProportion(brix) : '');
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class="mx-1 min-w-0 w-full {classProp}" data-testid="brix-{componentId}">
 	<Helper class="tracking-tight">Sweetness</Helper>
 
 	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
