@@ -1,6 +1,13 @@
 <script lang="ts">
-	import { Drawer, Drawerhead, Tooltip } from 'svelte-5-ui-lib';
-	import { CloseCircleSolid, ListOutline, ArrowRightOutline, ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
+	import { Drawer, Drawerhead, Li, Tooltip } from 'svelte-5-ui-lib';
+	import {
+		CloseCircleSolid,
+		ListOutline,
+		ArrowRightOutline,
+		ArrowUpRightFromSquareOutline,
+		StarSolid,
+		StarOutline
+	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
@@ -11,18 +18,24 @@
 	import { starredIds } from '$lib/stars.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
 
-	let files = $state([] as FileItem[]);
+	type ListedFile = FileItem & {
+		isStarred: boolean
+	}
+	let files = $state([] as ListedFile[]);
 	let drawerStatus = $state(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
 
+	let onlyStars = $state(true);
+
 	function listFiles<T extends Record<string, unknown> = Record<string, never>>(
 		extra: T = {} as T
-	): Array<FileItem & T> {
+	){
 		const files = filesDb.scan();
-		const out: Array<FileItem & T> = [];
+		const out: Array<ListedFile & T > = [];
 		for (const [id, item] of files) {
-			if (starredIds.includes(id)) {
-				out.push({ ...item, id, ...extra });
+			const isStarred = starredIds.includes(id);
+			if (!onlyStars || isStarred) {
+				out.push({ ...item, isStarred, id, ...extra });
 			}
 		}
 		return out;
@@ -95,7 +108,8 @@
 
 <Portal target="body">
 	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
-		<div class="
+		<div
+			class="
 			sticky
 			top-0
 			bg-white
@@ -103,43 +117,63 @@
 			dark:bg-primary-700
 			dark:border-primary-600
 			border-b
-			z-10">
+			z-10"
+		>
 			<Drawerhead onclick={closeDrawer}>
-				<h5
-					id="drawer-label"
-					class="
+				<section class="flex flex-col items-center">
+					<h5
+						id="drawer-label"
+						class="
 						inline-flex
 						items-center
 						p-4
 						text-lg
 						font-semibold
 						text-primary-500 dark:text-primary-400"
-				>
-					Saved Mixtures
-				</h5>
+					>
+						Saved Mixtures
+					</h5>
+					<!-- show all files or only starred files checkbox -->
+					<div class="flex flex-row items-center mb-1 ml-4">
+						<input type="checkbox" bind:checked={onlyStars} class="mr-2" id="only-stars-checkbox" />
+						<label
+							for="only-stars-checkbox"
+							class="text-sm text-primary-500 dark:text-primary-400 cursor-pointer"
+							>Only show starred files</label
+						>
+					</div>
+				</section>
 			</Drawerhead>
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 mt-2">
-			{#each files as { name, id, desc }}
-				<div class="
+			{#each files as { name, id, isStarred, desc }}
+				<div
+					class="
 					flex flex-col
 					pb-1
 					border-b-secondary-200
 					dark:border-b-primary-600
 					border-b-2
-					">
+					"
+				>
 					<div
 						class="
 							flex flex-col
 							items-start
 							mb-1
-							cursor-pointer
 							w-full
 							text-sm
 						"
 					>
-						<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
+						<div class="flex flex-row items-center gap-2">
+							{#if isStarred}
+								<StarSolid size="xs" />
+							{:else}
+								<StarOutline size="xs" />
+							{/if}
+							<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
+						</div>
 						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
 					</div>
 					<div class="flex flex-row justify-around">
