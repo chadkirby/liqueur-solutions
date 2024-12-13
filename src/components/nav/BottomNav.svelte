@@ -3,9 +3,10 @@
 	import FilesDrawer from './FilesDrawer.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { Tooltip } from 'svelte-5-ui-lib';
-	import { FileOutline, ArrowUpFromBracketOutline } from 'flowbite-svelte-icons';
+	import { FileOutline, ArrowUpFromBracketOutline, FileCopyOutline } from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
+	import { mixtureStore, urlEncode } from '$lib/mixture-store.js';
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(null);
@@ -35,7 +36,7 @@
 
 </script>
 
-<div
+<nav
 	class="
 		w-full
 		z-30
@@ -54,7 +55,7 @@
 		start-1/2
 		"
 >
-	<div class="h-full max-w-lg mx-auto flex items-center justify-around">
+	<section class="h-full max-w-lg mx-auto flex items-center justify-around">
 		<button
 			id="file-drawer-button"
 			aria-label="Files"
@@ -65,15 +66,25 @@
 			<FilesDrawer />
 		</button>
 
+		<section class="flex flex-row gap-4">
 		<button
 			id="new-button"
-			aria-label="New"
+			aria-label="New File"
 			class={btnClass}
 			onclick={() => goto('/new', { replaceState: true, invalidateAll: true })}
 		>
 			<FileOutline class="text-white" />
 		</button>
 
+		<button
+			id="open-copy-button"
+			aria-label="Open a copy"
+			class={btnClass}
+			onclick={() => goto(urlEncode(mixtureStore.getName(), mixtureStore.getMixture()), { replaceState: true, invalidateAll: true })}
+		>
+			<FileCopyOutline class="text-white" />
+		</button>
+	</section>
 		<button
 			id="share-button"
 			aria-label="Share"
@@ -82,13 +93,14 @@
 		>
 			<ArrowUpFromBracketOutline class="text-white" />
 		</button>
-	</div>
-</div>
+	</section>
+</nav>
 
 <ShareModal />
 
 <Tooltip color="default" offset={6} triggeredBy="#new-button">Create a new mixture</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#open-copy-button">Open a copy of this mixture</Tooltip>
 <Tooltip color="default" offset={6} triggeredBy="#file-drawer-button">
 	Show saved mixture files
 </Tooltip>
-<Tooltip color="default" offset={6} triggeredBy="#share-button">Share the current mixture</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#share-button">Share this mixture</Tooltip>

@@ -11,7 +11,7 @@
 	let ml = $derived(component.volume);
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class="mx-1 min-w-0 w-full {classProp}" data-testid={`volume-${componentId}`}>
 	<Helper class="tracking-tight">Volume</Helper>
 	{#if component instanceof Sweetener || readonly}
 		<ReadOnlyValue value={ml} type="volume" />

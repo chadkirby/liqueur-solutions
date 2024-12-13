@@ -52,7 +52,7 @@
 	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
-<div class="flex items-center whitespace-nowrap font-mono leading-[18px] text-xs ">
+<output class="flex items-center whitespace-nowrap font-mono leading-[18px] text-xs ">
 	<button
 		onclick={rotateAlternates}
 		class="
@@ -72,4 +72,4 @@
 	</button><span class="{suffixSize} ml-0.5">
 		{formatted.suffix}
 	</span>
-</div>
+</output>

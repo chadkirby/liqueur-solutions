@@ -13,7 +13,7 @@
 	let proof = $derived(abv * 2);
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class="mx-1 min-w-0 w-full {classProp}" data-testid="abv-{componentId}">
 	<Helper class="tracking-tight">ABV</Helper>
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner
