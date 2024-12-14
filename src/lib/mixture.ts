@@ -154,15 +154,15 @@ export class Mixture extends BaseComponent {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-	addComponent({ name, component }: { name: string; component: AnyComponent }) {
+	addComponent({ name, component, id }: { name: string; id: string; component: AnyComponent }) {
 		if (component instanceof Mixture) {
 			this.components.push({
-				id: componentId(),
+				id,
 				name,
 				component: component.clone(true)
 			});
 		} else {
-			this.components.push({ id: componentId(), name, component: component.clone() });
+			this.components.push({ id, name, component: component.clone() });
 		}
 	}
 
