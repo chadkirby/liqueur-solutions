@@ -1,14 +1,13 @@
-import { writable, get } from 'svelte/store';
 import { writable, get, type Updater } from 'svelte/store';
 import { isSweetenerData, SweetenerTypes } from './component.js';
 import { Sweetener } from './sweetener.js';
 import { digitsForDisplay, type Analysis } from './utils.js';
-import { isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
 import { filesDb } from './local-storage.svelte';
 import { asStorageId, type StorageId } from './storage-id.js';
-
+import { UndoRedo } from './undo-redo.js';
+import { decrement, increment, type MinMax } from './increment-decrement.js';
 export type ComponentValueKey = keyof Analysis;
 
 function findById(mixture: Mixture, id: string): MixtureComponent | null {
@@ -22,6 +21,8 @@ function findById(mixture: Mixture, id: string): MixtureComponent | null {
 	}
 	return null;
 }
+
+export type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
 
 type MixtureStoreData = {
 	storeId: StorageId;
@@ -169,6 +170,55 @@ export function createMixtureStore() {
 				}
 			);
 		},
+		increment(key: EditableComponentType, componentId: string, minMax?: MinMax) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			const component = mxc.component;
+			if (!component.canEdit(key)) {
+				throw new Error(`${key} is not editable`);
+			}
+			const originalValue = component[key];
+			const newValue = increment(originalValue, minMax);
+			if (newValue === originalValue) return;
+
+			const actionDesc = `increment-${key}-${componentId}`;
+			if (key === 'volume') {
+				return this.setVolume(componentId, newValue, actionDesc);
+			} else if (key === 'abv') {
+				return this.setAbv(componentId, newValue, actionDesc);
+			} else if (key === 'brix') {
+				return this.setBrix(componentId, newValue, actionDesc);
+			} else if (key === 'mass') {
+				return this.setMass(componentId, newValue, actionDesc);
+			}
+			key satisfies never;
+		},
+		decrement(key: EditableComponentType, componentId: string, minMax?: MinMax) {
+			const mxc = findById(get(store).mixture, componentId);
+			if (!mxc) {
+				throw new Error(`Unable to find component ${componentId}`);
+			}
+			const component = mxc.component;
+			if (!component.canEdit(key)) {
+				throw new Error(`${key} is not editable`);
+			}
+			const originalValue = component[key];
+			const newValue = decrement(originalValue, minMax);
+			if (newValue === originalValue) return;
+
+			const actionDesc = `decrement-${key}-${componentId}`;
+			if (key === 'volume') {
+				return this.setVolume(componentId, newValue, actionDesc);
+			} else if (key === 'abv') {
+				return this.setAbv(componentId, newValue, actionDesc);
+			} else if (key === 'brix') {
+				return this.setBrix(componentId, newValue, actionDesc);
+			} else if (key === 'mass') {
+				return this.setMass(componentId, newValue, actionDesc);
+			}
+			key satisfies never;
 		},
 		getVolume(componentId: string) {
 			const mxc = findById(get(store).mixture, componentId);

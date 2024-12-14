@@ -1,6 +1,7 @@
 <!-- NumberSpinner.svelte -->
 <script lang="ts">
 	import { mixtureStore } from '$lib';
+	import { clamp } from '$lib/increment-decrement.js';
 	import { digitsForDisplay, format } from '$lib/utils.js';
 
 	interface Props {
@@ -16,23 +17,6 @@
 	let { value, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
-
-	function changeValue(v: number): number {
-		const getKey =
-			`get${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
-		getKey satisfies keyof typeof mixtureStore;
-
-		const setKey =
-			`set${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
-		setKey satisfies keyof typeof mixtureStore;
-
-		try {
-			mixtureStore[setKey](componentId, v);
-		} catch (e) {
-			// can't always set the requested value
-		}
-		return mixtureStore[getKey](componentId);
-	}
 
 	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
 
@@ -161,16 +145,16 @@
 	}
 	// Value manipulation functions
 	function incrementValue() {
-		setValue(increment(value));
+		mixtureStore.increment(type, componentId, {min, max});
 	}
 
 	function decrementValue() {
-		setValue(decrement(value));
+		mixtureStore.decrement(type, componentId, {min, max});
 	}
 
 	function setValue(newValue: number) {
 		// Clamp the value between min and max
-		const clampedValue = Math.max(min, Math.min(max, newValue));
+		const clampedValue = clamp(newValue, min, max);
 		if (clampedValue !== value) {
 			const newVal = changeValue(clampedValue);
 			value = newVal;
@@ -179,32 +163,21 @@
 		return value;
 	}
 
-	/**
-	 * Increments the given number by a step size determined by its order
-	 * of magnitude.
-	 *
-	 * @param value - The number to be incremented.
-	 * @returns The incremented number.
-	 */
-	function increment(value: number) {
-		const step = findStep(value);
-		return value + step;
-	}
-	function decrement(value: number) {
-		const step = findStep(value);
-		return value - step;
-	}
+	function changeValue(v: number): number {
+		const getKey =
+			`get${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		getKey satisfies keyof typeof mixtureStore;
 
-	/** return a power of 10 or 5 that close to 1% of the given value
-	 */
-	function findStep(value: number) {
-		const step = Math.max(0.01, value * 0.01);
-		const closest10 = Math.pow(10, Math.round(Math.log10(step)));
-		if (step < 1) return closest10;
-		const closest5 = Math.pow(5, Math.round(Math.log10(step)));
-		const diff10 = Math.abs(closest10 - step);
-		const diff5 = Math.abs(closest5 - step);
-		return diff10 <= diff5 ? closest10 : closest5;
+		const setKey =
+			`set${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
+		setKey satisfies keyof typeof mixtureStore;
+
+		try {
+			mixtureStore[setKey](componentId, v);
+		} catch (e) {
+			// can't always set the requested value
+		}
+		return mixtureStore[getKey](componentId);
 	}
 
 	// Display either the formatted value or raw input value based on editing state
