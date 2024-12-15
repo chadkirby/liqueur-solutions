@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { UndoRedo } from './undo-redo.js';
+import { UndoRedo } from './undo-redo.svelte.js';
 
 describe('UndoRedo', () => {
 	it('should handle basic undo and redo operations', () => {

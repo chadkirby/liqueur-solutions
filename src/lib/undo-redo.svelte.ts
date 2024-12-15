@@ -1,18 +1,10 @@
 import { type Updater } from 'svelte/store';
 import pDebounce from 'p-debounce';
 
-type UndoItem<T> = {
-	desc: string;
-	undos: Array<Updater<T>>;
-	redos: Array<Updater<T>>;
-};
-
-function emptyItem<T>(desc: string): UndoItem<T> {
-	return {
-		desc,
-		undos: [],
-		redos: []
-	};
+class UndoItem<T> {
+	constructor(public readonly desc: string) {}
+	undos = [] as Updater<T>[];
+	redos = [] as Updater<T>[];
 }
 
 class Collector<T> {
@@ -21,13 +13,13 @@ class Collector<T> {
 		desc: string,
 		private readonly committer: (item: UndoItem<T>) => void
 	) {
-		this.pending = emptyItem(desc);
+		this.pending = new UndoItem(desc);
 	}
 
 	public collect(desc: string, undo: Updater<T>, redo: Updater<T>) {
 		if (this.pending.desc !== desc) {
 			this.committer(this.pending);
-			this.pending = emptyItem(desc);
+			this.pending = new UndoItem(desc);
 		}
 		this.pending.undos.push(undo);
 		this.pending.redos.push(redo);
@@ -40,22 +32,17 @@ class Collector<T> {
 
 	commitImmediately() {
 		if (this.pending.undos.length) this.committer(this.pending);
-		this.pending = emptyItem(this.pending.desc);
+		this.pending = new UndoItem(this.pending.desc);
 	}
 }
 
 export class UndoRedo<T> {
-	private undoStack = new Array<UndoItem<T>>();
-	private redoStack = new Array<UndoItem<T>>();
+	private undoStack = $state(new Array<UndoItem<T>>());
+	private redoStack = $state(new Array<UndoItem<T>>());
+	public readonly undoLength = $derived(this.undoStack.length);
+	public readonly redoLength = $derived(this.redoStack.length);
+
 	constructor(private readonly maxItems: number = 100) {}
-
-	get undoLength() {
-		return this.undoStack.length;
-	}
-
-	get redoLength() {
-		return this.redoStack.length;
-	}
 
 	private collector: Collector<T> = new Collector('', (item) => {
 		this.undoStack.push(item);
