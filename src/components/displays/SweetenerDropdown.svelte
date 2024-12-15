@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
-	import { Mixture, mixtureStore, Sweetener, SweetenerTypes } from '$lib';
+	import { Mixture, Sweetener, SweetenerTypes } from '$lib/index.svelte';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	interface Props {
 		componentId: string;
 		component: Sweetener | Mixture;
+		mixtureStore: MixtureStore;
 		class?: string;
 		basis: string;
 		onclick?: (e: Event) => void;
 	}
 
-	let { componentId, component, class: classProp, basis, onclick = () => {} }: Props = $props();
+	let { componentId, component, mixtureStore,class: classProp, basis, onclick = () => {} }: Props = $props();
 
 	const sweeteners = SweetenerTypes.map((type) => ({ value: type, name: type }));
 

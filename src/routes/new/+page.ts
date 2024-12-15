@@ -1,4 +1,4 @@
-import { componentId, newSpirit, Sweetener } from '$lib';
+import { componentId, newSpirit, Sweetener } from '$lib/index.svelte';
 import type { LoadDataFromUrl } from '$lib/load-data.js';
 
 export function load(): LoadDataFromUrl {

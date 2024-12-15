@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Sweetener,  } from '$lib';
+	import { type Sweetener } from '$lib/index.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import { SweetenerEquivData } from '$lib/sweetener.js';

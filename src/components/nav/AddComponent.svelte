@@ -1,10 +1,15 @@
 <script lang="ts">
-	import { Mixture, mixtureStore, newSpirit, newSyrup, Sweetener, Water } from '$lib';
+	import { Mixture, newSpirit, newSyrup, Sweetener, Water } from '$lib/index.svelte';
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
-	let { componentId, callback }: { componentId: string | null; callback?: () => void } = $props();
+	let {
+		componentId,
+		callback,
+		mixtureStore
+	}: { componentId: string | null; mixtureStore: MixtureStore; callback?: () => void } = $props();
 
 	function addSpirit() {
 		if (callback) callback();

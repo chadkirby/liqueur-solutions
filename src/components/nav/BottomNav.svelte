@@ -6,7 +6,13 @@
 	import { FileOutline, ArrowUpFromBracketOutline, FileCopyOutline } from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
-	import { mixtureStore, urlEncode } from '$lib/mixture-store.js';
+	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+
+	interface Props {
+		mixtureStore: MixtureStore;
+	}
+
+	let { mixtureStore }: Props = $props();
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(null);
@@ -63,7 +69,7 @@
 			onclick={openFilesDrawer}
 			onkeydown={handleKeydown}
 		>
-			<FilesDrawer />
+			<FilesDrawer {mixtureStore} />
 		</button>
 
 		<section class="flex flex-row gap-4">
@@ -80,7 +86,7 @@
 			id="open-copy-button"
 			aria-label="Open a copy"
 			class={btnClass}
-			onclick={() => goto(urlEncode(mixtureStore.getName(), mixtureStore.getMixture()), { replaceState: true, invalidateAll: true })}
+			onclick={() => goto(urlEncode(mixtureStore.name, mixtureStore.mixture), { replaceState: true, invalidateAll: true })}
 		>
 			<FileCopyOutline class="text-white" />
 		</button>

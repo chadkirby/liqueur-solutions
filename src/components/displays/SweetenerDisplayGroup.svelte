@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Sweetener } from '$lib';
+	import { type Sweetener } from '$lib/index.svelte';
 	import Mass from './Mass.svelte';
 	import Volume from './Volume.svelte';
 	import Cal from './Cal.svelte';

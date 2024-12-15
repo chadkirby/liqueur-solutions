@@ -5,19 +5,18 @@
 	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
-	import { mixtureStore } from '$lib';
 	import type { ChangeEventHandler } from 'svelte/elements';
-	import { goto } from '$app/navigation';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import type { StorageId } from '$lib/storage-id.js';
 	import { starredIds, toggleStar } from '$lib/stars.svelte.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	interface Props {
-		storeId: StorageId;
+		mixtureStore: MixtureStore;
 	}
 
-	let { storeId }: Props = $props();
+	let { mixtureStore }: Props = $props();
+	let storeId = $derived(mixtureStore.storeId);
 
 	// hack to remove accordion focus ring
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
@@ -31,14 +30,7 @@
 		debounce<ChangeEventHandler<HTMLInputElement>>((event) => {
 			const newName = (event.target as HTMLInputElement).value;
 			mixtureStore.setName(newName);
-			mixtureStore.save();
 		}, 100);
-
-	function saveAndGo(id: StorageId) {
-		// storeId = id;
-		// mixtureStore.setStoreId(id);
-		goto(`/file${id}`, { replaceState: true, invalidateAll: true });
-	}
 
 	let isStarred = $derived(starredIds.includes(storeId));
 
@@ -73,7 +65,7 @@
 		<div class="w-full relative">
 			<Helper class="absolute left-0 -top-[67%] ">Mixture name</Helper>
 			<TextInput
-				value={$mixtureStore.name}
+				value={mixtureStore.name}
 				oninput={handleTitleInput()}
 				placeholder="Name your mixture"
 				class="text-l font-bold leading-normal"
@@ -81,7 +73,7 @@
 		</div>
 	</section>
 
-	<MixtureAccordion mixture={$mixtureStore.mixture} id={null} name={$mixtureStore.name} />
+	<MixtureAccordion {mixtureStore} id={null} name={mixtureStore.name} />
 </main>
 
 <style>

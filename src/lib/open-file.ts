@@ -1,3 +1,4 @@
+// import { goto } from '$app/navigation';
 import type { StorageId } from './storage-id.js';
 
 export function openFile(id: StorageId): void {

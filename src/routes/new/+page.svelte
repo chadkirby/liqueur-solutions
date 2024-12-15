@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { dataToMixture } from '$lib';
+	import { dataToMixture } from '$lib/index.svelte';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
 	import { type FileItem } from '$lib/local-storage.svelte';
-	import { urlEncode } from '$lib/mixture-store.js';
+	import { urlEncode } from '$lib/mixture-store.svelte.js';
 	import { generateStorageId } from '$lib/storage-id.js';
 	import NewMixture from '../../components/NewMixture.svelte';
 

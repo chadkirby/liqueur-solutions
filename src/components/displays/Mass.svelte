@@ -1,12 +1,12 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { Sweetener } from '$lib';
+	import { Sweetener } from '$lib/index.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 
-	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
+	let { componentId, component, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
 
 	let grams = $derived(component.mass);
 </script>
@@ -15,6 +15,7 @@
 	<Helper class="tracking-tight">Mass</Helper>
 	{#if component instanceof Sweetener && !readonly}
 		<NumberSpinner
+			{mixtureStore}
 			value={grams}
 			type="mass"
 			componentId={componentId}

@@ -1,11 +1,12 @@
 <!-- NumberSpinner.svelte -->
 <script lang="ts">
-	import { mixtureStore } from '$lib';
 	import { clamp } from '$lib/increment-decrement.js';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { digitsForDisplay, format } from '$lib/utils.js';
 
 	interface Props {
 		value: number;
+		mixtureStore: MixtureStore;
 		id?: string;
 		componentId: string;
 		type: 'brix' | 'abv' | 'volume' | 'mass';
@@ -14,7 +15,7 @@
 		class?: string;
 	}
 
-	let { value, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+	let { value, mixtureStore, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
