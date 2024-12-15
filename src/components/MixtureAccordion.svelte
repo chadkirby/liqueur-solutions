@@ -34,8 +34,6 @@
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
-	let disableUndo = $derived(mixtureStore.undoCount === 0);
-	let disableRedo = $derived(mixtureStore.redoCount === 0);
 
 	// We need to manage open states externally and use the component's ID
 	// as the key in the #each block to prevent Svelte from reusing
@@ -64,27 +62,6 @@
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
-		{#if parentId === null}
-			<button
-				id="undo-button"
-				disabled={disableUndo}
-				aria-label="Undo"
-				class={btnClass}
-				onclick={() => mixtureStore.undo()}
-			>
-				<UndoOutline class="text-primary-500" />
-			</button>
-
-			<button
-				id="redo-button"
-				aria-label="Redo"
-				disabled={disableRedo}
-				class={btnClass}
-				onclick={() => mixtureStore.redo()}
-			>
-				<RedoOutline class="text-primary-500" />
-			</button>
-		{/if}
 		<Button isActive={editMode} class={btnClass} onclick={toggleEditMode}>
 			<CirclePlusSolid class="text-primary-500" />
 			<CircleMinusSolid class="text-primary-500" />
