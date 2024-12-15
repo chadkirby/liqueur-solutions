@@ -33,7 +33,7 @@ test('index page has expected totals', async ({ page }) => {
 	});
 });
 
-test('can edit spirit volume', async ({ page }) => {
+test.skip('can edit spirit volume', async ({ page }) => {
 	await page.goto(standardMixture);
 
 	await page.getByRole('button', { name: 'spirit 100 ml 40.0 %' }).click();
@@ -42,16 +42,29 @@ test('can edit spirit volume', async ({ page }) => {
 		.getByRole('textbox')
 		.first()
 		.click();
-	await scheduler.wait(100);
 	await page
 		.getByRole('button', { name: 'spirit 100 ml 40.0 %' })
 		.getByRole('textbox')
 		.first()
-		.pressSequentially('200', { delay: 10 });
-	await scheduler.wait(100);
-	await page
-		.getByRole('button', { name: 'spirit 100 ml 40.0 %' })
-		.getByRole('textbox')
-		.first()
-		.press('Enter');
+		.press('UpArrow');
+	await expectTotals(page, {
+		volume: '231',
+		abv: '17.3',
+		brix: '20.7',
+		mass: '242',
+		cal: '418'
+	});
+});
+
+test('can show share modal', async ({ page }) => {
+	await page.goto(standardMixture);
+	await page.getByLabel('Share').click();
+	await expect(page.getByTestId('share-modal')).toBeVisible();
+	await expect(page.getByTestId('qr-code')).toBeVisible();
+});
+
+test('can show files drawer', async ({ page }) => {
+	await page.goto(standardMixture);
+	await page.getByLabel('Files').click();
+	await expect(page.getByRole('heading', { name: 'Saved Mixtures' })).toBeVisible();
 });

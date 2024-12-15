@@ -91,8 +91,11 @@
 </script>
 
 <Portal target="body">
-	<Modal size="sm" modalStatus={shareModal.isOpen}>
-		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
+	<Modal size="sm" modalStatus={shareModal.isOpen} data-testid="share-modal">
+		<div
+			id="qr-code"
+			class="flex flex-col content-center items-center gap-2"
+		>
 			<QRCode
 				data={resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture))}
 				size={256}
