@@ -1,5 +1,6 @@
-import { type Updater } from 'svelte/store';
 import pDebounce from 'p-debounce';
+
+type Updater<T> = (value: T) => T;
 
 class UndoItem<T> {
 	constructor(public readonly desc: string) {}
@@ -45,13 +46,14 @@ export class UndoRedo<T> {
 	constructor(private readonly maxItems: number = 100) {}
 
 	private collector: Collector<T> = new Collector('', (item) => {
-		this.undoStack.push(item);
+		if (item.undos.length) {
+			this.undoStack.push(item);
+			this.redoStack = [];
+		}
 		// limit the number of items in the stack
 		if (this.undoStack.length > this.maxItems) {
 			this.undoStack.shift();
 		}
-
-		this.redoStack = [];
 	});
 
 	push(desc: string, undo: Updater<T>, redo: Updater<T>) {

@@ -34,8 +34,8 @@
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
-	let disableUndo = $derived(!mixtureStore.canUndo);
-	let disableRedo = $derived(!mixtureStore.canRedo);
+	let disableUndo = $derived(mixtureStore.undoCount === 0);
+	let disableRedo = $derived(mixtureStore.redoCount === 0);
 
 	// We need to manage open states externally and use the component's ID
 	// as the key in the #each block to prevent Svelte from reusing

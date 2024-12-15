@@ -114,4 +114,85 @@ describe('Mixture Store', () => {
 		expect(store.name).toBe('New Mixture Name');
 		expect(store.snapshot().name).toBe('New Mixture Name');
 	});
+
+	it('should support undo/redo operations', () => {
+		const store = new MixtureStore();
+
+		// Initially no undo/redo available
+		expect(store.undoCount).toBe(0);
+		expect(store.redoCount).toBe(0);
+
+		// Add a water component
+		store.addComponentTo(null, {
+			name: 'water',
+			component: new Water(100)
+		});
+
+		// @ts-expect-error undoRedo is private
+		store.undoRedo._forceCommit();
+
+		// Should have one undo available
+		expect(store.undoCount).toBe(1);
+		expect(store.redoCount).toBe(0);
+
+		const state = store.snapshot();
+		const waterId = state.mixture.components[0].id;
+
+		// Change volume
+		store.setVolume(waterId, 200);
+		// @ts-expect-error undoRedo is private
+		store.undoRedo._forceCommit();
+		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.undoCount).toBe(2);
+		expect(store.redoCount).toBe(0);
+
+		// Undo volume change
+		store.undo();
+		expect(store.getVolume(waterId)).toBe(100);
+		expect(store.undoCount).toBe(1);
+		expect(store.redoCount).toBe(1);
+
+		// Redo volume change
+		store.redo();
+		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.undoCount).toBe(2);
+		expect(store.redoCount).toBe(0);
+
+		// Undo back to start
+		store.undo();
+		store.undo();
+		expect(store.mixture.components.length).toBe(0);
+		expect(store.undoCount).toBe(0);
+		expect(store.redoCount).toBe(2);
+	});
+
+	it('should clear redo stack when new action is performed', () => {
+		const store = new MixtureStore();
+
+		// Add water
+		store.addComponentTo(null, {
+			name: 'water',
+			component: new Water(100)
+		});
+
+		const state = store.snapshot();
+		const waterId = state.mixture.components[0].id;
+
+		// Change volume to 200
+		store.setVolume(waterId, 200);
+
+		// Undo volume change
+		store.undo();
+		expect(store.getVolume(waterId)).toBe(100);
+		expect(store.redoCount).toBe(1);
+
+		// Make a new change
+		store.setVolume(waterId, 300);
+		// @ts-expect-error undoRedo is private
+		store.undoRedo._forceCommit();
+
+		// Redo stack should be cleared
+		expect(store.redoCount).toBe(0);
+		expect(store.getVolume(waterId)).toBe(300);
+	});
 });

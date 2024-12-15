@@ -93,8 +93,8 @@ export class MixtureStore {
 	}
 
 	private undoRedo = new UndoRedo<MixtureStoreData>();
-	readonly canUndo = $derived(this.undoRedo.undoLength);
-	readonly canRedo = $derived(this.undoRedo.redoLength);
+	readonly undoCount = $derived(this.undoRedo.undoLength);
+	readonly redoCount = $derived(this.undoRedo.redoLength);
 
 	private update(
 		actionDesc: string,
