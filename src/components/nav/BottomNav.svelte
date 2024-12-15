@@ -102,7 +102,7 @@
 	</section>
 </nav>
 
-<ShareModal />
+<ShareModal {mixtureStore} />
 
 <Tooltip color="default" offset={6} triggeredBy="#new-button">Create a new mixture</Tooltip>
 <Tooltip color="default" offset={6} triggeredBy="#open-copy-button">Open a copy of this mixture</Tooltip>
