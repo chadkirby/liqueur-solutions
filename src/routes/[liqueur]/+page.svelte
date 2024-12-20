@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { dataToMixture } from '$lib/index.svelte';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
-	import { type FileItem } from '$lib/local-storage.svelte';
+	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	import { urlEncode } from '$lib/mixture-store.svelte.js';
+	import { openFile } from '$lib/open-file.js';
 	import { generateStorageId } from '$lib/storage-id.js';
-	import NewMixture from '../../components/NewMixture.svelte';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function
@@ -23,8 +23,8 @@
 		name,
 		desc: mixture.describe(),
 		href
-	}
+	};
 
+	filesDb.write(item);
+	openFile(item.id);
 </script>
-
-<NewMixture {item} />

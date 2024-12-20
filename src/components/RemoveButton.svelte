@@ -28,8 +28,7 @@
 
 <Tooltip color="default" offset={6} triggeredBy={`#componentId-${componentId}-remove`}>Remove {name}</Tooltip>
 <Button
+  class="h-4"
   id={`componentId-${componentId}-remove`}
   onclick={removeComponent}
->
-  <CircleMinusSolid size="sm" />
-</Button>
+><CircleMinusSolid size="sm" /></Button>

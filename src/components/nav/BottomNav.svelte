@@ -13,6 +13,7 @@
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+	import { loadNewMixture } from '$lib/new-mixture.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -105,7 +106,7 @@
 				id="new-button"
 				aria-label="New File"
 				class={btnClass}
-				onclick={() => goto('/new', { replaceState: true, invalidateAll: true })}
+				onclick={loadNewMixture}
 			>
 				<FileOutline class="text-primary-100" />
 			</button>
@@ -116,7 +117,6 @@
 				class={btnClass}
 				onclick={() =>
 					goto(urlEncode(mixtureStore.name, mixtureStore.mixture), {
-						replaceState: true,
 						invalidateAll: true
 					})}
 			>

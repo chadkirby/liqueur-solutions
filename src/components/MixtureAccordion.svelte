@@ -1,11 +1,4 @@
 <script lang="ts">
-	import {
-		RedoOutline,
-		UndoOutline,
-		CirclePlusSolid,
-		CircleMinusSolid,
-		FileCopySolid
-	} from 'flowbite-svelte-icons';
 	import { isSimpleSpirit, isSimpleSyrup, Mixture, Sweetener, Water } from '$lib/index.svelte';
 	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
@@ -25,7 +18,6 @@
 	import Button from './ui-primitives/Button.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
-	import { goto } from '$app/navigation';
 
 	let {
 		mixtureStore,
@@ -62,19 +54,22 @@
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
-		<Button isActive={editMode} class={btnClass} onclick={toggleEditMode}>
-			<CirclePlusSolid class="text-primary-500" />
-			<CircleMinusSolid class="text-primary-500" />
+		<Button
+		isActive={editMode}
+		class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}
+		>
+			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
+				>Add/Remove</span>
 		</Button>
-		{#if mixture}
-			<button
-				id="copy-button"
-				aria-label="Open Copy"
-				class={btnClass}
-				onclick={() => goto(urlEncode(name, mixture))}
+		{#if parentId !== null}
+			<Button
+				class="py-1 px-1.5 border-1 !justify-start gap-1"
+				onclick={() => mixture && (window.location.href = urlEncode(name, mixture))}
 			>
-				<FileCopySolid class="text-primary-500" />
-			</button>
+				<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
+					>Open a copy</span
+				>
+			</Button>
 		{/if}
 	</div>
 

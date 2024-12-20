@@ -1,9 +1,8 @@
-// import { goto } from '$app/navigation';
 import type { StorageId } from './storage-id.js';
 
 export function openFile(id: StorageId): void {
 	// client-side navigation does not work???
-	// goto(`/file${id}`, { replaceState: true, invalidateAll: true });
+	// goto(`/file${id}`, { invalidateAll: true });
 	window.location.href = `/file${id}`;
 }
 

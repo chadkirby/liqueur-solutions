@@ -19,11 +19,13 @@ type MixtureStoreData = {
 	totals: Analysis;
 };
 
+export const loadingStoreId = '/loading' as StorageId;
+
 function newData(): MixtureStoreData {
 	const mx = new Mixture([]);
 	return {
-		storeId: '/0' as StorageId,
-		name: `Mixture-0`,
+		storeId: loadingStoreId,
+		name: '',
 		mixture: mx,
 		totals: getTotals(mx)
 	};
