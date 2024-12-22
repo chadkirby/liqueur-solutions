@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MixtureStore } from './mixture-store.svelte';
+import { MixtureStore, loadingStoreId } from './mixture-store.svelte';
 import { Water } from './components/water.js';
 import { Mixture, newSpirit } from './mixture.js';
 
@@ -8,8 +8,8 @@ describe('Mixture Store', () => {
 		const store = new MixtureStore();
 
 		const state = store.snapshot();
-		expect(state.name).toBe('Mixture-0');
-		expect(state.storeId).toBe('/0');
+		expect(state.name).toBe('');
+		expect(state.storeId).toBe(loadingStoreId);
 		expect(state.mixture).toBeDefined();
 		expect(state.totals).toBeDefined();
 	});
@@ -18,8 +18,8 @@ describe('Mixture Store', () => {
 		const store = new MixtureStore();
 		const state = store.snapshot();
 		expect(store.mixture).toEqual(state.mixture);
-		expect(store.storeId).toBe('/0');
-		expect(store.name).toBe('Mixture-0');
+		expect(store.storeId).toBe(loadingStoreId);
+		expect(store.name).toBe('');
 	});
 
 	it('should add and remove components', () => {

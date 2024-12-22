@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Water } from './water.js';
+import { Water } from './components/water.js';
 import type { Analysis } from './utils.js';
 import { MixtureStore } from './mixture-store.svelte.js';
 import { newSpirit } from './mixture.js';
-import { Sweetener } from './sweetener.js';
+import { Sweetener } from './components/sweetener.js';
 
 describe('Mixture', () => {
 	let store: MixtureStore;

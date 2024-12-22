@@ -60,11 +60,34 @@ test('can show share modal', async ({ page }) => {
 	await page.goto(standardMixture);
 	await page.getByLabel('Share').click();
 	await expect(page.getByTestId('share-modal')).toBeVisible();
-	await expect(page.getByTestId('qr-code')).toBeVisible();
+	await expect(page.getByTestId('share-modal').locator('#qr-code').getByRole('img')).toBeVisible();
+	// click outside the modal to close it
+	await page.mouse.click(100, 100);
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
+});
+
+test('esc closes share modal', async ({ page }) => {
+	await page.goto(standardMixture);
+	await page.getByLabel('Share').click();
+	await expect(page.getByTestId('share-modal')).toBeVisible();
+	// click outside the modal to close it
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
 });
 
 test('can show files drawer', async ({ page }) => {
 	await page.goto(standardMixture);
 	await page.getByLabel('Files').click();
 	await expect(page.getByRole('heading', { name: 'Saved Mixtures' })).toBeVisible();
+	// click outside the drawer to close it
+	page.mouse.click(page.viewportSize()!.width - 100, 100);
+	await expect(page.getByRole('heading', { name: 'Saved Mixtures' })).not.toBeVisible();
+});
+
+test('can show files drawer and close with esc', async ({ page }) => {
+	await page.goto(standardMixture);
+	await page.getByLabel('Files').click();
+	await expect(page.getByRole('heading', { name: 'Saved Mixtures' })).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
 });
