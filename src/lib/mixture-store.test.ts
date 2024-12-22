@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MixtureStore } from './mixture-store.svelte';
-import { Water } from './water.js';
+import { Water } from './components/water.js';
 import { Mixture, newSpirit } from './mixture.js';
 
 describe('Mixture Store', () => {

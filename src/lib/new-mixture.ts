@@ -3,7 +3,7 @@ import { urlEncode } from './mixture-store.svelte.js';
 import { componentId, dataToMixture, newSpirit } from './mixture.js';
 import { openFile } from './open-file.js';
 import { generateStorageId } from './storage-id.js';
-import { Sweetener } from './sweetener.js';
+import { Sweetener } from './components/sweetener.js';
 
 export function loadNewMixture() {
 	const mixture = dataToMixture({

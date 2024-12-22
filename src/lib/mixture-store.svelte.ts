@@ -1,6 +1,6 @@
 import { type Updater } from 'svelte/store';
-import { isSweetenerData, SweetenerTypes } from './component.js';
-import { Sweetener } from './sweetener.js';
+import { isSweetenerData, SweetenerTypes } from './components/index.js';
+import { Sweetener } from './components/sweetener.js';
 import { digitsForDisplay, type Analysis } from './utils.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';

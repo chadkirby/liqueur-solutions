@@ -2,7 +2,7 @@
 	import { type Sweetener } from '$lib/index.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
-	import { SweetenerEquivData } from '$lib/sweetener.js';
+	import { SweetenerEquivData } from '$lib/components/sweetener.js';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 
