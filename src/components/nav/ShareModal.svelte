@@ -1,6 +1,5 @@
 <script lang="ts">
-	// import Button from '../ui-primitives/Button.svelte';
-	import { Button, Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
+	import { Button, Modal, Toast, uiHelpers } from 'svelte-5-ui-lib';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
 	import { resolveUrl } from '$lib/local-storage.svelte';
@@ -12,6 +11,7 @@
 	}
 
 	let { mixtureStore }: Props = $props();
+
 
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
@@ -91,7 +91,7 @@
 </script>
 
 <Portal target="body">
-	<Modal size="sm" modalStatus={shareModal.isOpen} data-testid="share-modal">
+	<Modal size="sm" modalStatus={shareModal.isOpen} closeModal={shareModal.close} data-testid="share-modal">
 		<div
 			id="qr-code"
 			class="flex flex-col content-center items-center gap-2"
