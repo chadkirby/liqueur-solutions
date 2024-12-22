@@ -3,7 +3,7 @@ import {
 	type Component,
 	type ComponentNumberKeys,
 	type WaterData
-} from './component.js';
+} from './index.js';
 
 export class Water extends BaseComponent implements Component {
 	readonly type = 'water';

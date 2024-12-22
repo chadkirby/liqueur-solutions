@@ -1,18 +1,23 @@
 <script lang="ts">
-	// import Button from '../ui-primitives/Button.svelte';
-	import { Button, Modal, uiHelpers, Toast, Tooltip } from 'svelte-5-ui-lib';
+	import { Button, Modal, Toast, uiHelpers } from 'svelte-5-ui-lib';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
-	import { mixtureStore } from '$lib';
 	import { resolveUrl } from '$lib/local-storage.svelte';
-	import { urlEncode } from '$lib/mixture-store.js';
+	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
+
+	interface Props {
+		mixtureStore: MixtureStore;
+	}
+
+	let { mixtureStore }: Props = $props();
+
 
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture())));
+		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture)));
 		toastStatus = true;
 		setTimeout(() => {
 			toastStatus = false;
@@ -86,10 +91,13 @@
 </script>
 
 <Portal target="body">
-	<Modal size="sm" modalStatus={shareModal.isOpen}>
-		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
+	<Modal size="sm" modalStatus={shareModal.isOpen} closeModal={shareModal.close} data-testid="share-modal">
+		<div
+			id="qr-code"
+			class="flex flex-col content-center items-center gap-2"
+		>
 			<QRCode
-				data={resolveUrl(urlEncode(mixtureStore.getName(), mixtureStore.getMixture()))}
+				data={resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture))}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl
@@ -107,7 +115,7 @@
 					<Button outline color="light"
 						class="p-1"
 						href={downloadUrl}
-						download={(mixtureStore.getName() || 'my-mixture') + '.png'}>Download QR Code</Button
+						download={(mixtureStore.name || 'my-mixture') + '.png'}>Download QR Code</Button
 					>
 				{/if}
 			</div>

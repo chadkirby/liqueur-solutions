@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Water } from '$lib';
+	import { type Water } from '$lib/index.svelte';
 	import Mass from './Mass.svelte';
 	import Volume from './Volume.svelte';
 	interface Props {

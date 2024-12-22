@@ -1,4 +1,4 @@
-import { analyze, type Analysis } from './utils.js';
+import { analyze, type Analysis } from '../utils.js';
 
 const NumericDataValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
 export type ComponentValueKeys = (typeof NumericDataValueKeys)[number];

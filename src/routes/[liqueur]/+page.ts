@@ -1,5 +1,7 @@
-import { componentId, deserialize, newSpirit, Sweetener } from '$lib';
+import { componentId, deserialize, newSpirit, Sweetener } from '$lib/index.svelte';
 import type { LoadDataFromUrl } from '$lib/load-data.js';
+
+export const ssr = false;
 
 export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
 	const { url, params } = args;

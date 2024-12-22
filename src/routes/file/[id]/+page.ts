@@ -11,3 +11,4 @@ export function load(args: { params: { id: string } }): LoadDataFromStore {
 		storeId
 	};
 }
+export const ssr = false;

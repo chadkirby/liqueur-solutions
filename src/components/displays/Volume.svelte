@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Sweetener } from '$lib';
+	import { Sweetener } from '$lib/index.svelte';
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
 
-	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
+	let { componentId, component, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
 
 	let ml = $derived(component.volume);
 </script>
@@ -17,6 +17,7 @@
 		<ReadOnlyValue value={ml} type="volume" />
 	{:else}
 		<NumberSpinner
+			{mixtureStore}
 			value={ml}
 			type="volume"
 			componentId={componentId}

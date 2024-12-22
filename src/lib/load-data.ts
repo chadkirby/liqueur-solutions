@@ -1,4 +1,4 @@
-import type { SerializedComponent } from './component.js';
+import type { SerializedComponent } from './components/index.js';
 import type { StorageId } from './storage-id.js';
 
 export type LoadDataFromStore = {

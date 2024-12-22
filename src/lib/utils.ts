@@ -1,4 +1,4 @@
-import type { Component } from './component.js';
+import type { Component } from './components/index.js';
 import type { Target } from './solver.js';
 
 export function round(value: number, precision: number) {

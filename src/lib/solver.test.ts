@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Mixture, newSpirit } from './mixture.js';
-import { Water } from './water.js';
+import { Water } from './components/water.js';
 import type { Analysis } from './utils.js';
-import { Sweetener } from './sweetener.js';
+import { Sweetener } from './components/sweetener.js';
 import { solver } from './solver.js';
 
 describe('Mixture', () => {
@@ -11,9 +11,9 @@ describe('Mixture', () => {
 
 	beforeEach(() => {
 		mixture = new Mixture();
-		mixture.addComponent({ name: 'spirit', component: newSpirit(50, 95) });
-		mixture.addComponent({ name: 'water', component: new Water(50) });
-		mixture.addComponent({ name: 'sugar', component: new Sweetener('sucrose', 50) });
+		mixture.addComponent({ name: 'spirit', id: 'spirit', component: newSpirit(50, 95) });
+		mixture.addComponent({ name: 'water', id: 'water', component: new Water(50) });
+		mixture.addComponent({ name: 'sugar', id: 'sugar', component: new Sweetener('sucrose', 50) });
 		initialAnalysis = mixture.analyze(2);
 	});
 

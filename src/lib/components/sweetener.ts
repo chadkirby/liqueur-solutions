@@ -4,7 +4,7 @@ import {
 	type Component,
 	type ComponentNumberKeys,
 	type SweetenerData
-} from './component.js';
+} from './index.js';
 
 type Sweetnesss = {
 	density: number;
@@ -122,4 +122,3 @@ export class Sweetener extends BaseComponent implements Component {
 export function isSweetener(component: unknown): component is Sweetener {
 	return component instanceof Sweetener;
 }
-

@@ -1,5 +1,5 @@
 import * as fflate from 'fflate';
-import { type AnyData } from './component.js';
+import { type AnyData } from './components/index.js';
 import { dataToMixture, Mixture } from './mixture.js';
 import { filesDb } from './local-storage.svelte';
 import { isStorageId } from './storage-id.js';

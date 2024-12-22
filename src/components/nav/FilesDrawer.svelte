@@ -11,12 +11,18 @@
 	import Portal from 'svelte-portal';
 	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
 	import { deserializeFromLocalStorage } from '$lib/deserialize.js';
-	import { mixtureStore } from '$lib';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { asStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { starredIds } from '$lib/stars.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+
+	interface Props {
+		mixtureStore: MixtureStore;
+	}
+
+	let { mixtureStore }: Props = $props();
 
 	type ListedFile = FileItem & {
 		isStarred: boolean
@@ -187,6 +193,7 @@
 						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('add', id)}`}>
 							Add {name} into current mixture
 						</Tooltip>
+
 						<Button
 							id={domIdFor('remove', id)}
 							onclick={() => removeItem(id)}
@@ -196,6 +203,7 @@
 							<CloseCircleSolid size="sm" />
 							Delete
 						</Button>
+
 						<Button
 							id={domIdFor('open', id)}
 							onclick={goToFile(id)}
@@ -205,6 +213,7 @@
 							Open
 							<ArrowUpRightFromSquareOutline size="sm" />
 						</Button>
+
 						<Button
 							id={domIdFor('add', id)}
 							onclick={addToMixture(id, name)}

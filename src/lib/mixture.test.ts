@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Water } from './water.js';
+import { Water } from './components/water.js';
 import type { Analysis } from './utils.js';
-import { createMixtureStore, type mixtureStore } from './mixture-store.js';
+import { MixtureStore } from './mixture-store.svelte.js';
 import { newSpirit } from './mixture.js';
-import { Sweetener } from './sweetener.js';
+import { Sweetener } from './components/sweetener.js';
 
 describe('Mixture', () => {
-	let store: typeof mixtureStore;
+	let store: MixtureStore;
 	let initialAnalysis: Analysis;
 
 	beforeEach(() => {
-		store = createMixtureStore();
+		store = new MixtureStore();
 		store.addComponentTo(null, { name: 'spirit', component: newSpirit(50, 100) });
 		store.addComponentTo(null, { name: 'water', component: new Water(50) });
 		store.addComponentTo(null, { name: 'sugar', component: new Sweetener('sucrose', 50) });
-		initialAnalysis = store.getMixture().analyze(2);
+		initialAnalysis = store.mixture.analyze(2);
 	});
 
 	it('should solve for volume', () => {

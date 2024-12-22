@@ -1,12 +1,12 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { Mixture } from '$lib';
+	import { Mixture } from '$lib/index.svelte';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { brixToSyrupProportion, format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 
-	let { componentId, component, readonly, class: classProp }: DisplayProps = $props();
+	let { componentId, component, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
 
 	let brix = $derived(component.brix ?? 0);
 	// convert 50 brix to 1/1
@@ -20,6 +20,7 @@
 
 	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
 		<NumberSpinner
+			{mixtureStore}
 			value={brix}
 			type="brix"
 			componentId={componentId}

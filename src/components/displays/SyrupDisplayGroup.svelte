@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Mixture } from '$lib';
+	import { type Mixture } from '$lib/index.svelte';
 	import Mass from './Mass.svelte';
 	import Volume from './Volume.svelte';
 	import Cal from './Cal.svelte';

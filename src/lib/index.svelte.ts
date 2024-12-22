@@ -1,7 +1,7 @@
 export * from './mixture.js';
-export { Sweetener } from './sweetener.js';
-export { Water } from './water.js';
-export { Ethanol } from './ethanol.js';
+export { Sweetener } from './components/sweetener.js';
+export { Water } from './components/water.js';
+export { Ethanol } from './components/ethanol.js';
 export {
 	isSweetenerData,
 	isMixtureData,
@@ -9,13 +9,12 @@ export {
 	isWaterData,
 	type SerializedComponent,
 	SweetenerTypes
-} from './component.js';
+} from './components/index.js';
 export type {
 	Component,
 	MixtureData,
 	EthanolData as SpiritData,
 	SweetenerData as SugarData,
 	WaterData
-} from './component.js';
+} from './components/index.js';
 export { deserialize } from './deserialize.js';
-export { mixtureStore } from './mixture-store.js';

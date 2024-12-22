@@ -1,15 +1,15 @@
 import { strToU8, strFromU8, compressSync } from 'fflate';
-import { isEthanolData, isSweetenerData, isMixtureData, isWaterData } from './component.js';
+import { isEthanolData, isSweetenerData, isMixtureData, isWaterData } from './components/index.js';
 import {
 	BaseComponent,
 	type MixtureData,
 	type Component,
 	type ComponentNumberKeys
-} from './component.js';
-import { Ethanol } from './ethanol.js';
+} from './components/index.js';
+import { Ethanol } from './components/ethanol.js';
+import { Sweetener } from './components/sweetener.js';
+import { Water } from './components/water.js';
 import { solver } from './solver.js';
-import { Sweetener } from './sweetener.js';
-import { Water } from './water.js';
 import { brixToSyrupProportion, format } from './utils.js';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
@@ -154,15 +154,15 @@ export class Mixture extends BaseComponent {
 		return this.components.find(({ component }) => is(component))?.component as X | undefined;
 	}
 
-	addComponent({ name, component }: { name: string; component: AnyComponent }) {
+	addComponent({ name, component, id }: { name: string; id: string; component: AnyComponent }) {
 		if (component instanceof Mixture) {
 			this.components.push({
-				id: componentId(),
+				id,
 				name,
 				component: component.clone(true)
 			});
 		} else {
-			this.components.push({ id: componentId(), name, component: component.clone() });
+			this.components.push({ id, name, component: component.clone() });
 		}
 	}
 
