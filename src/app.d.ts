@@ -5,7 +5,9 @@ import type { R2Bucket } from '@cloudflare/workers-types';
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			userId?: string;
+		}
 		// interface PageData {}
 
 		/**
