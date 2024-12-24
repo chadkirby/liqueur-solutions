@@ -7,7 +7,6 @@ export {
 	isMixtureData,
 	isEthanolData,
 	isWaterData,
-	type SerializedComponent,
 	SweetenerTypes
 } from './components/index.js';
 export type {
@@ -17,4 +16,3 @@ export type {
 	SweetenerData as SugarData,
 	WaterData
 } from './components/index.js';
-export { deserialize } from './deserialize.js';

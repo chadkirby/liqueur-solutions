@@ -1,14 +1,39 @@
+import { dataToMixture, Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
-import { Replicache, type WriteTransaction } from 'replicache';
+import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
 import { loadCorbado } from './corbado-store.js';
 
+export type StoredComponent = {
+	// Each component has a name, id, and data object that can
+	// hold any JSON value
+	name: string;
+	id: string;
+	data: {
+		[key: string]: ReadonlyJSONValue;
+	};
+};
+
+export type StoredMixtureData = {
+	// The mixture data has a literal 'type' and an array of
+	// 'components'
+	type: 'mixture';
+	components: Array<StoredComponent>;
+};
+
+/**
+ * FileItem represents a stored mixture file. All types must be
+ * compatible with Replicache's ReadonlyJSONValue.
+ */
 export type FileItem = {
-	id: StorageId;
+	id: string;
 	accessTime: number;
 	name: string;
 	desc: string;
-	href: string;
+	mixture: {
+		name: string;
+		data: StoredMixtureData;
+	};
 };
 
 // Space is a logical grouping of data in Replicache
@@ -256,13 +281,15 @@ export async function getName(id: StorageId): Promise<string> {
 }
 
 /**
- * Creates a URL object from a StorageId.
+ * Deserializes a mixture from storage.
  */
-export async function makeUrl(id: StorageId): Promise<URL> {
+export async function deserializeFromStorage(id: string): Promise<Mixture> {
+	if (!isStorageId(id)) {
+		throw new Error('Invalid id');
+	}
 	const item = await filesDb.read(id);
 	if (!item) {
-		throw new Error(`No file found for id: ${id}`);
+		throw new Error('No item found');
 	}
-	// Use the href from the FileItem
-	return new URL(item.href);
+	return dataToMixture(item.mixture.data);
 }
