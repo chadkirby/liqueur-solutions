@@ -11,6 +11,7 @@ import { Water } from './components/water.js';
 import { solver } from './solver.js';
 import { brixToSyrupProportion, format } from './utils.js';
 import type { StoredMixtureData } from './components/index.js';
+import { nanoid } from 'nanoid';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
@@ -309,7 +310,7 @@ export class Mixture extends BaseComponent {
 
 export function componentId(): string {
 	// return a random string
-	return Math.random().toString(36).slice(2);
+	return nanoid(12);
 }
 
 function isClose(a: number, b: number, delta = 0.01) {

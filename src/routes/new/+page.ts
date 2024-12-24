@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { Sweetener, Water } from '$lib/index.svelte.js';
-import { Mixture, newSpirit } from '$lib/mixture.js';
+import { componentId, Mixture, newSpirit } from '$lib/mixture.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import type { StoredFileData } from '$lib/storage.svelte.js';
 import { redirect } from '@sveltejs/kit';
@@ -12,9 +12,9 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 	const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 
 	const mixture = new Mixture([]);
-	mixture.addComponent({ name: '', id: 'spirit', component: newSpirit(200, 40) });
-	mixture.addComponent({ name: '', id: 'water', component: new Water(100) });
-	mixture.addComponent({ name: '', id: 'sugar', component: new Sweetener('sucrose', 50) });
+	mixture.addComponent({ name: '', id: componentId(), component: newSpirit(500, 40) });
+	mixture.addComponent({ name: '', id: componentId(), component: new Water(200) });
+	mixture.addComponent({ name: '', id: componentId(), component: new Sweetener('sucrose', 80) });
 
 	const item: StoredFileData = {
 		id: generateStorageId(),
