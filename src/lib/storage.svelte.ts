@@ -128,12 +128,7 @@ class FilesDb {
 
 	async write(item: StoredFileData): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		const exists = await this.has(item.id);
-		if (exists) {
-			await this.rep?.mutate.updateFile(item);
-		} else {
-			await this.rep?.mutate.createFile(item);
-		}
+		await this.rep?.mutate.updateFile(item);
 	}
 
 	async delete(id: StorageId): Promise<void> {
