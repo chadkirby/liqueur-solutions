@@ -1,7 +1,7 @@
 import { type Updater } from 'svelte/store';
 import { isSweetenerData, SweetenerTypes } from './components/index.js';
 import { Sweetener } from './components/sweetener.js';
-import { digitsForDisplay, type Analysis } from './utils.js';
+import { digitsForDisplay, getTotals, type Analysis } from './utils.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
@@ -28,13 +28,6 @@ function newData(): MixtureStoreData {
 		mixture: mx,
 		totals: getTotals(mx)
 	};
-}
-
-export function getTotals(mixture: Mixture) {
-	if (!mixture.isValid) {
-		throw new Error('Invalid mixture');
-	}
-	return mixture.analyze(1);
 }
 
 // exported for testing
@@ -101,7 +94,8 @@ export class MixtureStore {
 		undoer: Updater<MixtureStoreData>
 	) {
 		this.undoRedo.push(actionDesc, undoer, updater);
-		const newData = updater(this.snapshot());
+		const snapshot = this.snapshot();
+		const newData = updater(snapshot);
 		if (newData.mixture.isValid) {
 			newData.totals = getTotals(newData.mixture);
 		}
@@ -110,20 +104,18 @@ export class MixtureStore {
 	}
 
 	private async _save(newData: MixtureStoreData) {
-		if (!this._data) return;
-		const dataToSave = this._data;
+		this._data = { ...newData };
 		const { filesDb } = await import('$lib/storage.svelte.js');
 		await filesDb.write({
-			id: dataToSave.storeId,
+			id: newData.storeId,
 			accessTime: Date.now(),
-			name: dataToSave.name,
-			desc: dataToSave.mixture.describe(),
+			name: newData.name,
+			desc: newData.mixture.describe(),
 			mixture: {
-				name: dataToSave.name,
-				data: dataToSave.mixture.toStorageData()
+				name: newData.name,
+				data: newData.mixture.toStorageData()
 			}
 		});
-		this._data = { ...newData };
 	}
 	setName(newName: string, undoKey = 'setName') {
 		const originalName = this.name;

@@ -4,16 +4,17 @@
 	import BottomNav from '../../../components/nav/BottomNav.svelte';
 	import { loadingStoreId, MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Spinner } from 'svelte-5-ui-lib';
+	import { filesDb } from '$lib/storage.svelte.js';
 
 	interface Props {
 		data: LoadData;
 	}
 
 	let { data }: Props = $props();
-	const { storeId, mixture, name, totals, filesDb } = data;
+	const { storeId, mixture, name, totals } = data;
 
 	let title = $state(`${name} - Liqueur Solutions`);
-	const mixtureStore = filesDb && mixture && totals
+	const mixtureStore = mixture && totals
 		? new MixtureStore({ storeId, name, mixture, totals })
 		: null;
 

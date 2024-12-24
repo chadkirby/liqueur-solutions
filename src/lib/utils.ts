@@ -1,4 +1,5 @@
 import type { Component } from './components/index.js';
+import type { Mixture } from './mixture.js';
 import type { Target } from './solver.js';
 
 export function round(value: number, precision: number) {
@@ -220,3 +221,14 @@ export function resolveUrl(relativePath: string): string {
 	return link.href;
 }
 
+/**
+ * Returns the totals for a mixture.
+ * @param mixture - The mixture to analyze
+ * @returns The totals for the mixture
+ */
+export function getTotals(mixture: Mixture) {
+	if (!mixture.isValid) {
+		throw new Error('Invalid mixture');
+	}
+	return mixture.analyze(1);
+}

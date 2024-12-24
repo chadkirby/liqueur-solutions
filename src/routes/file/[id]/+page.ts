@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 import { loadingStoreId } from '$lib/mixture-store.svelte.js';
+import { deserializeFromStorage, getName } from '$lib/storage.svelte.js';
+import { getTotals } from '$lib/utils.js';
 import type { LoadData } from './types.js';
 
 // ha ha ha, wish this worked
@@ -11,16 +13,9 @@ export async function load(args: { params: { id: string } }): Promise<LoadData> 
 			storeId: loadingStoreId,
 			mixture: null,
 			name: '',
-			totals: null,
-			filesDb: null
+			totals: null
 		};
 	}
-
-	// corbado absolutely won't run on the server, and I can't figure
-	// out how to prevent this file from ever running on the server so
-	// we have to import it here
-	const { getTotals } = await import('$lib/mixture-store.svelte.js');
-	const { getName, deserializeFromStorage, filesDb } = await import('$lib/storage.svelte.js');
 
 	const { params } = args;
 	if (!params.id) throw new Error('No id');
@@ -36,7 +31,6 @@ export async function load(args: { params: { id: string } }): Promise<LoadData> 
 		storeId,
 		mixture,
 		name,
-		totals,
-		filesDb
+		totals
 	};
 }

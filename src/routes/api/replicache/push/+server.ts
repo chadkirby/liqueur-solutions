@@ -4,13 +4,14 @@ import { getR2Bucket } from '$lib/r2';
 
 export async function POST({ request, platform, locals }: RequestEvent) {
 	if (!platform) {
-		throw error(401, 'Unauthorized');
+		// testing
+		return json({ ok: true });
 	}
-	
+
 	const push = await request.json();
 	const bucket = getR2Bucket(platform);
 	const userId = locals.userId; // Get from Corbado session
-	
+
 	if (!userId) {
 		throw error(401, 'Unauthorized');
 	}

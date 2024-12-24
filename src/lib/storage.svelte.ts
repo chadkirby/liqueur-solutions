@@ -4,6 +4,13 @@ import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'repli
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
 import type { StoredMixtureData } from './components/index.js';
 import { browser } from '$app/environment';
+import type { SessionUser } from '@corbado/types';
+
+let user: SessionUser | null = $state(null);
+
+// Default to offline mode, sync when user logs in
+let pushDelay = $derived(user ? 1000 : Infinity);
+let pullInterval = $derived(user ? 5 * 60 * 1000 : Infinity);
 
 /**
  * FileItem represents a stored mixture file. All types must be
@@ -59,21 +66,20 @@ const mutators = {
 	}
 } satisfies Mutators;
 
-export class FilesDb {
-	private rep: Replicache<Mutators>;
+class FilesDb {
+	private rep: Replicache<Mutators> | null = null;
 
 	constructor() {
+		if (!browser) return;
 		this.rep = new Replicache({
 			name: 'mixture-files',
 			licenseKey: PUBLIC_REPLICACHE_LICENSE_KEY,
 			mutators,
 			pushURL: '/api/replicache/push',
 			pullURL: '/api/replicache/pull',
-			// Default to offline mode, sync when user logs in
-			pushDelay: Infinity,
-			pullInterval: Infinity
+			pushDelay,
+			pullInterval
 		});
-
 		// Listen for auth changes to enable/disable sync
 		this.initializeSync();
 
@@ -86,35 +92,27 @@ export class FilesDb {
 		// Clean up subscription on module unload
 		if (import.meta.hot) {
 			import.meta.hot.dispose(() => {
-				unsubscribe();
+				if (unsubscribe) unsubscribe();
 			});
 		}
 	}
 
 	private async initializeSync() {
-		if (!browser) return;
-		try {
-			// unimportable on the server
-			const { loadCorbado } = await import('$lib/corbado-store.js');
-			const Corbado = await loadCorbado();
-			if (Corbado.user) {
+		if (browser) {
+			try {
+				const { default: Corbado } = await import('@corbado/web-js');
+				user = Corbado.user ?? null;
 				// Enable sync when user is logged in
-				await this.rep.pull(); // Initial pull
-				this.rep.pushDelay = 1000;
-				this.rep.pullInterval = 5 * 60 * 1000;
-			} else {
-				// Disable sync when logged out
-				this.rep.pushDelay = Infinity;
-				this.rep.pullInterval = Infinity;
+				if (user) await this.rep?.pull(); // Initial pull
+			} catch (error) {
+				console.error('Failed to initialize sync:', error);
 			}
-		} catch (error) {
-			console.error('Failed to initialize sync:', error);
 		}
 	}
 
 	async has(id: StorageId): Promise<boolean> {
 		if (!isStorageId(id)) return false;
-		const item = await this.rep.query(async (tx) => {
+		const item = await this.rep?.query(async (tx) => {
 			return await tx.get(`${SPACE_FILES}/${id}`);
 		});
 		return item !== null;
@@ -122,7 +120,7 @@ export class FilesDb {
 
 	async read(id: StorageId): Promise<StoredFileData | null> {
 		if (!isStorageId(id)) return null;
-		const item = await this.rep.query(async (tx) => {
+		const item = await this.rep?.query(async (tx) => {
 			return await tx.get(`${SPACE_FILES}/${id}`);
 		});
 		return item as StoredFileData | null;
@@ -130,12 +128,17 @@ export class FilesDb {
 
 	async write(item: StoredFileData): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		await this.rep.mutate.createFile(item);
+		const exists = await this.has(item.id);
+		if (exists) {
+			await this.rep?.mutate.updateFile(item);
+		} else {
+			await this.rep?.mutate.createFile(item);
+		}
 	}
 
 	async delete(id: StorageId): Promise<void> {
 		if (!isStorageId(id)) return;
-		await this.rep.mutate.deleteFile(id);
+		await this.rep?.mutate.deleteFile(id);
 	}
 
 	async toggleStar(id: StorageId): Promise<void> {
@@ -150,17 +153,17 @@ export class FilesDb {
 	async addStar(id: StorageId): Promise<void> {
 		if (!isStorageId(id)) return;
 		if (starredIds.includes(id)) return;
-		await this.rep.mutate.addStar(id);
+		await this.rep?.mutate.addStar(id);
 	}
 
 	async removeStar(id: StorageId): Promise<void> {
 		if (!isStorageId(id)) return;
 		if (!starredIds.includes(id)) return;
-		await this.rep.mutate.deleteStar(id);
+		await this.rep?.mutate.deleteStar(id);
 	}
 
 	async scan(sortBy: keyof StoredFileData = 'accessTime'): Promise<Map<StorageId, StoredFileData>> {
-		const items = await this.rep.query(async (tx) => {
+		const items = await this.rep?.query(async (tx) => {
 			const items = new Map<StorageId, StoredFileData>();
 			const starred = new Set(starredIds);
 
@@ -185,7 +188,7 @@ export class FilesDb {
 		});
 
 		// Sort items by the specified field
-		const sortedEntries = Array.from(items.entries()).sort(([, a], [, b]) => {
+		const sortedEntries = Array.from(items?.entries() ?? []).sort(([, a], [, b]) => {
 			const aVal = a[sortBy];
 			const bVal = b[sortBy];
 			return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
@@ -195,7 +198,7 @@ export class FilesDb {
 	}
 
 	private subscribeToStars(callback: (stars: StorageId[]) => void) {
-		return this.rep.subscribe(
+		return this.rep?.subscribe(
 			async (tx) => {
 				const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
 				return stars.map(([key]) => key.split('/')[1] as StorageId);
@@ -208,7 +211,7 @@ export class FilesDb {
 
 	subscribe(callback: (items: Map<StorageId, StoredFileData>) => void) {
 		// Subscribe to changes in the files space
-		return this.rep.subscribe(
+		return this.rep?.subscribe(
 			// Body function that computes the value
 			async (tx) => {
 				const items = new Map<StorageId, StoredFileData>();
