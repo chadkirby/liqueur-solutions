@@ -24,11 +24,10 @@ describe('Mixture Store', () => {
 
 	it('should add and remove components', () => {
 		const store = new MixtureStore();
-
 		// Add a spirit component
 		store.addComponentTo(null, {
 			name: 'spirit',
-			component: new Mixture([])
+			component: newSpirit(100, 40)
 		});
 
 		let state = store.snapshot();
@@ -45,8 +44,8 @@ describe('Mixture Store', () => {
 		const spiritComponent = state.mixture.components[0];
 		expect(spiritComponent.component instanceof Mixture).toBe(true);
 		if (spiritComponent.component instanceof Mixture) {
-			expect(spiritComponent.component.components.length).toBe(1);
-			expect(spiritComponent.component.components[0].component instanceof Water).toBe(true);
+			expect(spiritComponent.component.components.length).toBe(3);
+			expect(spiritComponent.component.components.at(-1)!.component instanceof Water).toBe(true);
 		}
 
 		// Remove the water component
@@ -54,7 +53,7 @@ describe('Mixture Store', () => {
 		store.removeComponent(waterId);
 
 		state = store.snapshot();
-		expect((state.mixture.components[0].component as Mixture).components.length).toBe(0);
+		expect((state.mixture.components[0].component as Mixture).components.length).toBe(2);
 	});
 
 	it('should handle volume changes and track errors', () => {

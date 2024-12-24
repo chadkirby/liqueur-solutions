@@ -6,8 +6,7 @@
 	let user: SessionUser | null;
 
 	onMount(async () => {
-		const { loadCorbado } = await import('$lib/corbado-store.js');
-		await loadCorbado();
+		const { default: Corbado } = await import('@corbado/web-js');
 		if (Corbado.user) {
 			user = Corbado.user;
 		} else {

@@ -51,4 +51,9 @@ describe('Mixture', () => {
 		// Act & Assert
 		expect(() => store.solveTotal('abv', 200)).toThrowError('Unable to solve for abv = 200');
 	});
+
+	it('should clone', () => {
+		const clone = store.mixture.clone();
+		expect(clone).toEqual(store.mixture);
+	});
 });
