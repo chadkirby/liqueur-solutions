@@ -9,8 +9,7 @@
 		StarOutline
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { filesDb, starredIds, type FileItem } from '$lib/storage.svelte';
-	import { deserializeFromStorage } from '$lib/deserialize.js';
+	import { filesDb, starredIds, deserializeFromStorage, type FileItem } from '$lib/storage.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';

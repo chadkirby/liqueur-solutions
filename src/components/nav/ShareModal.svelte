@@ -3,8 +3,9 @@
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
 	import { resolveUrl } from '$lib/utils.js';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
+	import { serializeToUrl } from '$lib/url-serialization.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -17,7 +18,7 @@
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture)));
+		await navigator.clipboard.writeText(resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture)));
 		toastStatus = true;
 		setTimeout(() => {
 			toastStatus = false;
@@ -97,7 +98,7 @@
 			class="flex flex-col content-center items-center gap-2"
 		>
 			<QRCode
-				data={resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture))}
+				data={resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture))}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl

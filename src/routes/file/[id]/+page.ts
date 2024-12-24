@@ -17,9 +17,8 @@ export async function load(args: { params: { id: string } }): Promise<LoadDataFr
 	// corbado absolutely won't run on the server, and I can't figure
 	// out how to prevent this file from ever running on the server so
 	// we have to import it here
-	const { deserializeFromStorage } = await import('$lib/deserialize.js');
 	const { getTotals } = await import('$lib/mixture-store.svelte.js');
-	const { getName } = await import('$lib/storage.svelte.js');
+	const { getName, deserializeFromStorage } = await import('$lib/storage.svelte.js');
 
 	const { params } = args;
 	if (!params.id) throw new Error('No id');
