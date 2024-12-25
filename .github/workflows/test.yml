@@ -1,0 +1,33 @@
+name: Run Tests
+
+on: [push, pull_request]  # Run on all pushes and PRs
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CORBADO_API_SECRET: ${{ secrets.CORBADO_API_SECRET }}
+      PUBLIC_REPLICACHE_LICENSE_KEY: ${{ secrets.PUBLIC_REPLICACHE_LICENSE_KEY }}
+      PUBLIC_CORBADO_PROJECT_ID: ${{ vars.PUBLIC_CORBADO_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+
+      - name: Install Volta
+        uses: volta-cli/action@v4
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Svelte Check
+        run: yarn svelte-check
+
+      - name: Run Unit Tests
+        run: yarn test:unit
+
+      - name: Run Playwright Tests
+        run: |
+          yarn playwright install
+          yarn test
