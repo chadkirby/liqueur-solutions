@@ -19,14 +19,9 @@
 	<Helper class="tracking-tight">Sweetness</Helper>
 
 	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
-		<NumberSpinner
-			{mixtureStore}
-			value={brix}
-			type="brix"
-			componentId={componentId}
-		/>
+		<NumberSpinner {mixtureStore} value={brix} type="brix" {componentId} />
 		<Helper class="text-center">{parts}</Helper>
-		{:else}
+	{:else}
 		<ReadOnlyValue value={brix} type="brix" />
 	{/if}
 </div>

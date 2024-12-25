@@ -1,5 +1,4 @@
 <script lang="ts">
-
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { Mixture } from '$lib/index.svelte';
 	import Helper from '../ui-primitives/Helper.svelte';
@@ -16,15 +15,9 @@
 <div class="mx-1 min-w-0 w-full {classProp}" data-testid="abv-{componentId}">
 	<Helper class="tracking-tight">ABV</Helper>
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
-		<NumberSpinner
-			{mixtureStore}
-			value={abv}
-			type="abv"
-			componentId={componentId}
-			max={100}
-		/>
-		<Helper class="text-center">{format(proof, {unit: 'proof'})}</Helper>
-		{:else}
+		<NumberSpinner {mixtureStore} value={abv} type="abv" {componentId} max={100} />
+		<Helper class="text-center">{format(proof, { unit: 'proof' })}</Helper>
+	{:else}
 		<ReadOnlyValue value={abv} type="abv" />
 	{/if}
 </div>

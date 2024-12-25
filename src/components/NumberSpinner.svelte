@@ -15,7 +15,16 @@
 		class?: string;
 	}
 
-	let { value, mixtureStore, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+	let {
+		value,
+		mixtureStore,
+		type,
+		id,
+		componentId,
+		min = 0,
+		max = Infinity,
+		class: classProp
+	}: Props = $props();
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
@@ -146,11 +155,11 @@
 	}
 	// Value manipulation functions
 	function incrementValue() {
-		mixtureStore.increment(type, componentId, {min, max});
+		mixtureStore.increment(type, componentId, { min, max });
 	}
 
 	function decrementValue() {
-		mixtureStore.decrement(type, componentId, {min, max});
+		mixtureStore.decrement(type, componentId, { min, max });
 	}
 
 	function setValue(newValue: number) {

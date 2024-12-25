@@ -149,7 +149,7 @@
 							<SweetenerDropdown
 								{mixtureStore}
 								componentId={id}
-								component={component}
+								{component}
 								basis="basis-1/3"
 								onclick={(e) => e.stopPropagation()}
 							/>
@@ -180,7 +180,13 @@
 					{#if component instanceof Sweetener}
 						<div class="flex flex-row my-1">
 							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
-							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
+							<Volume
+								{mixtureStore}
+								componentId={id}
+								{component}
+								readonly={true}
+								class="basis-1/5"
+							/>
 							<EquivalentSugar
 								{mixtureStore}
 								componentId={id}
@@ -192,19 +198,37 @@
 						</div>
 					{:else if component instanceof Water}
 						<div class="flex flex-row my-1">
-							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/2" />
+							<Volume
+								{mixtureStore}
+								componentId={id}
+								{component}
+								readonly={true}
+								class="basis-1/2"
+							/>
 							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/2" />
 						</div>
 					{:else if isSimpleSpirit(component)}
 						<div class="flex flex-row my-1">
-							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Volume
+								{mixtureStore}
+								componentId={id}
+								{component}
+								readonly={true}
+								class="basis-1/4"
+							/>
 							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
 							<Abv {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
 							<Cal {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
 						</div>
 					{:else if isSimpleSyrup(component)}
 						<div class="flex flex-row my-1">
-							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Volume
+								{mixtureStore}
+								componentId={id}
+								{component}
+								readonly={true}
+								class="basis-1/4"
+							/>
 							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
 							<Brix {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
 							<Cal {mixtureStore} componentId={id} {component} readonly={true} />

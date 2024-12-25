@@ -13,12 +13,13 @@
 
 	let { mixtureStore }: Props = $props();
 
-
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture)));
+		await navigator.clipboard.writeText(
+			resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture))
+		);
 		toastStatus = true;
 		setTimeout(() => {
 			toastStatus = false;
@@ -92,11 +93,13 @@
 </script>
 
 <Portal target="body">
-	<Modal size="sm" modalStatus={shareModal.isOpen} closeModal={shareModal.close} data-testid="share-modal">
-		<div
-			id="qr-code"
-			class="flex flex-col content-center items-center gap-2"
-		>
+	<Modal
+		size="sm"
+		modalStatus={shareModal.isOpen}
+		closeModal={shareModal.close}
+		data-testid="share-modal"
+	>
+		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
 				data={resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture))}
 				size={256}
@@ -104,16 +107,15 @@
 				dispatchDownloadUrl
 				on:downloadUrlGenerated={(event) => handleDownloadUrlGenerated(event.detail.url)}
 			/>
-			<Toast
-          bind:toastStatus={toastStatus}
-          position="top-left"
-        >Copied to clipboard</Toast>
+			<Toast bind:toastStatus position="top-left">Copied to clipboard</Toast>
 
 			<div class="flex flex-row justify-center gap-2">
 				<Button outline color="light" class="p-1" onclick={copyUrlToClipboard}>Copy URL</Button>
 				<Button outline color="light" class="p-1" onclick={copyImage}>Copy QR Code</Button>
 				{#if downloadUrl}
-					<Button outline color="light"
+					<Button
+						outline
+						color="light"
 						class="p-1"
 						href={downloadUrl}
 						download={(mixtureStore.name || 'my-mixture') + '.png'}>Download QR Code</Button

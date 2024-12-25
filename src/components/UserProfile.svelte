@@ -11,7 +11,7 @@
 			user = Corbado.user;
 		} else {
 			// redirect to /auth
-      window.location.href = '/auth';
+			window.location.href = '/auth';
 		}
 	});
 
@@ -23,9 +23,8 @@
 			console.error('Logout failed:', error);
 		}
 	}
-
-
 </script>
+
 <div class="p-8 flex justify-center items-start min-h-screen">
 	{#if user}
 		<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg">
@@ -51,5 +50,4 @@
 </div>
 
 <style>
-
 </style>

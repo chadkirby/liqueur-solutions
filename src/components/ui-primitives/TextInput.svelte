@@ -1,25 +1,28 @@
 <script lang="ts">
-	import type { SvelteHTMLElements} from 'svelte/elements';
+	import type { SvelteHTMLElements } from 'svelte/elements';
 
-type HTMLProps = SvelteHTMLElements['input'];
-type PropKeys = keyof HTMLProps;
-	type EventKeys = Extract<PropKeys, `on${string}`> extends infer K
-		? K extends `on:${string}` ? never : K
-		: never;
+	type HTMLProps = SvelteHTMLElements['input'];
+	type PropKeys = keyof HTMLProps;
+	type EventKeys =
+		Extract<PropKeys, `on${string}`> extends infer K
+			? K extends `on:${string}`
+				? never
+				: K
+			: never;
 
 	let {
 		value,
 		type = 'text',
 		class: classProp,
 		id,
-    placeholder='',
+		placeholder = '',
 		...handlers
 	}: {
 		value: string;
 		type?: 'text' | 'number';
 		class?: string;
 		id?: string;
-    placeholder?: string
+		placeholder?: string;
 	} & Pick<HTMLProps, EventKeys> = $props();
 </script>
 
@@ -27,7 +30,7 @@ type PropKeys = keyof HTMLProps;
 	{type}
 	{value}
 	{id}
-  {placeholder}
+	{placeholder}
 	autocomplete="off"
 	class="
     block
@@ -57,7 +60,7 @@ type PropKeys = keyof HTMLProps;
 />
 
 <style>
-  /* Hide the spin buttons */
+	/* Hide the spin buttons */
 	input[type='number']::-webkit-inner-spin-button,
 	input[type='number']::-webkit-outer-spin-button {
 		-webkit-appearance: none;
