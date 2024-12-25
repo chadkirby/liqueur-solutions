@@ -9,7 +9,12 @@
 		StarOutline
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { filesDb, starredIds, deserializeFromStorage, type StoredFileData } from '$lib/storage.svelte';
+	import {
+		filesDb,
+		starredIds,
+		deserializeFromStorage,
+		type StoredFileData
+	} from '$lib/storage.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
@@ -24,8 +29,8 @@
 	let { mixtureStore }: Props = $props();
 
 	type ListedFile = StoredFileData & {
-		isStarred: boolean
-	}
+		isStarred: boolean;
+	};
 	let files = $state([] as ListedFile[]);
 	let drawerStatus = $state(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
@@ -54,7 +59,7 @@
 	// Clean up subscription
 	if (import.meta.hot) {
 		import.meta.hot.dispose(() => {
-			unsubscribe();
+			if (unsubscribe) unsubscribe();
 		});
 	}
 
