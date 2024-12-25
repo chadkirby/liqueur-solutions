@@ -6,7 +6,7 @@
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 
-	let { component, class: classProp }: DisplayProps & {component: Sweetener} = $props();
+	let { component, class: classProp }: DisplayProps & { component: Sweetener } = $props();
 
 	let esm = $derived(component.equivalentSugarMass);
 	let equivCal = $derived(esm * SweetenerEquivData.sucrose.kcalPerGram);

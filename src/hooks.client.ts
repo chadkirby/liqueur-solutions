@@ -24,4 +24,3 @@ export const handleError: HandleClientError = ({ error, event }) => {
 		message: (error as Error).message
 	};
 };
-

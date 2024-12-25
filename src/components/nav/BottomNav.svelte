@@ -11,12 +11,12 @@
 		UndoOutline,
 		RedoOutline,
 		UserOutline,
-		UserSolid,
+		UserSolid
 	} from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import type {SessionUser} from '@corbado/types';
+	import type { SessionUser } from '@corbado/types';
 	import { openFile } from '$lib/open-file.js';
 	import { serializeToUrl } from '$lib/url-serialization.js';
 
@@ -104,7 +104,7 @@
 				class={btnClass}
 				onclick={() => mixtureStore.undo()}
 			>
-				<UndoOutline class={disableUndo ? "text-primary-500" : "text-primary-100"} />
+				<UndoOutline class={disableUndo ? 'text-primary-500' : 'text-primary-100'} />
 			</button>
 
 			<button
@@ -114,16 +114,11 @@
 				class={btnClass}
 				onclick={() => mixtureStore.redo()}
 			>
-				<RedoOutline class={disableRedo ? "text-primary-500" : "text-primary-100"} />
+				<RedoOutline class={disableRedo ? 'text-primary-500' : 'text-primary-100'} />
 			</button>
 		</section>
 		<section class="flex flex-row gap-4">
-			<button
-				id="new-button"
-				aria-label="New File"
-				class={btnClass}
-				onclick={() => openFile(null)}
-			>
+			<button id="new-button" aria-label="New File" class={btnClass} onclick={() => openFile(null)}>
 				<FileOutline class="text-primary-100" />
 			</button>
 
@@ -150,7 +145,7 @@
 				class={btnClass}
 				onclick={() => goto('/profile')}
 			>
-					<UserSolid class="text-primary-100" />
+				<UserSolid class="text-primary-100" />
 			</button>
 		{:else}
 			<button
@@ -159,7 +154,7 @@
 				class={btnClass}
 				onclick={() => goto('/auth')}
 			>
-					<UserOutline class="text-primary-100" />
+				<UserOutline class="text-primary-100" />
 			</button>
 		{/if}
 	</section>

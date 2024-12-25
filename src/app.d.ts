@@ -12,7 +12,7 @@ declare global {
 
 		/**
 		 * Platform-specific context from Cloudflare.
-		 * 
+		 *
 		 * The env property contains bindings configured in wrangler.toml:
 		 * ```toml
 		 * [[r2_buckets]]

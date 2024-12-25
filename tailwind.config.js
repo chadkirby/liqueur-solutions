@@ -1,4 +1,4 @@
-import colors from 'tailwindcss/colors'
+import colors from 'tailwindcss/colors';
 /** @type {import('tailwindcss').Config}*/
 const config = {
 	content: [
@@ -12,10 +12,10 @@ const config = {
 			colors: {
 				primary: colors.slate,
 
-				secondary: colors.stone,
+				secondary: colors.stone
 			}
 		}
-	},
-}
+	}
+};
 
 export default config;

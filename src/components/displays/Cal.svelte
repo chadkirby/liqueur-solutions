@@ -9,5 +9,5 @@
 
 <div class="mx-1 grow {classProp}" data-testid="cal-{componentId}">
 	<Helper class="tracking-tight">Calories</Helper>
-	<ReadOnlyValue type="kcal" {value}/>
+	<ReadOnlyValue type="kcal" {value} />
 </div>

@@ -16,12 +16,7 @@
 	{#if component instanceof Sweetener || readonly}
 		<ReadOnlyValue value={ml} type="volume" />
 	{:else}
-		<NumberSpinner
-			{mixtureStore}
-			value={ml}
-			type="volume"
-			componentId={componentId}
-		/>
-		<Helper class="text-center">{format(ml * 0.033814, {unit: 'fl_oz'})}</Helper>
+		<NumberSpinner {mixtureStore} value={ml} type="volume" {componentId} />
+		<Helper class="text-center">{format(ml * 0.033814, { unit: 'fl_oz' })}</Helper>
 	{/if}
 </div>

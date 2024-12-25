@@ -1,7 +1,7 @@
 import Rollbar from 'rollbar';
 
 // check whether we're running on the server
-const isServer = typeof window === 'undefined'
+const isServer = typeof window === 'undefined';
 
 const ROLLBAR_TOKEN = import.meta.env.VITE_ROLLBAR_TOKEN;
 
