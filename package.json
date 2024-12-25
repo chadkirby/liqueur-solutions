@@ -73,11 +73,11 @@
 	},
 	"engines": {
 		"node": "20.x",
-		"yarn": "1.22.19"
+		"yarn": "1.22.x"
 	},
 	"volta": {
 		"node": "20.12.1",
-		"yarn": "1.22.19"
+		"yarn": "1.22.22"
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
