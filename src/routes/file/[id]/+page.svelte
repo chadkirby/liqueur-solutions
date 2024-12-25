@@ -14,9 +14,26 @@
 	const { storeId, mixture, name, totals } = data;
 
 	let title = $state(`${name} - Liqueur Solutions`);
-	const mixtureStore = mixture && totals
-		? new MixtureStore({ storeId, name, mixture, totals })
-		: null;
+	const mixtureStore =
+		mixture && totals
+			? new MixtureStore(
+					{ storeId, name, mixture, totals },
+					{
+						onUpdate(data) {
+							filesDb.write({
+								id: data.storeId,
+								accessTime: Date.now(),
+								name: data.name,
+								desc: data.mixture.describe(),
+								mixture: {
+									name: data.name,
+									data: data.mixture.toStorageData()
+								}
+							});
+						}
+					}
+				)
+			: null;
 
 	$inspect(storeId, name, mixtureStore);
 </script>

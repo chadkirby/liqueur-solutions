@@ -33,7 +33,10 @@ function newData(): MixtureStoreData {
 // exported for testing
 export class MixtureStore {
 	private _data = $state(newData());
-	constructor(data = newData()) {
+	constructor(
+		data = newData(),
+		private readonly opts: { onUpdate?: (data: MixtureStoreData) => void } = {}
+	) {
 		this._data = data;
 	}
 
@@ -42,10 +45,6 @@ export class MixtureStore {
 			...this._data,
 			mixture: this.mixture.clone()
 		};
-	}
-
-	clone(): MixtureStore {
-		return new MixtureStore(this.snapshot());
 	}
 
 	findById(id: string, mixture = this.mixture): MixtureComponent | null {
@@ -100,22 +99,14 @@ export class MixtureStore {
 			newData.totals = getTotals(newData.mixture);
 		}
 		this._save(newData);
+		if (this.opts.onUpdate) {
+			this.opts.onUpdate(newData);
+		}
 		return newData;
 	}
 
 	private async _save(newData: MixtureStoreData) {
 		this._data = { ...newData };
-		const { filesDb } = await import('$lib/storage.svelte.js');
-		await filesDb.write({
-			id: newData.storeId,
-			accessTime: Date.now(),
-			name: newData.name,
-			desc: newData.mixture.describe(),
-			mixture: {
-				name: newData.name,
-				data: newData.mixture.toStorageData()
-			}
-		});
 	}
 	setName(newName: string, undoKey = 'setName') {
 		const originalName = this.name;
