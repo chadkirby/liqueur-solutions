@@ -2,10 +2,10 @@
 	import { isSimpleSpirit, isSimpleSyrup, Mixture, Sweetener, Water } from '$lib/index.svelte';
 	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
-	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
-	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
-	import SpiritDisplayGroup from './displays/SpiritDisplayGroup.svelte';
-	import SyrupDisplayGroup from './displays/SyrupDisplayGroup.svelte';
+	import Mass from './displays/Mass.svelte';
+	import Volume from './displays/Volume.svelte';
+	import Cal from './displays/Cal.svelte';
+	import Brix from './displays/Brix.svelte';
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import NumberSpinner from './NumberSpinner.svelte';
@@ -17,8 +17,10 @@
 	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
-	import { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { serializeToUrl } from '$lib/url-serialization.js';
+	import EquivalentSugar from './displays/EquivalentSugar.svelte';
+	import Abv from './displays/ABV.svelte';
 
 	let {
 		mixtureStore,
@@ -50,17 +52,14 @@
 	}
 
 	const btnClass = 'py-1 px-1.5 border-1 !justify-start gap-1';
-
 </script>
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
-		<Button
-		isActive={editMode}
-		class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}
-		>
+		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
 			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-				>Add/Remove</span>
+				>Add/Remove</span
+			>
 		</Button>
 		{#if parentId !== null}
 			<Button
@@ -76,12 +75,16 @@
 
 	{#if editMode}
 		<div class="flex flex-col items-stretch mt-1">
-			<AddComponent {mixtureStore} componentId={parentId} callback={() => setOpen('add-component', false)} />
+			<AddComponent
+				{mixtureStore}
+				componentId={parentId}
+				callback={() => setOpen('add-component', false)}
+			/>
 		</div>
 	{/if}
 
 	<Accordion flush={false} isSingle={false} class="mt-1">
-		{#each mixture?.components || [] as { name, id, component: entry } (id)}
+		{#each mixture?.components || [] as { name, id, component } (id)}
 			<AccordionItem
 				class="py-2 pl-1 pr-2"
 				open={openStates.get(id) ?? false}
@@ -89,7 +92,7 @@
 			>
 				{#snippet header()}
 					<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
-						<div class="absolute txt-xxs text-primary-500">{entry.describe()}</div>
+						<div class="absolute txt-xxs text-primary-500">{component.describe()}</div>
 						{#if editMode}
 							<RemoveButton
 								{mixtureStore}
@@ -99,11 +102,11 @@
 							/>
 						{/if}
 
-						{#if entry instanceof Sweetener}
+						{#if component instanceof Sweetener}
 							<NumberSpinner
 								{mixtureStore}
 								class="basis-1/5"
-								value={entry.mass}
+								value={component.mass}
 								type="mass"
 								componentId={id}
 							/>
@@ -111,24 +114,24 @@
 							<NumberSpinner
 								{mixtureStore}
 								class="basis-1/5"
-								value={entry.volume}
+								value={component.volume}
 								type="volume"
 								componentId={id}
 							/>
 						{/if}
 
-						{#if isSimpleSpirit(entry)}
+						{#if isSimpleSpirit(component)}
 							<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${id}`}>ABV</Tooltip>
 							<NumberSpinner
 								{mixtureStore}
 								id={`edit-abv-${id}`}
 								class="basis-1/6"
-								value={entry.abv}
+								value={component.abv}
 								type="abv"
 								componentId={id}
 							/>
 						{/if}
-						{#if isSimpleSyrup(entry)}
+						{#if isSimpleSyrup(component)}
 							<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${id}`}>
 								Sweetness
 							</Tooltip>
@@ -136,17 +139,17 @@
 								{mixtureStore}
 								id={`edit-brix-${id}`}
 								class="basis-1/6"
-								value={entry.brix}
+								value={component.brix}
 								type="brix"
 								componentId={id}
 							/>
 						{/if}
 
-						{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
+						{#if component instanceof Sweetener || isSimpleSyrup(component)}
 							<SweetenerDropdown
 								{mixtureStore}
 								componentId={id}
-								component={entry}
+								component={component}
 								basis="basis-1/3"
 								onclick={(e) => e.stopPropagation()}
 							/>
@@ -154,12 +157,12 @@
 						<TextInput
 							type="text"
 							value={name}
-							placeholder={entry.describe()}
+							placeholder={component.describe()}
 							class="
 								mr-2
-								{entry instanceof Sweetener || isSimpleSyrup(entry)
+								{component instanceof Sweetener || isSimpleSyrup(component)
 								? 'basis-1/3'
-								: isSimpleSpirit(entry)
+								: isSimpleSpirit(component)
 									? 'basis-1/2'
 									: 'basis-3/4'}
 								text-sm
@@ -174,15 +177,39 @@
 					</div>
 				{/snippet}
 				<div class="flex flex-col items-stretch">
-					{#if entry instanceof Sweetener}
-						<SweetenerDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Water}
-						<WaterDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSpirit(entry)}
-						<SpiritDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSyrup(entry)}
-						<SyrupDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Mixture}
+					{#if component instanceof Sweetener}
+						<div class="flex flex-row my-1">
+							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
+							<EquivalentSugar
+								{mixtureStore}
+								componentId={id}
+								{component}
+								readonly={true}
+								class="basis-1/5"
+							/>
+							<Cal {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
+						</div>
+					{:else if component instanceof Water}
+						<div class="flex flex-row my-1">
+							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/2" />
+							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/2" />
+						</div>
+					{:else if isSimpleSpirit(component)}
+						<div class="flex flex-row my-1">
+							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
+							<Abv {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Cal {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
+						</div>
+					{:else if isSimpleSyrup(component)}
+						<div class="flex flex-row my-1">
+							<Volume {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Brix {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
+							<Cal {mixtureStore} componentId={id} {component} readonly={true} />
+						</div>
+					{:else if component instanceof Mixture}
 						<MixtureAccordion {mixtureStore} {id} {name} />
 					{/if}
 				</div>
