@@ -1,8 +1,8 @@
-import { dataToMixture, Mixture } from './mixture.js';
+import { Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import type { StoredMixtureData } from './components/index.js';
+import type { StoredFileData } from './ingredients/index.js';
 import { browser } from '$app/environment';
 import type { SessionUser } from '@corbado/types';
 
@@ -11,21 +11,6 @@ let user: SessionUser | null = $state(null);
 // Default to offline mode, sync when user logs in
 let pushDelay = $derived(user ? 1000 : Infinity);
 let pullInterval = $derived(user ? 5 * 60 * 1000 : Infinity);
-
-/**
- * FileItem represents a stored mixture file. All types must be
- * compatible with Replicache's ReadonlyJSONValue.
- */
-export type StoredFileData = {
-	id: string;
-	accessTime: number;
-	name: string;
-	desc: string;
-	mixture: {
-		name: string;
-		data: StoredMixtureData;
-	};
-};
 
 // Space is a logical grouping of data in Replicache
 const SPACE_FILES = 'files';
@@ -276,5 +261,5 @@ export async function deserializeFromStorage(id: string): Promise<Mixture> {
 	if (!item) {
 		throw new Error('No item found');
 	}
-	return dataToMixture(item.mixture.data);
+	return Mixture.fromStorageData(item.mixture, item.ingredientDb);
 }

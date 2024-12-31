@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { MixtureStore, loadingStoreId } from './mixture-store.svelte';
-import { Water } from './components/water.js';
-import { Mixture, newSpirit } from './mixture.js';
+import { Water } from './ingredients/water.js';
+import { Mixture } from './mixture.js';
+import type { Analysis } from './utils.js';
+import { newSpirit } from './mixture-factories.js';
 
 describe('Mixture Store', () => {
 	it('should initialize with default values', () => {
@@ -193,5 +195,58 @@ describe('Mixture Store', () => {
 		// Redo stack should be cleared
 		expect(store.redoCount).toBe(0);
 		expect(store.getVolume(waterId)).toBe(300);
+	});
+});
+
+describe('Mixture store solver', () => {
+	let store: MixtureStore;
+	let initialAnalysis: Analysis;
+
+	beforeEach(() => {
+		store = new MixtureStore();
+		store.addComponentTo(null, { name: 'spirit', component: newSpirit(50, 100) });
+		store.addComponentTo(null, { name: 'water', component: new Water(50) });
+		store.addComponentTo(null, { name: 'sugar', component: new Sweetener('sucrose', 50) });
+		initialAnalysis = store.mixture.analyze(2);
+	});
+
+	it('should solve for volume', () => {
+		// Act
+		store.solveTotal('volume', 200);
+
+		// Assert
+		expect(store.getVolume('totals')).toBeCloseTo(200, 0);
+		expect(store.getAbv('totals')).toBeCloseTo(initialAnalysis.abv, 1);
+		expect(store.getBrix('totals')).toBeCloseTo(initialAnalysis.brix, 1);
+	});
+
+	it('should solve for abv', () => {
+		// Act
+		store.solveTotal('abv', 50);
+
+		// Assert
+		expect(store.getVolume('totals')).toBeCloseTo(initialAnalysis.volume, 1);
+		expect(store.getAbv('totals')).toBeCloseTo(50, 1);
+		expect(store.getBrix('totals')).toBeCloseTo(initialAnalysis.brix, 1);
+	});
+
+	it('should solve for brix', () => {
+		// Act
+		store.solveTotal('brix', 25);
+
+		// Assert
+		expect(store.getVolume('totals')).toBeCloseTo(initialAnalysis.volume, 1);
+		expect(store.getAbv('totals')).toBeCloseTo(initialAnalysis.abv, 1);
+		expect(store.getBrix('totals')).toBeCloseTo(25, 1);
+	});
+
+	it('should throw an error for unable to solve', () => {
+		// Act & Assert
+		expect(() => store.solveTotal('abv', 200)).toThrowError('Unable to solve for abv = 200');
+	});
+
+	it('should clone', () => {
+		const clone = store.mixture.clone();
+		expect(clone).toEqual(store.mixture);
 	});
 });

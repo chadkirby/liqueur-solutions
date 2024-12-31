@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Mixture, newSpirit, newSyrup, Sweetener, Water } from '$lib/index.svelte';
+	import { Mixture, Sweetener, Water } from '$lib/index.svelte';
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import { newSpirit, newSyrup } from '$lib/mixture-factories.js';
 
 	let {
 		componentId,

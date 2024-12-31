@@ -1,4 +1,4 @@
-import type { Component } from './components/index.js';
+import type { Component } from './ingredients/index.js';
 import type { Mixture } from './mixture.js';
 import type { Target } from './solver.js';
 
@@ -12,12 +12,13 @@ export type Analysis = Target & {
 	kcal: number;
 	proof: number;
 	equivalentSugarMass: number;
+	pH: number;
 };
 
 export function analyze(
 	item: Pick<
-		Component,
-		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal'
+		Mixture,
+		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal' | 'pH'
 	>,
 	precision = 0
 ): Analysis {
@@ -28,7 +29,8 @@ export function analyze(
 		brix: round(item.brix, precision),
 		kcal: round(item.kcal, precision),
 		proof: round(item.abv * 2, precision),
-		equivalentSugarMass: round(item.equivalentSugarMass, precision)
+		equivalentSugarMass: round(item.equivalentSugarMass, precision),
+		pH: round(item.pH, precision)
 	};
 }
 
