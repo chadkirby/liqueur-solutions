@@ -1,6 +1,6 @@
 import * as fflate from 'fflate';
 import { dataToMixture, type Mixture } from '$lib/mixture.js';
-import type { AnyData } from '$lib/components/index.js';
+import type { AnyData } from '$lib/ingredients/index.js';
 
 /**
  * Decompresses a gz parameter from a URL into a mixture.

@@ -1,6 +1,6 @@
 name: Run Tests
 
-on: [push, pull_request]  # Run on all pushes and PRs
+on: [push, pull_request] # Run on all pushes and PRs
 
 jobs:
   test:

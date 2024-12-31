@@ -1,6 +1,6 @@
 import { type Updater } from 'svelte/store';
-import { isSweetenerData, SweetenerTypes } from './components/index.js';
-import { Sweetener } from './components/sweetener.js';
+import { isSweetenerData, SweetenerTypes } from './ingredients/index.js';
+import { Sweetener } from './ingredients/sweetener.js';
 import { digitsForDisplay, getTotals, type Analysis } from './utils.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
@@ -132,7 +132,7 @@ export class MixtureStore {
 			undoKey,
 			(data) => {
 				if (parentId === null) {
-					data.mixture.addComponent({ id: newId, ...component });
+					data.mixture.addIngredient({ id: newId, ...component });
 				} else {
 					const parent = this.findById(parentId, data.mixture);
 					if (!parent) {
@@ -145,10 +145,10 @@ export class MixtureStore {
 				}
 				return data;
 			},
-			(data) => {
-				data.mixture.removeComponent(newId);
-				return data;
-			}
+				(data) => {
+					data.mixture.removeIngredient(newId);
+					return data;
+				};
 		);
 	}
 	removeComponent(componentId: string, undoKey = `removeComponent-${componentId}`) {
@@ -160,13 +160,13 @@ export class MixtureStore {
 		this.update(
 			undoKey,
 			(data) => {
-				data.mixture.removeComponent(componentId);
+				data.mixture.removeIngredient(componentId);
 				return data;
 			},
-			(data) => {
-				data.mixture.addComponent(mxc);
-				return data;
-			}
+				(data) => {
+					data.mixture.addIngredient(mxc);
+					return data;
+				};
 		);
 	}
 	increment(key: EditableComponentType, componentId: string, minMax?: MinMax) {
@@ -275,7 +275,7 @@ export class MixtureStore {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
 				const { component } = mxc;
-				if (component instanceof Mixture && component.findComponent((c) => c.abv > 0)) {
+				if (component instanceof Mixture && component.findIngredient((c) => c.abv > 0)) {
 					const spirit = component.clone();
 					spirit.setAbv(targetAbv);
 					if (!roundEq(spirit.abv, targetAbv)) {
