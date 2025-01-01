@@ -1,4 +1,4 @@
-import type { Component } from './ingredients/index.js';
+import type { Component } from './ingredients/substance-component.js';
 import type { Mixture } from './mixture.js';
 import type { Target } from './solver.js';
 
@@ -233,4 +233,13 @@ export function getTotals(mixture: Mixture) {
 		throw new Error('Invalid mixture');
 	}
 	return mixture.analyze(1);
+}
+
+export function abvToAbw(abv: number) {
+	if (abv < 0 || abv > 100) {
+		throw new Error('ABV must be between 0 and 100');
+	}
+	// estimate target alcohol by weight:
+	// ABW = 0.1893*ABV*ABV + 0.7918*ABV + 0.0002 => 0.3472
+	return 0.1893 * abv ** 2 + 0.7918 * abv + 0.0002;
 }

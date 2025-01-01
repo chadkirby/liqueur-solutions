@@ -76,7 +76,7 @@ export const Sweeteners = [
 		name: 'Sucrose',
 		id: 'sucrose',
 		molecule: new Molecule('C12H22O11'),
-		pureDensity: 1.59,
+		pureDensity: 1.5875,
 
 		// According to
 		// https://www.researchgate.net/publication/330245564_Apparent_Specific_Volumes_of_Sucrose_in_Different_Aqueous_Cosolvent_Mixtures_at_2982_K,
