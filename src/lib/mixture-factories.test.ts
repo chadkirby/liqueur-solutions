@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newLemon, newSpirit, newSyrup } from './mixture-factories.js';
-import { SubstanceComponent } from './ingredients/index.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
 
 describe('newSpirit', () => {
 	it('should work', () => {

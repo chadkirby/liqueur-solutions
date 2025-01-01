@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculateAbvProportions } from './density.js';
 import { Substances } from './substances.js';
-import { SubstanceComponent } from './index.js';
+import { SubstanceComponent } from './substance-component.js';
 
 const ethanol = new SubstanceComponent(Substances.find((substance) => substance.id === 'ethanol')!);
 function getSolutionDensity(weightPercentage: number) {

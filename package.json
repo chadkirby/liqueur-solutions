@@ -83,6 +83,7 @@
 		"@castlenine/svelte-qrcode": "^2.3.0",
 		"@corbado/node-sdk": "^3.0.2",
 		"@corbado/web-js": "^2.18.0",
+		"abstract-sim-anneal": "^0.1.0",
 		"lodash.debounce": "^4.0.8",
 		"nanoid": "^5.0.9",
 		"p-debounce": "^4.0.0",

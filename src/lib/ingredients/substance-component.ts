@@ -5,7 +5,7 @@ import {
 	type SubstanceId,
 	type Substance,
 	SubstanceIds,
-	interpolator
+	interpolator,
 } from './substances.js';
 
 const NumericDataValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
@@ -204,4 +204,3 @@ export class SubstanceComponent implements Component {
 		return this.substance.name;
 	}
 }
-

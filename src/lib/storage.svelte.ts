@@ -2,7 +2,7 @@ import { Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import type { StoredFileData } from './ingredients/index.js';
+import type { StoredFileData } from './ingredients/substance-component.js';
 import { browser } from '$app/environment';
 import type { SessionUser } from '@corbado/types';
 

@@ -1,20 +1,159 @@
-import { calculateAbvProportions } from './ingredients/density.js';
-import type { Component } from './index.svelte.js';
 import { Mixture } from './mixture.js';
-import { SubstanceComponent } from './ingredients/index.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
+import { AnnealingSolver } from 'abstract-sim-anneal';
+import { isAcidId, isSweetenerId } from './ingredients/substances.js';
+
+type IngredientClass = 'ethanol' | 'sweetener' | 'acid' | 'water';
 
 export interface Target {
+	/** between 0-100 */
 	abv: number;
+	/** between 0-100 */
 	brix: number;
+	/** between 0-Infinity */
 	volume: number;
+	/** between 0-7 */
+	pH: number;
 }
 
-const { sqrt } = Math;
+interface MixtureState {
+	mixture: Mixture;
+	targets: Target;
+	actual: Target;
+	/** deviation from target values as a percentage of the target value
+	 * between -1, 1 */
+	deviations: Target;
+	/** total deviation from target values */
+	error: number;
+}
 
-export function solver(
-	mixture: Mixture,
-	targets: { abv: number | null; brix: number | null; pH: number | null }
-) {
+export function analyze(mixture: Mixture, targets: Target): MixtureState {
+	if (targets.pH === 0) {
+		throw new Error('Target pH must be between 0 and 7');
+	}
+	if (targets.volume === 0) {
+		throw new Error('Target volume must be greater than 0');
+	}
+
+	const actual: Target = {
+		abv: mixture.abv,
+		brix: mixture.brix,
+		pH: mixture.pH,
+		volume: mixture.volume,
+	};
+	// determine the deviation from the target values as a percentage
+	const deviations = {
+		abv: getDeviation(actual.abv, targets.abv),
+		brix: getDeviation(actual.brix, targets.brix),
+		pH: getDeviation(actual.pH, targets.pH),
+		volume: getDeviation(actual.volume, targets.volume),
+	};
+
+	return {
+		mixture,
+		targets,
+		actual,
+		deviations,
+		error: totalDeviation(deviations),
+	};
+}
+
+/**
+ * Get the deviation of a mixture
+ *
+ * @return  the deviation as a percentage of the actual value
+ */
+function getDeviation(actual: number, target: number): number {
+	if (target < 0) {
+		throw new Error('Target value must be greater than or equal to 0');
+	}
+	if (target === 0) {
+		return actual === 0 ? 0 : 1;
+	}
+	return (actual - target) / actual;
+}
+
+function totalDeviation(deviations: Target): number {
+	return Math.sqrt(
+		deviations.abv ** 2 + deviations.brix ** 2 + deviations.pH ** 2 + deviations.volume ** 2,
+	);
+}
+type Needs = Map<IngredientClass, number>;
+function newNeeds(initializer = 0): Needs {
+	return new Map([
+		['ethanol', initializer],
+		['sweetener', initializer],
+		['acid', initializer],
+		['water', initializer],
+	]);
+}
+
+function getNeeds(deviations: Target): Needs {
+	const scale = 0.5;
+	const needs = newNeeds(1);
+	const needMore = (key: IngredientClass, howmuchMore: number) => {
+		needs.set(key, needs.get(key)! + howmuchMore * scale);
+	};
+	const needLess = (key: IngredientClass, howmuchLess: number) => {
+		needs.set(key, needs.get(key)! - howmuchLess * scale);
+	};
+	if (deviations.abv > 1) {
+		// if we have too much alcohol, we need less ethanol and more water
+		needMore('ethanol', deviations.abv);
+		needLess('water', deviations.abv);
+	} else if (deviations.abv < 1) {
+		// if we have too little alcohol, we need more ethanol and less
+		// water
+		needMore('ethanol', -deviations.abv);
+		needLess('water', -deviations.abv);
+	}
+	if (deviations.brix > 1) {
+		// if we have too much sugar, we need less sweetener and more water
+		needLess('sweetener', deviations.brix);
+		needMore('water', deviations.brix);
+	} else if (deviations.brix < 1) {
+		// if we have too little sugar, we need more sweetener and less water
+		needMore('sweetener', -deviations.brix);
+		needLess('water', -deviations.brix);
+	}
+	if (deviations.pH > 1) {
+		// if we have too high pH, we need more acid
+		needMore('acid', deviations.pH);
+	} else if (deviations.pH < 1) {
+		// if we have too low pH, we need less acid
+		needLess('acid', -deviations.pH);
+	}
+
+	return needs;
+}
+
+function getMixtureProvides(ingredient: Mixture): Needs {
+	const provides = newNeeds(0);
+	const substances = ingredient.makeSubstanceMap();
+	for (const { mass, component } of substances.values()) {
+		for (const [key, value] of getSubstanceProvides(component, mass)) {
+			provides.set(key, provides.get(key)! + value);
+		}
+	}
+
+	return provides;
+}
+function getSubstanceProvides(ingredient: SubstanceComponent, mass: number) {
+	const provides = newNeeds(0);
+	if (ingredient.substanceId === 'water') {
+		provides.set('water', mass);
+	} else if (ingredient.substanceId === 'ethanol') {
+		provides.set('ethanol', mass);
+	} else if (isSweetenerId(ingredient.substanceId)) {
+		provides.set('sweetener', mass);
+	} else if (isAcidId(ingredient.substanceId)) {
+		provides.set('acid', mass);
+	}
+
+	return provides;
+}
+
+export function solver(mixture: Mixture, targets: Target) {
 	if (targets.abv !== null && (targets.abv < 0 || targets.abv > 100)) {
 		throw new Error('Target ABV must be between 0 and 100');
 	}
@@ -24,86 +163,91 @@ export function solver(
 	if (targets.pH !== null && (targets.pH < 0 || targets.pH > 7)) {
 		throw new Error('Target pH must be between 0 and 7');
 	}
-	console.log('solver', { targets });
 
-	const tolerance = 0.01;
-	let error = 1;
-	let iterations = 1000;
-	const working = mixture.clone();
-	while (error > tolerance && --iterations > 0) {
-		const analysis = working.analyze(Math.log10(1 / tolerance));
-		console.log('solver', { ...analysis, iterations, error, tolerance });
-		if (targets.abv !== null) {
-			const targetVolume = working.volume * (targets.abv / 100);
+	const tolerance = 0.0001;
 
-			const actualAlcohol = working.alcoholVolume;
-			if (!isClose(actualAlcohol, targetVolume, tolerance)) {
-				for (const { component, id } of working.eachIngredient()) {
-					if (
-						(component instanceof SubstanceComponent && component.substanceId === 'ethanol') ||
-						(component instanceof Mixture && component.alcoholMass > 0)
-					) {
-						working.scaleIngredientMass(id, increment(targetVolume / actualAlcohol));
+	let bestState = analyze(mixture.clone(false), targets);
+
+	const ingredientIds = [...mixture.eachIngredientId()];
+
+	const solver: AnnealingSolver<MixtureState, Mixture> = new AnnealingSolver({
+		chooseMove: (state, count) => {
+			// given a state, return a candidate move and the error it would cause
+			const { mixture } = state;
+			// Track best solution
+			if (!bestState || state.error < bestState.error) {
+				bestState = state;
+				if (state.error < tolerance) {
+					console.log('Aborting early', count);
+					console.log(state.actual);
+					console.log(state.deviations);
+					console.log(state.error);
+					solver.abort();
+				}
+			}
+
+			const needs = getNeeds(state.deviations);
+
+			const provisionalMixture = mixture.clone(false);
+			for (const id of ingredientIds) {
+				const ingredient = provisionalMixture.ingredients.get(id)!;
+				const currentMass = provisionalMixture.getIngredientMass(id);
+				const provides =
+					ingredient.component instanceof Mixture
+						? getMixtureProvides(ingredient.component)
+						: getSubstanceProvides(ingredient.component, currentMass);
+				// determine if, on balance, we need more or less of this
+				// ingredient based on what we need and what it provides
+				let massDelta = 1;
+				for (const [key, value] of provides) {
+					const need = needs.get(key)!;
+					if (value > 0 && need > 0 && need !== 1) {
+						massDelta *= need;
 					}
 				}
-			}
-
-			if (!isClose(working.alcoholVolume, targetVolume, tolerance)) {
-				// instead set water volume
-				const waterComponents = [
-					...working.eachIngredient(
-						(igdt) =>
-							working.get(igdt, 'alcoholMass') === 0 &&
-							working.get(igdt, 'equivalentSugarMass') === 0 &&
-							isClose(working.get(igdt, 'pH'), 7, 0.1)
-					)
-				];
-				const alcComponents = working.eachIngredient(
-					(igdt) => working.get(igdt, 'alcoholMass') > 0
-				);
-				const alcWaterVolume = alcComponents.reduce(
-					(sum, igdt) => sum + working.get(igdt, 'waterVolume'),
-					0
-				);
-				const targetWaterVolume = working.volume - targetVolume - alcWaterVolume;
-				const startingWaterVolume = waterComponents.reduce(
-					(sum, igdt) => sum + working.get(igdt, 'waterVolume'),
-					0
-				);
-				for (const { component } of waterComponents) {
-					working.scaleIngredientMass(
-						component.id,
-						increment(targetWaterVolume / startingWaterVolume)
-					);
+				// scale the mass of the ingredient
+				if (massDelta !== 1) {
+					// Scale moves with temperature
+					// Larger initial moves, decrease with temperature
+					const moveScale = 1 * solver.currentTemperature;
+					const scaled = 1 + (massDelta - 1) * moveScale;
+					provisionalMixture.scaleIngredientMass(id, scaled);
 				}
 			}
-		}
-		if (targets.brix !== null) {
-			working.setEquivalentSugarMass(working.mass * increment(targets.brix / 100));
-		}
+			provisionalMixture.setVolume(targets.volume);
 
-		error = 0;
-		if (targets.abv !== null) {
-			error += (working.abv - targets.abv) ** 2;
-		}
-		if (targets.brix !== null) {
-			error += (working.brix - targets.brix) ** 2;
-		}
+			const provisional = analyze(provisionalMixture, targets);
 
-		error = sqrt(error);
+			return { move: provisionalMixture, errorDelta: provisional.error - state.error };
+		},
+		applyMove(state: MixtureState, move: Mixture): MixtureState {
+			return analyze(move, state.targets);
+		},
+	});
+	const result = solver.run(bestState, 100);
+
+	const finalState = bestState?.error < result.state.error ? bestState : result.state;
+
+	if (finalState.error > tolerance) {
+		throw new Error('Failed to converge');
 	}
-	console.log('solver', { error, iterations, ...working.analyze(2) });
-	return working;
-}
-
-function increment(wholeRatio: number): number {
-	return 0.25 * wholeRatio + 0.75;
+	return finalState.mixture;
 }
 
 export function setVolume(working: Mixture, targetVolume: number, iteration = 0): void {
+	if (targetVolume <= 0) {
+		working.setMass(0);
+		return;
+	}
+
 	if (isClose(targetVolume, working.volume, 0.001)) return;
 
-	// Try simple mass scaling first
+	// Try simple mass scaling first, but make sure we have a mass to
+	// scale
+	if (working.mass <= 0) {
+		working.setMass(1);
+	}
+
 	const factor = targetVolume / working.volume;
 	working.setMass(working.mass * factor);
 

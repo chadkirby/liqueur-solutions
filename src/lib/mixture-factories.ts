@@ -1,6 +1,6 @@
 import { componentId, Mixture } from './index.svelte.js';
 import { calculateAbvProportions } from './ingredients/density.js';
-import { SubstanceComponent } from './ingredients/index.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
 
 export function newSpirit(vol = 100, abv = 40): Mixture {
 	const props = calculateAbvProportions(abv, 100);

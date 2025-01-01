@@ -1,15 +1,15 @@
-import { SubstanceComponent, isSubstanceData } from './ingredients/index.js';
-import { type Component } from './ingredients/index.js';
+import { SubstanceComponent, isSubstanceData } from './ingredients/substance-component.js';
+import { type Component } from './ingredients/substance-component.js';
 import { setVolume, solver } from './solver.js';
-import { analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
-import type { IngredientDbData, MixtureData, StoredFileData } from './ingredients/index.js';
+import { abvToAbw, analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
+import type {
+	IngredientDbData,
+	MixtureData,
+	StoredFileData,
+} from './ingredients/substance-component.js';
 import { nanoid } from 'nanoid';
-import {
-	isSolventId,
-	isSweetenerId,
-	type SubstanceId,
-	Sweeteners
-} from './ingredients/substances.js';
+import { isSweetenerId, type SubstanceId, Sweeteners } from './ingredients/substances.js';
+import { AnnealingSolver } from 'abstract-sim-anneal';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -44,7 +44,7 @@ export class Mixture implements Component {
 					id,
 					proportion,
 					name,
-					component: Mixture.fromStorageData(data, ingredientData)
+					component: Mixture.fromStorageData(data, ingredientData),
 				});
 			}
 		}
@@ -55,16 +55,16 @@ export class Mixture implements Component {
 
 	constructor(
 		private _id = componentId(),
-		private _mass: number = 1,
+		private _mass: number = 0,
 		ingredients:
 			| Array<{
 					proportion: number;
 					name: string;
 					component: Mixture | SubstanceComponent;
 			  }>
-			| Array<{ name: string; mass: number; component: Mixture | SubstanceComponent }> = []
+			| Array<{ name: string; mass: number; component: Mixture | SubstanceComponent }> = [],
 	) {
-		if ('mass' in ingredients[0]) {
+		if (ingredients.length && 'mass' in ingredients[0]) {
 			ingredients = ingredients as Array<{
 				name: string;
 				mass: number;
@@ -75,7 +75,7 @@ export class Mixture implements Component {
 				this.addInitialIngredient({
 					proportion: ingredient.mass / this._mass,
 					name: ingredient.name,
-					component: ingredient.component
+					component: ingredient.component,
 				});
 			}
 		} else {
@@ -105,8 +105,8 @@ export class Mixture implements Component {
 			ingredients: [...this.ingredients.values()].map(({ id, proportion, name }) => ({
 				id,
 				proportion,
-				name
-			}))
+				name,
+			})),
 		} as const;
 	}
 
@@ -132,7 +132,7 @@ export class Mixture implements Component {
 			id: componentId(),
 			...item,
 			component:
-				item.component instanceof Mixture ? item.component.clone().updateIds() : item.component
+				item.component instanceof Mixture ? item.component.clone().updateIds() : item.component,
 		};
 
 		if (!ingredient.component?.isValid) {
@@ -149,7 +149,7 @@ export class Mixture implements Component {
 	private normalizeProportions() {
 		const sumOfProportions = [...this.ingredients.values()].reduce(
 			(acc, { proportion }) => acc + proportion,
-			0
+			0,
 		);
 		for (const ingredient of this.ingredients.values()) {
 			ingredient.proportion /= sumOfProportions;
@@ -169,7 +169,7 @@ export class Mixture implements Component {
 			id: componentId(),
 			name: item.name,
 			component: item.component,
-			proportion: item.mass / this.mass
+			proportion: this.mass ? item.mass / this.mass : 1,
 		};
 		this.ingredients.set(ingredient.id, ingredient);
 		this._mass += item.mass;
@@ -177,19 +177,12 @@ export class Mixture implements Component {
 	}
 
 	removeIngredient(id: string) {
-		// TODO: recompute proportions
 		if (this.ingredients.has(id)) {
+			this._mass -= this.getIngredientMass(id);
 			this.ingredients.delete(id);
+			this.normalizeProportions();
 			return true;
 		}
-
-		// Not sure we actually ever want to remove sub-ingredients...
-		// for (const { component } of this.eachIngredient()) {
-		// 	if (component instanceof Mixture) {
-		// 		if (component.removeIngredient(id)) return true;
-		// 	}
-		// }
-
 		return false;
 	}
 
@@ -212,10 +205,18 @@ export class Mixture implements Component {
 		return 'mixture';
 	}
 
-	*eachIngredient(predicate?: (item: IngredientItem) => boolean): Generator<IngredientItem> {
+	*eachIngredientId(): Generator<string> {
+		for (const id of this.ingredients.keys()) {
+			yield id;
+		}
+	}
+
+	*eachIngredient(
+		predicate?: (item: IngredientItem) => boolean,
+	): Generator<{ mass: number; ingredient: IngredientItem }> {
 		for (const ingredient of this.ingredients.values()) {
 			if (!predicate || predicate(ingredient)) {
-				yield ingredient;
+				yield { ingredient, mass: this.getIngredientMass(ingredient.id) };
 			}
 		}
 	}
@@ -227,16 +228,27 @@ export class Mixture implements Component {
 	*eachSubstance(...ids: SubstanceId[]): Generator<{
 		mass: number;
 		substanceId: string;
+		ingredientId: string;
 		component: SubstanceComponent;
 	}> {
-		const mass = this.mass;
-		for (const { component, proportion } of this.eachIngredient()) {
+		for (const { ingredient, mass } of this.eachIngredient()) {
+			const component = ingredient.component;
 			if (component instanceof SubstanceComponent) {
 				if (ids.length === 0 || ids.includes(component.substanceId)) {
-					yield { substanceId: component.substanceId, component, mass: mass * proportion };
+					yield {
+						substanceId: component.substanceId,
+						ingredientId: ingredient.id,
+						component,
+						mass,
+					};
 				}
 			} else if (component instanceof Mixture) {
-				yield * component.setMass(mass * proportion).eachSubstance(...ids);
+				for (const substance of component.eachSubstance(...ids)) {
+					yield {
+						...substance,
+						ingredientId: ingredient.id,
+					};
+				}
 			}
 		}
 	}
@@ -279,11 +291,11 @@ export class Mixture implements Component {
 				.filter((x) => Sweeteners.some((s) => s.id === x.substanceId))
 				.sort(
 					(a, b) =>
-						b.component.getEquivalentSugarMass(b.mass) - a.component.getEquivalentSugarMass(a.mass)
+						b.component.getEquivalentSugarMass(b.mass) - a.component.getEquivalentSugarMass(a.mass),
 				);
 			const summary = [
 				brixToSyrupProportion(this.brix),
-				`${sweeteners.map((s) => s.component.name).join('/')} syrup`
+				`${sweeteners.map((s) => s.component.name).join('/')} syrup`,
 			];
 			return summary.join(' ').replace('sucrose syrup', 'simple syrup');
 		}
@@ -293,33 +305,38 @@ export class Mixture implements Component {
 		if (isLiqueur(this)) {
 			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
 		}
-		return [...this.eachIngredient()].map((ig) => ig.component.describe()).join(', ');
+		return [...this.eachIngredient()]
+			.map(({ ingredient }) => ingredient.component.describe())
+			.join(', ');
 	}
 
-	clone(): this {
+	clone(deep = true): this {
 		return new Mixture(
 			this.id,
 			this.mass,
-			[...this.eachIngredient()].map((ig) => ({
-				...ig,
-				component: ig.component instanceof Mixture ? ig.component.clone() : ig.component
-			}))
+			[...this.eachIngredient()].map(({ ingredient }) => ({
+				...ingredient,
+				component:
+					deep && ingredient.component instanceof Mixture
+						? ingredient.component.clone()
+						: ingredient.component,
+			})),
 		) as this;
 	}
 
 	updateIds() {
 		this._id = componentId();
-		for (const { component } of this.eachIngredient()) {
-			if (component instanceof Mixture) {
-				component.updateIds();
+		for (const { ingredient } of this.eachIngredient()) {
+			if (ingredient.component instanceof Mixture) {
+				ingredient.component.updateIds();
 			}
 		}
 		return this;
 	}
 
 	findIngredient(predicate: (component: Component) => boolean): Component | undefined {
-		for (const { component } of this.eachIngredient()) {
-			if (predicate(component)) return component;
+		for (const { ingredient } of this.eachIngredient()) {
+			if (predicate(ingredient.component)) return ingredient.component;
 		}
 		return undefined;
 	}
@@ -344,17 +361,26 @@ export class Mixture implements Component {
 	 * Return a map of substances to their total mass in the mixture.
 	 */
 	makeSubstanceMap() {
-		const substanceMap = new Map<SubstanceId, { mass: number; component: SubstanceComponent }>();
+		const substanceMap = new Map<
+			SubstanceId,
+			{
+				mass: number;
+				component: SubstanceComponent;
+				ingredients: Array<{ ingredientId: string; mass: number }>;
+			}
+		>();
 
 		for (const substance of this.eachSubstance()) {
-			const { substanceId } = substance;
+			const { substanceId, ingredientId } = substance;
 			const mapSubstance = substanceMap.get(substanceId)!;
 			if (mapSubstance) {
 				mapSubstance.mass += substance.mass;
+				mapSubstance.ingredients.push({ ingredientId, mass: substance.mass });
 			} else {
 				substanceMap.set(substanceId, {
 					mass: substance.mass,
-					component: SubstanceComponent.new(substanceId)
+					component: SubstanceComponent.new(substanceId),
+					ingredients: [{ ingredientId, mass: substance.mass }],
 				});
 			}
 		}
@@ -370,20 +396,23 @@ export class Mixture implements Component {
 		return abv;
 	}
 
-	setAbv(targetAbv: number, maintainVolume = false) {
-		if (targetAbv === this.abv) return;
-		const originalVolume = maintainVolume ? this.volume : null;
+	getSweetenerSubstances() {
+		return [...this.eachSubstance(...Sweeteners.map((s) => s.id))];
+	}
+
+	setAbv(targetAbv: number) {
+		if (isClose(targetAbv, this.abv, 0.001)) return;
 		const working = solver(this, {
+			volume: this.volume,
 			abv: targetAbv,
 			brix: this.brix,
-			pH: this.pH
+			pH: this.pH,
 		});
-		for (const [key, ingredient] of working.ingredients.entries()) {
-			this.ingredients.get(key)!.proportion = ingredient.proportion;
+		for (const { ingredient } of working.eachIngredient()) {
+			this.ingredients.get(ingredient.id)!.proportion = ingredient.proportion;
 		}
-		if (originalVolume !== null) {
-			this.setVolume(originalVolume);
-		}
+		this.setMass(working.mass);
+		return this;
 	}
 
 	get pH() {
@@ -439,7 +468,7 @@ export class Mixture implements Component {
 		const substanceMap = this.makeSubstanceMap();
 		let density = 0;
 		for (const { mass, component } of substanceMap.values()) {
-			const weightPercent = mass / totalMass;
+			const weightPercent = Math.max(0, Math.min(1, mass / totalMass));
 			const partialDensity = component.partialSolutionDensity(weightPercent);
 			density += partialDensity;
 		}
@@ -451,8 +480,9 @@ export class Mixture implements Component {
 	}
 
 	get volume() {
+		const mass = this.mass;
 		const density = this.density();
-		const volume = this.mass / density;
+		const volume = density !== 0 ? mass / density : 0;
 		return volume;
 	}
 
@@ -495,23 +525,50 @@ export class Mixture implements Component {
 		return alcoholMass;
 	}
 
+	setAlcoholMass(newAlcoholMass: number) {
+		const currentAlcoholMass = this.alcoholMass;
+		if (currentAlcoholMass === 0) {
+			const spirits = [
+				...this.eachIngredient(
+					(ig) =>
+						isSpirit(ig.component) ||
+						(ig.component instanceof SubstanceComponent && ig.component.substanceId === 'ethanol'),
+				),
+			].map(({ ingredient }) => ingredient);
+			for (const spirit of spirits) {
+				this.setIngredientMass(spirit.id, newAlcoholMass / spirits.length);
+			}
+		} else if (!isClose(currentAlcoholMass, newAlcoholMass, 0.001)) {
+			const factor = newAlcoholMass / currentAlcoholMass;
+			for (const { ingredient, mass } of this.eachIngredient()) {
+				if (ingredient.component.getAlcoholMass(mass) > 0) {
+					this.setIngredientMass(ingredient.id, mass * factor);
+				}
+			}
+		}
+		return this;
+	}
+
 	get brix() {
-		return (100 * this.equivalentSugarMass) / this.mass;
+		return this.mass ? (100 * this.equivalentSugarMass) / this.mass : 0;
 	}
 	setBrix(newBrix: number, maintainVolume = false) {
 		if (isClose(newBrix, this.brix)) return;
 		// change the ratio of sweetener to total mass
 		const working = solver(this, {
+			volume: this.volume,
 			abv: this.abv,
 			brix: newBrix,
-			pH: this.pH
+			pH: this.pH,
 		});
 		if (maintainVolume) {
 			working.setVolume(this.volume);
 		}
-		for (const ingredient of working.eachIngredient()) {
+		for (const { ingredient } of working.eachIngredient()) {
 			this.ingredients.get(ingredient.id)!.proportion = ingredient.proportion;
 		}
+		this.setMass(working.mass);
+		return this;
 	}
 
 	get equivalentSugarMass() {
@@ -526,14 +583,18 @@ export class Mixture implements Component {
 	}
 	setEquivalentSugarMass(newSugarEquivalent: number) {
 		const currentSugarEquivalent = this.equivalentSugarMass;
-		if (!isClose(currentSugarEquivalent, newSugarEquivalent)) {
+		if (currentSugarEquivalent === 0) {
+			const sweeteners = [...this.eachIngredient((ig) => isSweetener(ig.component))].map(
+				({ ingredient }) => ingredient,
+			);
+			for (const sweetener of sweeteners) {
+				this.setIngredientMass(sweetener.id, newSugarEquivalent / sweeteners.length);
+			}
+		} else if (!isClose(currentSugarEquivalent, newSugarEquivalent)) {
 			const factor = newSugarEquivalent / currentSugarEquivalent;
-			for (const ingredient of this.eachIngredient()) {
-				if (
-					ingredient.component.getEquivalentSugarMass(this.getIngredientMass(ingredient.id)) > 0
-				) {
-					const originalMass = this.getIngredientMass(ingredient.id);
-					this.setIngredientMass(ingredient.id, originalMass * factor);
+			for (const { ingredient, mass } of this.eachIngredient()) {
+				if (ingredient.component.getEquivalentSugarMass(mass) > 0) {
+					this.setIngredientMass(ingredient.id, mass * factor);
 				}
 			}
 		}
@@ -556,16 +617,14 @@ export class Mixture implements Component {
 		if (!this.ingredients.has(ingredientId)) {
 			throw new Error('Ingredient not found');
 		}
-		const oldTotalMass = this.mass;
 		const delta = newMass - this.getIngredientMass(ingredientId);
-		const newTotalMass = oldTotalMass + delta;
+		const newTotalMass = this.mass + delta;
 
-		for (const ingredient of this.eachIngredient()) {
+		for (const { ingredient } of this.eachIngredient()) {
 			if (ingredientId === ingredient.id) {
 				ingredient.proportion = newMass / newTotalMass;
 			} else {
-				const oldMass = ingredient.proportion * oldTotalMass;
-				ingredient.proportion = oldMass / oldTotalMass;
+				ingredient.proportion = this.getIngredientMass(ingredient.id) / newTotalMass;
 			}
 		}
 		this.setMass(newTotalMass);
@@ -583,13 +642,15 @@ export class Mixture implements Component {
 	get isValid(): boolean {
 		return (
 			[...this.eachSubstance()].every((ig) => ig.component.isValid && ig.mass >= 0) &&
-			[...this.eachIngredient()].every((ig) => ig.component.isValid && ig.proportion >= 0)
+			[...this.eachIngredient()].every(
+				({ ingredient }) => ingredient.component.isValid && ingredient.proportion >= 0,
+			)
 		);
 	}
 
 	get(
 		item: IngredientItem,
-		what: 'equivalentSugarMass' | 'alcoholMass' | 'pH' | 'waterVolume'
+		what: 'equivalentSugarMass' | 'alcoholMass' | 'pH' | 'waterVolume',
 	): number {
 		const component = item.component;
 		if (component instanceof Mixture) {
@@ -615,7 +676,7 @@ export class Mixture implements Component {
 export function toStorageData(mx: Mixture): Pick<StoredFileData, 'mixture' | 'ingredientDb'> {
 	return {
 		mixture: mx.toStorageData(),
-		ingredientDb: mx.toStorageDbData()
+		ingredientDb: mx.toStorageDbData(),
 	};
 }
 
@@ -644,6 +705,18 @@ export function isSimpleSpirit(thing: IngredientItem['component']) {
 	return isSpirit(thing) && thing.ingredients.size === 2 && thing.substances.length === 2;
 }
 
+export function isSweetener(thing: Mixture): boolean;
+export function isSweetener(thing: IngredientItem['component']): thing is Mixture;
+export function isSweetener(thing: IngredientItem['component']) {
+	if (thing instanceof SubstanceComponent) {
+		return isSweetenerId(thing.substanceId);
+	}
+	if (thing instanceof Mixture) {
+		return thing.everySubstance((x) => isSweetenerId(x.substanceId));
+	}
+	return false;
+}
+
 export function isSyrup(thing: Mixture): boolean;
 export function isSyrup(thing: IngredientItem['component']): thing is Mixture;
 export function isSyrup(thing: IngredientItem['component']) {
@@ -668,12 +741,14 @@ export function isLiqueur(thing: IngredientItem['component']) {
 	return thing instanceof Mixture && thing.abv > 0 && thing.brix > 0;
 }
 
-export function isWater(thing: Mixture): boolean;
-export function isWater(thing: IngredientItem['component']): thing is Mixture;
 export function isWater(thing: IngredientItem['component']) {
-	return (
-		thing instanceof Mixture &&
-		thing.hasEverySubstances(['water']) &&
-		thing.everySubstance((x) => x.substanceId === 'water')
-	);
+	if (thing instanceof Mixture) {
+		return (
+			thing.hasEverySubstances(['water']) && thing.everySubstance((x) => x.substanceId === 'water')
+		);
+	}
+	if (thing instanceof SubstanceComponent) {
+		return thing.substanceId === 'water';
+	}
+	return false;
 }
