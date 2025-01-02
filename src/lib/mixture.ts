@@ -8,7 +8,12 @@ import type {
 	StoredFileData,
 } from './ingredients/substance-component.js';
 import { nanoid } from 'nanoid';
-import { isSweetenerId, type SubstanceId, Sweeteners } from './ingredients/substances.js';
+import {
+	bufferPairs,
+	isSweetenerId,
+	type SubstanceId,
+	Sweeteners,
+} from './ingredients/substances.js';
 import { AnnealingSolver } from 'abstract-sim-anneal';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -324,8 +329,14 @@ export class Mixture implements Component {
 		) as this;
 	}
 
+	get idPrefix() {
+		// allow a parenthesized prefix before the id
+		const match = this.id.match(/^\([-\w]+\)/i);
+		return match ? match[0] : '';
+	}
+
 	updateIds() {
-		this._id = componentId();
+		this._id = `${this.idPrefix}${componentId()}`;
 		for (const { ingredient } of this.eachIngredient()) {
 			if (ingredient.component instanceof Mixture) {
 				ingredient.component.updateIds();
@@ -415,54 +426,121 @@ export class Mixture implements Component {
 		return this;
 	}
 
+	/**
+	 * Approximates the pH of the mixture, considering acids and buffer pairs.
+	 *
+	 * @returns The pH of the mixture.
+	 */
 	get pH() {
-		// Track total H+ ions (in moles) and total volume (in mL)
 		let totalMolesH = 0;
-		let totalVolume = 0;
+		const totalVolume = this.volume;
+		const bufferPHEstimates = [];
+		const bufferAcids = [];
 
-		// Iterate through each substance in the mixture
-		for (const substance of this.eachSubstance()) {
-			const substanceVolume = substance.component.getVolume(substance.mass);
-			const substanceMolarity = substance.component.getMolarity(substance.mass);
-			const acidDisociationK = substance.component.substance.pKa;
+		const substances = this.substances;
+		console.log(
+			'Substances:',
+			substances.map((s) => ({
+				name: s.component.name,
+				mass: s.mass,
+				totalVolume: totalVolume,
+				pKa: s.component.substance.pKa,
+			})),
+		);
 
-			totalVolume += substanceVolume;
+		// Check for buffer pairs and calculate pH using Henderson-Hasselbalch equation
+		for (const pair of bufferPairs) {
+			const acid = substances.find((s) => s.substanceId === pair.acid);
+			const base = substances.find((s) => s.substanceId === pair.base);
 
-			// Skip substances that aren't acids (no pKa values)
-			if (acidDisociationK.length === 0) continue;
+			if (acid && base) {
+				const acidMoles = acid.mass / acid.component.substance.molecule.molecularMass;
+				const baseMoles = base.mass / base.component.substance.molecule.molecularMass;
 
-			// Convert substance amount to moles
-			// molarity (mol/L) * volume (mL) / 1000 = moles
-			const molesOfSubstance = (substanceMolarity * substanceVolume) / 1000;
+				const acidConc = acidMoles / (totalVolume / 1000);
+				const baseConc = baseMoles / (totalVolume / 1000);
 
-			// For polyprotic acids, calculate H+ contribution from each dissociation step
-			for (const [i, pKa] of acidDisociationK.entries()) {
-				// Ka (acid dissociation constant) = 10^-pKa
-				const Ka = Math.pow(10, -pKa);
-
-				// Weight later dissociations less since they contribute less to total [H+]
-				// First dissociation (i=0): weight = 1
-				// Second dissociation (i=1): weight = 1/2
-				// Third dissociation (i=2): weight = 1/3
-				const weight = 1 / (i + 1);
-
-				// Calculate H+ contribution using simplified equilibrium approximation
-				// √(Ka * [acid]) gives approximate [H+] for each dissociation
-				// Multiply by moles of substance to get moles of H+
-				totalMolesH += weight * Math.sqrt(Ka * molesOfSubstance);
+				const pH = pair.pKa + Math.log10(baseConc / acidConc);
+				bufferPHEstimates.push(pH);
+				bufferAcids.push(acid);
+				console.log('Buffer system:', {
+					acid: acid.component.name,
+					base: base.component.name,
+					pH: pH,
+				});
 			}
 		}
 
-		// If no acids present (totalMolesH = 0), return neutral pH
-		if (!totalMolesH) return 7;
+		// Calculate total H+ contribution from non-buffer acids
+		for (const substance of substances) {
+			const isBufferAcid = bufferAcids.includes(substance);
+			if (isBufferAcid || substance.component.substance.pKa.length === 0) continue;
+			const hContrib = this.getHContributions(substance.component, substance.mass, totalVolume);
+			console.log('Non-buffer contribution:', {
+				substance: substance.component.name,
+				mass: substance.mass,
+				molarity:
+					substance.mass /
+					substance.component.substance.molecule.molecularMass /
+					(totalVolume / 1000),
+				hContrib,
+				contributingPH: -Math.log10(hContrib),
+			});
+			totalMolesH += hContrib;
+		}
 
-		// Convert total moles H+ back to molarity by dividing by total volume in liters
-		const finalMolarity = totalMolesH / (totalVolume / 1000);
+		// Calculate non-buffer pH
+		const nonBufferPh = totalMolesH ? -Math.log10(totalMolesH) : 7;
+		console.log('Final calculation:', {
+			totalMolesH,
+			nonBufferPh,
+			bufferPHEstimates,
+		});
 
-		// Convert H+ concentration to pH using -log10[H+]
-		return -Math.log10(finalMolarity);
+		// Determine the final pH based on buffer systems and non-buffer acids
+		if (bufferPHEstimates.length > 0) {
+			const avgBufferPH = bufferPHEstimates.reduce((a, b) => a + b, 0) / bufferPHEstimates.length;
+			// Adjust final pH based on buffer and non-buffer contributions (TODO: better model)
+			const finalPH = totalMolesH ? (avgBufferPH + nonBufferPh) / 2 : avgBufferPH;
+			return finalPH;
+		}
+		console.log({ totalVolume, bufferPHEstimates, nonBufferPh, totalMolesH });
+		return nonBufferPh;
 	}
 
+	private getHContributions(
+		{ substance }: SubstanceComponent,
+		mass: number,
+		volume = this.volume,
+	): number {
+		if (!substance.pKa.length) return 0;
+
+		// Initial concentrations
+		const initialConc = mass / substance.molecule.molecularMass / (volume / 1000);
+		const Ka = Math.pow(10, -substance.pKa[0]);
+
+		// ICE table calculation
+		// HA ⇌ H+ + A-
+		// I: initialConc    0    0
+		// C:    -x        +x    +x
+		// E: (initialConc-x)    x     x
+
+		// Ka = x^2/(initialConc - x)
+		// Solve quadratic: x^2 + Ka*x - Ka*initialConc = 0
+		const a = 1;
+		const b = Ka;
+		const c = -Ka * initialConc;
+		const x = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+
+		console.log('ICE calculation:', {
+			initialConc,
+			Ka,
+			equilibriumH: x,
+			pH: -Math.log10(x),
+		});
+
+		return x;
+	}
 	density() {
 		const totalMass = this.mass;
 		const substanceMap = this.makeSubstanceMap();

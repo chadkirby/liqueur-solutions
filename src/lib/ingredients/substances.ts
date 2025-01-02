@@ -178,7 +178,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 2.5,
-		pKa: [3.13, 4.76, 6.4]
+		pKa: [3.13, 4.76, 5.4],
 	},
 	{
 		name: 'Phosphoric Acid',
@@ -188,7 +188,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: [2.15, 7.2, 12.35]
+		pKa: [2.15, 7.21, 12.35],
 	},
 	{
 		name: 'Malic Acid',
@@ -198,7 +198,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 2.4,
-		pKa: [3.4, 5.1]
+		pKa: [3.4, 5.1],
 	},
 	{
 		name: 'Lactic Acid',
@@ -208,7 +208,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 3.6,
-		pKa: [3.86]
+		pKa: [3.86],
 	},
 	{
 		name: 'Acetic Acid',
@@ -218,7 +218,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 3.5,
-		pKa: [4.76]
+		pKa: [4.76],
 	},
 	{
 		name: 'Tartaric Acid',
@@ -228,7 +228,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 2.5,
-		pKa: [3.03, 4.37]
+		pKa: [3.03, 4.37],
 	},
 	{
 		name: 'Ascorbic Acid',
@@ -238,8 +238,8 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 4,
-		pKa: [4.17]
-	}
+		pKa: [4.17],
+	},
 ] as const satisfies Array<_Substance>;
 
 export const Buffers = [
@@ -251,7 +251,7 @@ export const Buffers = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Sodium Phosphate',
@@ -261,7 +261,7 @@ export const Buffers = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Sodium Bicarbonate',
@@ -271,9 +271,29 @@ export const Buffers = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
-	}
+		pKa: [],
+	},
+	{
+		name: 'Sodium Acetate',
+		id: 'sodium-acetate',
+		molecule: new Molecule('C2H3NaO2'),
+		pureDensity: 1.528,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
 ] as const satisfies Array<_Substance>;
+
+export const bufferPairs = [
+	{ acid: 'citric-acid', base: 'sodium-citrate', pKa: 5.4 },
+	{ acid: 'phosphoric-acid', base: 'sodium-phosphate', pKa: 7.21 },
+	{ acid: 'malic-acid', base: 'sodium-citrate', pKa: 5.4 },
+	{ acid: 'lactic-acid', base: 'sodium-citrate', pKa: 5.4 },
+	{ acid: 'acetic-acid', base: 'sodium-acetate', pKa: 4.76 },
+	{ acid: 'tartaric-acid', base: 'sodium-citrate', pKa: 5.4 },
+	{ acid: 'ascorbic-acid', base: 'sodium-citrate', pKa: 5.4 },
+];
 
 export const Preservatives = [
 	{
@@ -284,7 +304,7 @@ export const Preservatives = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: [4.2]
+		pKa: [4.2],
 	},
 	{
 		name: 'Potassium Sorbate',
@@ -294,8 +314,8 @@ export const Preservatives = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: [4.76]
-	}
+		pKa: [4.76],
+	},
 ] as const satisfies Array<_Substance>;
 
 export const Solvents = [
@@ -307,7 +327,7 @@ export const Solvents = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Ethanol',
@@ -327,11 +347,11 @@ export const Solvents = [
 			[0.7, 0.8676],
 			[0.8, 0.843],
 			[0.9, 0.818],
-			[1.0, 0.7893] // Pure ethanol
+			[1.0, 0.7893], // Pure ethanol
 		] as const,
 		sweetness: 0,
 		kcal: 7.1,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Propylene Glycol',
@@ -341,8 +361,8 @@ export const Solvents = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 4.3,
-		pKa: []
-	}
+		pKa: [],
+	},
 ] as const satisfies Array<_Substance>;
 
 export const OtherSubstances = [
@@ -354,7 +374,7 @@ export const OtherSubstances = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Protein',
@@ -364,7 +384,7 @@ export const OtherSubstances = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 4,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Fat',
@@ -374,8 +394,8 @@ export const OtherSubstances = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 9,
-		pKa: []
-	}
+		pKa: [],
+	},
 ] as const satisfies Array<_Substance>;
 
 export const Salts = [
@@ -387,7 +407,7 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Sodium Chloride',
@@ -397,7 +417,7 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Potassium Chloride',
@@ -407,7 +427,7 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Sodium Bicarbonate',
@@ -417,7 +437,7 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: [6.4, 10.3]
+		pKa: [6.4, 10.3],
 	},
 	{
 		name: 'Magnesium Sulfate',
@@ -427,7 +447,7 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Potassium Bicarbonate',
@@ -437,8 +457,8 @@ export const Salts = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 0,
-		pKa: [6.4, 10.3]
-	}
+		pKa: [6.4, 10.3],
+	},
 ];
 
 export const Substances = [
@@ -447,7 +467,7 @@ export const Substances = [
 	...Acids,
 	...Buffers,
 	...Preservatives,
-	...OtherSubstances
+	...OtherSubstances,
 ] as const satisfies Array<_Substance>;
 
 export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
