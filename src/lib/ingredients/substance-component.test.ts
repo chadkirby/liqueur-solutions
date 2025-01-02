@@ -56,7 +56,7 @@ describe('Substances', () => {
 		assert.equal(water.isValid, true, 'isValid');
 		assert.equal(water.partialSolutionDensity(1), 1, 'partialSolutionDensity');
 		assert.equal(water.getKcal(1), 0, 'getKcal');
-		assert.approximately(water.getMolarity(1), 0.05551, 0.00001, 'getMolarity');
+		assert.approximately(water.getMoles(1), 0.05551, 0.00001, 'getMolarity');
 		assert.equal(water.describe(), 'Water', 'describe');
 	});
 
@@ -75,7 +75,7 @@ describe('Substances', () => {
 		assert.equal(sucrose.pureDensity, 1.5875, 'pureDensity');
 		assert.equal(sucrose.isValid, true, 'isValid');
 		assert.equal(sucrose.getKcal(1), 3.87, 'getKcal');
-		assert.approximately(sucrose.getMolarity(1), 0.0029214, 0.00001, 'getMolarity');
+		assert.approximately(sucrose.getMoles(1), 0.0029214, 0.00001, 'getMolarity');
 		assert.equal(sucrose.describe(), 'Sucrose', 'describe');
 	});
 });

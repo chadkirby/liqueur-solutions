@@ -188,7 +188,7 @@ export class SubstanceComponent implements Component {
 				const Ka = Math.pow(10, -pKa);
 				// Weight later dissociations less
 				const weight = 1 / (i + 1);
-				totalH += weight * Math.sqrt(Ka * this.getMolarity(mass));
+				totalH += weight * Math.sqrt(Ka * this.getMoles(mass));
 			}
 			return -Math.log10(totalH);
 		}
@@ -196,7 +196,7 @@ export class SubstanceComponent implements Component {
 		return 7;
 	}
 
-	getMolarity(mass: number): number {
+	getMoles(mass: number): number {
 		return mass / this.substance.molecule.molecularMass;
 	}
 
