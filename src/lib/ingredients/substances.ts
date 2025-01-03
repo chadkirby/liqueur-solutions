@@ -178,7 +178,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 2.5,
-		pKa: [3.13, 4.76, 5.4],
+		pKa: [3.13, 4.76, 6.4],
 	},
 	{
 		name: 'Phosphoric Acid',
@@ -286,14 +286,19 @@ export const Buffers = [
 ] as const satisfies Array<_Substance>;
 
 export const bufferPairs = [
-	{ acid: 'citric-acid', base: 'sodium-citrate', pKa: 5.4 },
-	{ acid: 'phosphoric-acid', base: 'sodium-phosphate', pKa: 7.21 },
-	{ acid: 'malic-acid', base: 'sodium-citrate', pKa: 5.4 },
-	{ acid: 'lactic-acid', base: 'sodium-citrate', pKa: 5.4 },
-	{ acid: 'acetic-acid', base: 'sodium-acetate', pKa: 4.76 },
-	{ acid: 'tartaric-acid', base: 'sodium-citrate', pKa: 5.4 },
-	{ acid: 'ascorbic-acid', base: 'sodium-citrate', pKa: 5.4 },
+	{ acid: 'citric-acid', base: 'sodium-citrate' },
+	{ acid: 'phosphoric-acid', base: 'sodium-phosphate' },
+	{ acid: 'malic-acid', base: 'sodium-citrate' },
+	{ acid: 'lactic-acid', base: 'sodium-citrate' },
+	{ acid: 'acetic-acid', base: 'sodium-acetate' },
+	{ acid: 'tartaric-acid', base: 'sodium-citrate' },
+	{ acid: 'ascorbic-acid', base: 'sodium-citrate' },
 ];
+
+export function getConjugateAcid(base: string): string | null {
+	const pair = bufferPairs.find((pair) => pair.base === base);
+	return pair?.acid ?? null;
+}
 
 export const Preservatives = [
 	{

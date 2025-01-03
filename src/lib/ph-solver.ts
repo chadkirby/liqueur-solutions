@@ -79,66 +79,59 @@ export function getMolarConcentration(
 	return concentration;
 }
 
-export function calculatePh(
-	substance: AcidSubstance,
-	// total concentration of the substance in the solution
-	C_total: number,
-): PhResult {
-	// Step 3: Calculate the Ka values from the pKa values
-	const K_a = substance.pKa.map((pk) => 10 ** -pk);
+export type PhInput = {
+	// Total concentration of the acid
+	acidMolarity: number;
+	// Any pre-existing conjugate base (e.g. from sodium citrate)
+	conjugateBaseMolarity: number;
+	// pKa values from the acid
+	pKa: number[];
+	// For citrus juices, what fraction is already dissociated
+	dissociationFactor?: number;
+};
 
-	// Step 4: Define the charge balance equation
+export function calculatePh({
+	acidMolarity,
+	conjugateBaseMolarity = 0,
+	pKa,
+	dissociationFactor = 0,
+}: PhInput): PhResult {
+	const Ka = pKa.map((pk) => 10 ** -pk);
+	const freeAcidMolarity = acidMolarity * (1 - dissociationFactor);
+
 	function f(H: number): number {
-		let sumNegativelyCharged = 0;
+		// Total acid from both sources
+		const totalAcid = freeAcidMolarity + conjugateBaseMolarity;
 
-		// Calculate the denominator for alpha fractions
-		let denom = 1; // Represents [H+]^n
-		for (let j = 0; j < K_a.length; j++) {
-			let term = 1;
-			for (let k = 0; k <= j; k++) {
-				term *= K_a[k];
-			}
-			denom += term / Math.pow(H, j + 1);
+		// Number of dissociation steps = number of pKa values
+		const maxCharge = Ka.length;
+
+		// Calculate K products and denominator
+		let denominator = 1;
+		let kProducts: number[] = [1]; // Start with neutral species
+
+		// Build up products of K values and H+
+		for (let i = 0; i < maxCharge; i++) {
+			const nextK = (kProducts[i] * Ka[i]) / H;
+			kProducts.push(nextK);
+			denominator += nextK;
 		}
 
-		// Calculate the concentration of each negatively charged species
-		for (let i = 1; i <= K_a.length; i++) {
-			// Calculate the numerator for the current species
-			let num = 1;
-			for (let j = 0; j < i; j++) {
-				num *= K_a[j];
-			}
-			num /= Math.pow(H, i);
+		// Calculate charge balance
+		let positiveCharges = H + maxCharge * conjugateBaseMolarity;
+		let negativeCharges = 1e-14 / H; // OH⁻
 
-			// Calculate the alpha fraction for the current species
-			const alpha = num / denom;
-
-			// Calculate the concentration of the current species
-			const conc = C_total * alpha;
-
-			// Add the contribution of the current species to the sum of negatively charged species
-			sumNegativelyCharged += i * conc;
+		// Sum up negative charges from each species
+		// Skip first element (i=0) as it represents neutral species
+		for (let i = 1; i <= maxCharge; i++) {
+			negativeCharges += (totalAcid * (i * kProducts[i])) / denominator;
 		}
 
-		// Include the OH- contribution in the charge balance equation
-		const OH = 1e-14 / H;
-
-		// The charge balance equation: [H+] - sum of negatively charged species - [OH-] = 0
-		return H - sumNegativelyCharged - OH;
+		return positiveCharges - negativeCharges;
 	}
 
-	// Step 5: Define initial guesses for [H+]
-	const H_min = 1e-14;
-	const H_max = 1;
-
-	// Step 7: Use the bisection method to find the root of f(H)
-	const H_root = bisection(f, H_min, H_max, 1e-9);
-
-	// Step 8: Calculate the pH from [H+]
-	const pH = -Math.log10(H_root);
-
-	// Step 10: Return the pH and [H+]
-	return { pH: pH, H: H_root };
+	const H_root = bisection(f, 1e-14, 1, 1e-9);
+	return { pH: -Math.log10(H_root), H: H_root, f };
 }
 
 export function getMoles(substance: AcidSubstance, mass: number): number {
