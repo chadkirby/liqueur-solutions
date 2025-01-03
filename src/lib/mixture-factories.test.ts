@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { citrus, newSpirit, newSyrup } from './mixture-factories.js';
+import { citrus, newSpirit, newSyrup, newZeroSyrup } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { getCitrusPrefix } from './citrus-ids.js';
 
@@ -95,5 +95,21 @@ describe('Citrus', () => {
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(8.78, 1);
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
+	});
+});
+
+describe('zeroCal', () => {
+	it('should work', () => {
+		const zeroCal = newZeroSyrup(1000, 66.67);
+		const substanceMap = zeroCal.makeSubstanceMap();
+		expect(substanceMap.get('water')!.mass, 'mass').toBeCloseTo(906, 0);
+		expect(substanceMap.get('allulose')!.mass, 'mass').toBeCloseTo(201, 0);
+		expect(substanceMap.get('sucralose')!.mass, 'mass').toBeCloseTo(1, 1);
+		expect(substanceMap.get('citric-acid')!.mass, 'mass').toBeCloseTo(1.3, 1);
+		expect(substanceMap.get('sodium-citrate')!.mass, 'mass').toBeCloseTo(1.0, 1);
+		expect(zeroCal.volume, 'volume').toBeCloseTo(1000);
+		expect(zeroCal.equivalentSugarMass, 'mass').toBeCloseTo(741, 0);
+		expect(zeroCal.brix, 'target brix').toBeCloseTo(66.67, 0);
+		expect(zeroCal.pH, 'buffered pH!').toBeCloseTo(3.5, 1);
 	});
 });

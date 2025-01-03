@@ -266,6 +266,33 @@ export function setVolume(working: Mixture, targetVolume: number, iteration = 0)
 	}
 }
 
-function isClose(a: number, b: number, delta = 0.01) {
+export function isClose(a: number, b: number, delta = 0.01) {
 	return Math.abs(a - b) < delta;
+}
+
+export function seek(
+	mixture: Mixture,
+	options: {
+		message?: string;
+		maxIterations?: number;
+		predicate(mx: Mixture): boolean;
+		adjuster(mx: Mixture): Mixture;
+		throwOnFail?: boolean;
+	},
+): Mixture {
+	if (options.predicate(mixture)) {
+		return mixture;
+	}
+	let iterations = options.maxIterations ?? 100;
+	while (iterations-- > 0) {
+		const next = options.adjuster(mixture);
+		if (options.predicate(next)) {
+			return next;
+		}
+		mixture = next;
+	}
+	if (options.throwOnFail) {
+		throw new Error(`Failed to converge: ${options.message}`);
+	}
+	return mixture;
 }

@@ -1,7 +1,8 @@
-import { componentId, Mixture } from './index.svelte.js';
+import { componentId, isWater, Mixture } from './index.svelte.js';
 import { calculateAbvProportions } from './ingredients/density.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import type { CitrusJuiceId, CitrusJuiceName } from './citrus-ids.js';
+import { isClose, seek } from './solver.js';
 
 export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
@@ -185,3 +186,96 @@ export const citrus = {
 		return mx;
 	},
 } as const satisfies Record<CitrusJuiceName, (volume: number) => Mixture>;
+
+export function newPreservative(volume: number): Mixture {
+	const mx = new Mixture(componentId(), 1, [
+		{
+			name: 'sodium benzoate',
+			proportion: 15,
+			component: SubstanceComponent.new('sodium-benzoate'),
+		},
+		{
+			name: 'potassium sorbate',
+			proportion: 25,
+			component: SubstanceComponent.new('potassium-sorbate'),
+		},
+		{
+			name: 'water',
+			proportion: 100,
+			component: SubstanceComponent.new('water'),
+		},
+	]).setVolume(volume);
+	return mx;
+}
+
+export function newZeroSyrup(volume: number, desiredBrix = 66.67): Mixture {
+	const preservative = newPreservative(100);
+	const mx = new Mixture()
+		.addIngredient({
+			name: 'sucralose',
+			mass: 1,
+			component: SubstanceComponent.new('sucralose'),
+		})
+		.addIngredient({
+			name: 'allulose',
+			mass: 250,
+			component: SubstanceComponent.new('allulose'),
+		})
+		.addIngredient({
+			name: 'preservative',
+			mass: preservative.mass / 100,
+			component: preservative,
+		})
+		.addIngredient({
+			name: 'buffer acid',
+			mass: 1.3,
+			component: SubstanceComponent.new('citric-acid'),
+		})
+		.addIngredient({
+			name: 'buffer base',
+			mass: 1,
+			component: SubstanceComponent.new('sodium-citrate'),
+		})
+		.addIngredient({
+			name: 'water',
+			// add water to make up the volume to 1000
+			mass: 890.7899,
+			component: SubstanceComponent.new('water'),
+		});
+
+	// we need to adjust the sweetness to the desired brix
+	// it's too hard to measure tiny quantities of sucralose, so we'll
+	// adjust the sweetness by adjusting the allulose mass
+	const allulose = mx.findIngredient(
+		(i) => i instanceof SubstanceComponent && i.substanceId === 'allulose',
+	);
+	if (!allulose) throw new Error('Allulose not found');
+	// we'll also need to adjust the water mass to keep the volume at 1000
+	// while we're adjusting proportions to hit the desired sweetness
+	const water = mx.findIngredient(isWater);
+	if (!water) throw new Error('Water not found');
+
+	seek(mx, {
+		message: 'Adjusting allulose mass to desired brix',
+		throwOnFail: true,
+		maxIterations: 100,
+		predicate: (mx) => isClose(mx.brix, desiredBrix, 0.01),
+		adjuster: (mx) => {
+			const actualBrix = mx.brix;
+			mx.scaleIngredientMass(allulose.id, desiredBrix / actualBrix);
+			// while we're dialing in the sweetnedd, keep the volume to 1000
+			const desiredVolume = 1000;
+			seek(mx, {
+				message: 'Adjusting water mass to restore volume',
+				maxIterations: 10,
+				predicate: (mx) => isClose(mx.volume, desiredVolume, 0.01),
+				adjuster: (mx) => mx.scaleIngredientMass(water.id, desiredVolume / mx.volume),
+			});
+			return mx;
+		},
+	});
+
+	// now that the ingredient proportions are correct, set the volume
+	mx.setVolume(volume);
+	return mx;
+}
