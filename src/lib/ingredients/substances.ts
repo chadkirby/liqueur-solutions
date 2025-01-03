@@ -238,7 +238,7 @@ export const Acids = [
 		solutionDensityMeasurements: [],
 		sweetness: 0,
 		kcal: 4,
-		pKa: [4.17],
+		pKa: [4.17, 11.8],
 	},
 ] as const satisfies Array<_Substance>;
 
@@ -459,7 +459,7 @@ export const Salts = [
 		kcal: 0,
 		pKa: [6.4, 10.3],
 	},
-];
+] as const satisfies Array<_Substance>;
 
 export const Substances = [
 	...Solvents,
@@ -470,9 +470,10 @@ export const Substances = [
 	...OtherSubstances,
 ] as const satisfies Array<_Substance>;
 
-export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
-
+// TODO: this shouldn't be string[]
 export type SubstanceId = (typeof Substances)[number]['id'];
+
+export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
 
 export function isSubstanceIid(id: string): id is SubstanceId {
 	return SubstanceIds.includes(id as SubstanceId);

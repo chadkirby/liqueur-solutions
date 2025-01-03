@@ -14,7 +14,7 @@ import {
 	type SubstanceId,
 	Sweeteners,
 } from './ingredients/substances.js';
-import { AnnealingSolver } from 'abstract-sim-anneal';
+import { bisectPh as pHSolver } from './ph-solver.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -465,21 +465,21 @@ export class Mixture implements Component {
 
 			if (isBufferAcid || substance.component.substance.pKa.length === 0) continue;
 
-			const substanceVolume = substance.component.getVolume(substance.mass);
-			const substanceMolarity = substance.component.getMoles(substance.mass);
+			const phData = pHSolver(substance.component.substance, substance.mass, totalVolume);
 
-			// Convert substance amount to moles
-			const molesOfSubstance = (substanceMolarity * substanceVolume) / 1000;
-
-			for (const [i, pKa] of substance.component.substance.pKa.entries()) {
-				const Ka = Math.pow(10, -pKa);
-				const weight = 1 / (i + 1);
-				totalMolesH += weight * Math.sqrt(Ka * molesOfSubstance);
-			}
+			totalMolesH += phData.H;
+			console.log({
+				substance: substance.component.substance.name,
+				mass: substance.mass,
+				totalVolume,
+				phData,
+				totalMolesH,
+				nonBufferPh: -Math.log10(totalMolesH),
+			});
 		}
 
 		// Calculate non-buffer pH
-		const nonBufferPh = totalMolesH ? -Math.log10(totalMolesH / (totalVolume / 1000)) : 7;
+		const nonBufferPh = totalMolesH ? -Math.log10(totalMolesH) : 7;
 
 		// Determine the final pH based on buffer systems and non-buffer acids
 		if (bufferPHEstimates.length > 0) {
