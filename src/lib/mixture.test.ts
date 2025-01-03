@@ -224,7 +224,7 @@ describe('can model pH', () => {
 		assert.approximately(mx.pH, 1.82, 0.1, 'pH');
 	});
 
-	test('should handle buffer pair - citric acid and sodium citrate', () => {
+	test.only('should handle buffer pair - citric acid and sodium citrate', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',

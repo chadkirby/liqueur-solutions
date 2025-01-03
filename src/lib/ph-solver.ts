@@ -7,6 +7,8 @@
 	}
  */
 
+import { isClose } from './solver.js';
+
 export interface AcidSubstance {
 	molecule: {
 		molecularMass: number;
@@ -79,66 +81,101 @@ export function getMolarConcentration(
 	return concentration;
 }
 
-export function calculatePh(
-	substance: AcidSubstance,
-	// total concentration of the substance in the solution
-	C_total: number,
-): PhResult {
-	// Step 3: Calculate the Ka values from the pKa values
-	const K_a = substance.pKa.map((pk) => 10 ** -pk);
+export type PhInput = {
+	// Total concentration of the acid
+	acidMolarity: number;
+	// Any pre-existing conjugate base (e.g. from sodium citrate)
+	conjugateBaseMolarity: number;
+	// pKa values from the acid
+	pKa: number[];
+	// For citrus juices, what fraction is already dissociated
+	dissociationFactor?: number;
+};
 
-	// Step 4: Define the charge balance equation
+export function calculatePh({
+	acidMolarity,
+	conjugateBaseMolarity = 0,
+	pKa,
+	dissociationFactor = 0,
+}: PhInput): PhResult {
+	console.log('Calculating pH with:', {
+		acidMolarity,
+		conjugateBaseMolarity,
+		pKa,
+		dissociationFactor,
+	});
+
+	// Convert pKa to Ka
+	const Ka = pKa.map((pk) => 10 ** -pk);
+
+	// If this is citrus juice, adjust the free acid concentration
+	const freeAcidMolarity = acidMolarity * (1 - dissociationFactor);
+	// The dissociated portion adds to our conjugate base
+	const totalConjugateBase = conjugateBaseMolarity + acidMolarity * dissociationFactor;
+
+	console.log('After adjustments:', {
+		freeAcidMolarity,
+		totalConjugateBase,
+		Ka,
+	});
+
 	function f(H: number): number {
 		let sumNegativelyCharged = 0;
 
-		// Calculate the denominator for alpha fractions
-		let denom = 1; // Represents [H+]^n
-		for (let j = 0; j < K_a.length; j++) {
+		// From pre-existing citrate
+		const citrate3Minus = 3 * totalConjugateBase;
+		sumNegativelyCharged += citrate3Minus;
+
+		// Calculate denominators for acid dissociation
+		let denom = 1; // [H+]^n term
+		for (let j = 0; j < Ka.length; j++) {
 			let term = 1;
 			for (let k = 0; k <= j; k++) {
-				term *= K_a[k];
+				term *= Ka[k];
 			}
 			denom += term / Math.pow(H, j + 1);
 		}
 
-		// Calculate the concentration of each negatively charged species
-		for (let i = 1; i <= K_a.length; i++) {
-			// Calculate the numerator for the current species
+		// Calculate each dissociation state contribution
+		let dissociatedContributions = 0;
+		for (let i = 1; i <= Ka.length; i++) {
 			let num = 1;
 			for (let j = 0; j < i; j++) {
-				num *= K_a[j];
+				num *= Ka[j];
 			}
 			num /= Math.pow(H, i);
-
-			// Calculate the alpha fraction for the current species
 			const alpha = num / denom;
-
-			// Calculate the concentration of the current species
-			const conc = C_total * alpha;
-
-			// Add the contribution of the current species to the sum of negatively charged species
-			sumNegativelyCharged += i * conc;
+			const conc = freeAcidMolarity * alpha;
+			dissociatedContributions += i * conc;
 		}
+		sumNegativelyCharged += dissociatedContributions;
 
-		// Include the OH- contribution in the charge balance equation
 		const OH = 1e-14 / H;
 
-		// The charge balance equation: [H+] - sum of negatively charged species - [OH-] = 0
+		// Log all contributions
+		if (Math.abs(-Math.log10(H) - 5.5) < 1) {
+			console.log('Near target pH:', {
+				pH: -Math.log10(H),
+				citrate3Minus,
+				dissociatedContributions,
+				OH,
+				total: H - sumNegativelyCharged - OH,
+			});
+		} else {
+			console.log('Not near target pH:', {
+				pH: -Math.log10(H),
+				citrate3Minus,
+				dissociatedContributions,
+				OH,
+				total: H - sumNegativelyCharged - OH,
+			});
+		}
+
 		return H - sumNegativelyCharged - OH;
 	}
-
-	// Step 5: Define initial guesses for [H+]
-	const H_min = 1e-14;
-	const H_max = 1;
-
-	// Step 7: Use the bisection method to find the root of f(H)
-	const H_root = bisection(f, H_min, H_max, 1e-9);
-
-	// Step 8: Calculate the pH from [H+]
-	const pH = -Math.log10(H_root);
-
-	// Step 10: Return the pH and [H+]
-	return { pH: pH, H: H_root };
+	// Use bisection as before
+	const H_root = bisection(f, 1e-14, 1, 1e-9);
+	return { pH: -Math.log10(H_root), H: H_root };
 }
 
 export function getMoles(substance: AcidSubstance, mass: number): number {

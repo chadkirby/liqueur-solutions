@@ -178,10 +178,6 @@ export function solver(mixture: Mixture, targets: Target) {
 			if (!bestState || state.error < bestState.error) {
 				bestState = state;
 				if (state.error < tolerance) {
-					console.log('Aborting early', count);
-					console.log(state.actual);
-					console.log(state.deviations);
-					console.log(state.error);
 					solver.abort();
 				}
 			}
