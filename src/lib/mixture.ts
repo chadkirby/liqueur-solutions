@@ -14,13 +14,7 @@ import {
 	type SubstanceId,
 	Sweeteners,
 } from './ingredients/substances.js';
-import {
-	bisection,
-	calculateBufferedPh,
-	calculatePh,
-	getMolarConcentration,
-	type AcidSystem,
-} from './ph-solver.js';
+import { calculatePh, getMolarConcentration } from './ph-solver.js';
 import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -243,7 +237,7 @@ export class Mixture implements Component {
 		ingredientId: string;
 		component: SubstanceComponent;
 	}> {
-		for (const { ingredient, mass } of this.eachIngredient()) {
+		for (const { ingredient, mass: ingredientMass } of this.eachIngredient()) {
 			const component = ingredient.component;
 			if (component instanceof SubstanceComponent) {
 				if (ids.length === 0 || ids.includes(component.substanceId)) {
@@ -251,13 +245,18 @@ export class Mixture implements Component {
 						substanceId: component.substanceId,
 						ingredientId: ingredient.id,
 						component,
-						mass,
+						mass: ingredientMass,
 					};
 				}
 			} else if (component instanceof Mixture) {
-				for (const substance of component.eachSubstance(...ids)) {
+				const subMixture = component;
+				for (const subSubstance of subMixture.eachSubstance(...ids)) {
+					// the mass of the substance in this mixture is the proportion
+					// of the sub-substance in the sub-mixture times the mass of
+					// this ingredient
 					yield {
-						...substance,
+						...subSubstance,
+						mass: (subSubstance.mass / subMixture.mass) * ingredientMass,
 						ingredientId: ingredient.id,
 					};
 				}
@@ -346,9 +345,11 @@ export class Mixture implements Component {
 		return this;
 	}
 
-	findIngredient(predicate: (component: Component) => boolean): Component | undefined {
+	findIngredient(
+		predicate: (component: IngredientItem['component']) => boolean,
+	): IngredientItem | undefined {
 		for (const { ingredient } of this.eachIngredient()) {
-			if (predicate(ingredient.component)) return ingredient.component;
+			if (predicate(ingredient.component)) return ingredient;
 		}
 		return undefined;
 	}
@@ -493,17 +494,6 @@ export class Mixture implements Component {
 
 			const phData = calculatePh(substance.component.substance, freeMoles);
 			totalMolesH += phData.H;
-
-			console.log({
-				id: substance.substanceId,
-				dissociationFactor,
-				mass: substance.mass,
-				totalMoles,
-				freeMoles,
-				totalVolume,
-				phData,
-				mixturePh: -Math.log10(totalMolesH),
-			});
 		}
 		// Calculate buffer contributions
 		for (const system of bufferSystems.values()) {

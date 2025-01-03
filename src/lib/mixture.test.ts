@@ -51,6 +51,28 @@ describe('mixture works', () => {
 		assert.equal(mx.ingredients.size, 2, 'two ingredients');
 	});
 
+	test('can add sub-mixtures', () => {
+		const mx0 = new Mixture().addIngredient({
+			name: 'water',
+			mass: 100,
+			component: SubstanceComponent.new('water'),
+		});
+		const mx1 = new Mixture().addIngredient({
+			name: 'water',
+			mass: 100,
+			component: SubstanceComponent.new('water'),
+		});
+
+		const mx = new Mixture()
+			.addIngredient({ name: 'water 0', mass: 10, component: mx0 })
+			.addIngredient({ name: 'water 1', mass: 10, component: mx1 });
+
+		assert.equal(mx.makeSubstanceMap().get('water')!.mass, 20, 'water substance map');
+		assert.equal(mx.waterMass, 20, 'water ingredient mass');
+		assert.equal(mx.ingredients.size, 2, 'two ingredients');
+	});
+
+
 	test('can remove ingredient', () => {
 		const mx = new Mixture()
 			.addIngredient({
