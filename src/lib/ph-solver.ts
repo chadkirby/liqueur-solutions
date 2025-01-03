@@ -118,58 +118,57 @@ export function calculatePh({
 		// Start with most dissociated form (charge = -maxCharge)
 		let denominator = 1;
 		let lastK = 1;
+		const kValues: number[] = [];
 
 		// Only use Ka[maxCharge-1] through Ka[1] for charged species
 		for (let i = maxCharge - 1; i >= 1; i--) {
 			if (i === maxCharge - 1) {
 				lastK = H / Ka[i]; // First K (K3)
-				log += `+ ${lastK.toFixed(2)} `;
 			} else {
-				log += `+ ${lastK.toFixed(2)} * ${((lastK * H) / Ka[i]).toFixed(2)} `;
 				lastK = (lastK * (lastK * H)) / Ka[i]; // Subsequent Ks use previous K
 			}
-
+			kValues.push(lastK);
 			denominator += lastK;
 		}
-		console.log(log, `= ${denominator.toFixed(4)}`);
 
 		// Calculate charge balance
 		let positiveCharges = H + maxCharge * conjugateBaseMolarity;
 
+		{
+			// works:
+			const K3 = H / Ka[2]; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
+			const K2 = (K3 * H) / Ka[1]; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
+
+			let negativeCharges =
+				totalCitrate *
+				((3 * 1) / denominator + // Cit³⁻ + // Cit³⁻
+					(2 * K3) / denominator + // HCit²⁻
+					(1 * (K3 * K2)) / denominator); // H₂Cit⁻
+
+			console.log(
+				'works:',
+				`${negativeCharges.toFixed(6)} =`,
+				`${totalCitrate.toFixed(2)} * ((3 * 1) / ${denominator.toFixed(2)}`,
+				`+ (2 * ${K3.toFixed(2)}) / ${denominator.toFixed(2)}`,
+				`+ (1 * (${K3.toFixed(2)} * ${K2.toFixed(2)})) / ${denominator.toFixed(2)})`,
+			);
+		}
 		let negativeCharges =
 			totalCitrate *
-			((maxCharge * 1) / denominator + // Most negative (e.g., Cit³⁻)
-				((maxCharge - 1) * (H / Ka[maxCharge - 1])) / denominator + // Next (e.g., HCit²⁻)
-				((maxCharge - 2) * (((H / Ka[maxCharge - 1]) * H) / Ka[maxCharge - 2])) / denominator); // Last (e.g., H₂Cit⁻)
+			((maxCharge * 1) / denominator + // Most dissociated
+				((maxCharge - 1) * kValues[0]) / denominator + // Using K3
+				((maxCharge - 2) * kValues[1]) / denominator); // Using K3*K2
 
+		console.log(
+			'broke:',
+			`${negativeCharges.toFixed(6)} =`,
+			`${totalCitrate.toFixed(2)} * ((${maxCharge} * 1) / ${denominator.toFixed(2)}`,
+			`+ (${maxCharge - 1} * ${kValues[0].toFixed(2)}) / ${denominator.toFixed(2)}`,
+			`+ (${maxCharge - 2} * ${kValues[1].toFixed(2)}) / ${denominator.toFixed(2)})`,
+		);
 		negativeCharges += 1e-14 / H; // OH⁻
 
 		return positiveCharges - negativeCharges;
-	}
-	// Before trying bisection, let's scan across a range of pH values
-	console.log('Scanning pH range for root:');
-	for (let pH = 0; pH <= 14; pH += 1) {
-		const H = Math.pow(10, -pH);
-		const result = f(H);
-		const prev = f(Math.pow(10, -pH - 1));
-		// log if the sign changes
-		if (prev * result < 0) {
-			console.log(`pH ${pH}: f(H) = ${result}`);
-		}
-	}
-
-	// Then try to find where f(H) changes sign
-	console.log('\nFinding sign change:');
-	let pH = 0;
-	while (pH <= 14) {
-		const H = Math.pow(10, -pH);
-		const prev = f(Math.pow(10, -pH - 0.25));
-		const result = f(H);
-		// log if the sign changes
-		if (prev * result < 0) {
-			console.log(`pH ${pH.toFixed(2)}: f(H) = ${result}`);
-		}
-		pH += 0.25;
 	}
 	const H_root = bisection(f, H_min, H_max, 1e-9);
 	return { pH: -Math.log10(H_root), H: H_root };
