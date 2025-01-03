@@ -108,33 +108,27 @@ export function calculatePh({
 	const H_min = 10 ** -(avgPka + 4); // pH = avgPka + 4
 	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
 
-	function f(H: number): number {
-		// Start with H+ and Na+ from sodium citrate
-		let positiveCharges = H + 3 * conjugateBaseMolarity; // 3 Na+ per citrate
+  function f(H: number): number {
+		// Na⁺ from sodium citrate plus H⁺
+		let positiveCharges = 3 * conjugateBaseMolarity + H;
 
-		// Calculate distribution of citrate species based on pH
-		let negativeCharges = 0;
-		const denom = 1 + H / Ka[0] + (H * H) / (Ka[0] * Ka[1]) + (H * H * H) / (Ka[0] * Ka[1] * Ka[2]);
+		const Ka2 = Math.pow(10, -4.76);
+		const Ka3 = Math.pow(10, -6.4);
 
-		// Cit³⁻
-		negativeCharges += (3 * conjugateBaseMolarity) / denom;
-		// HCit²⁻
-		negativeCharges += 2 * conjugateBaseMolarity * (H / (Ka[2] * denom));
-		// H₂Cit⁻
-		negativeCharges += conjugateBaseMolarity * ((H * H) / (Ka[1] * Ka[2] * denom));
+		// Calculate distribution among H₂Cit⁻, HCit²⁻, and Cit³⁻
+		const alpha1 = 1; // H₂Cit⁻
+		const alpha2 = Ka2 / H; // HCit²⁻
+		const alpha3 = (Ka2 * Ka3) / (H * H); // Cit³⁻
+		const denom = alpha1 + alpha2 + alpha3;
 
-		for (let i = 0; i < Ka.length; i++) {
-			const numerator = Ka.slice(0, i + 1).reduce((prod, k) => prod * k, 1);
-			const alpha = numerator / (Math.pow(H, i + 1) * denom);
-			negativeCharges += (i + 1) * freeAcidMolarity * alpha;
-		}
+		// Total negative charge from all citrate species
+		const totalCitrate = conjugateBaseMolarity + freeAcidMolarity;
+		let negativeCharges = (totalCitrate * (alpha1 + 2 * alpha2 + 3 * alpha3)) / denom;
 
-		// Add OH- contribution
 		negativeCharges += 1e-14 / H;
 
 		return positiveCharges - negativeCharges;
 	}
-
 	// Before trying bisection, let's scan across a range of pH values
 	console.log('Scanning pH range for root:');
 	for (let pH = 0; pH <= 14; pH += 1) {
