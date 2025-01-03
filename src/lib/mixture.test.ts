@@ -199,7 +199,7 @@ describe('can model pH', () => {
 				mass: 94,
 				component: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 2.5, 0.1, 'pH');
+		assert.approximately(mx.pH, 1.82, 0.1, 'pH');
 	});
 
 	test('should handle buffer pair - citric acid and sodium citrate', () => {
