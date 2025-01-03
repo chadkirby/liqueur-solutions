@@ -21,6 +21,7 @@ import {
 	getMolarConcentration,
 	type AcidSystem,
 } from './ph-solver.js';
+import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -335,14 +336,8 @@ export class Mixture implements Component {
 		) as this;
 	}
 
-	get idPrefix() {
-		// allow a parenthesized prefix before the id
-		const match = this.id.match(/^\([-\w]+\)/i);
-		return match ? match[0] : '';
-	}
-
 	updateIds() {
-		this._id = `${this.idPrefix}${componentId()}`;
+		this._id = `${getIdPrefix(this.id)}${componentId()}`;
 		for (const { ingredient } of this.eachIngredient()) {
 			if (ingredient.component instanceof Mixture) {
 				ingredient.component.updateIds();
@@ -445,6 +440,7 @@ export class Mixture implements Component {
 		const totalVolume = this.volume;
 		const substances = this.substances;
 		type SubstanceItem = (typeof substances)[number];
+		const dissociationFactor = getCitrusDissociationFactor(this.id);
 
 		// Group acids with their conjugate bases
 		const bufferSystems = new Map<
@@ -459,20 +455,56 @@ export class Mixture implements Component {
 			if (bufferPair) {
 				const conjugateBase = substances.find((s) => s.substanceId === bufferPair.base);
 				if (conjugateBase) {
-					bufferSystems.set(bufferPair.acid, {
-						acid: substance,
-						base: conjugateBase,
-						pKa: bufferPair.pKa,
-					});
-					continue;
+					const acidConc = getMolarConcentration(
+						substance.component.substance,
+						substance.mass,
+						totalVolume,
+					);
+					const baseConc = getMolarConcentration(
+						conjugateBase.component.substance,
+						conjugateBase.mass,
+						totalVolume,
+					);
+					const ratio = acidConc / baseConc;
+					// Henderson-Hasselbalch equation is meant for buffer
+					// solutions where the acid and conjugate base concentrations
+					// are relatively similar (usually within an order of
+					// magnitude or so).
+					if (ratio > 0.1 && ratio < 10) {
+						// Handle as buffer
+						bufferSystems.set(bufferPair.acid, {
+							acid: substance,
+							base: conjugateBase,
+							pKa: bufferPair.pKa,
+						});
+						continue;
+					}
 				}
 			}
 
-			// Handle unbuffered acids
-			const phData = calculatePh(substance.component.substance, substance.mass, totalVolume);
-			totalMolesH += phData.H;
-		}
+			// Calculate the total concentration of the substance in the solution
+			const totalMoles = getMolarConcentration(
+				substance.component.substance,
+				substance.mass,
+				totalVolume,
+			);
+			// Calculate the concentration of the free acid in the solution
+			const freeMoles = totalMoles * (1 - dissociationFactor);
 
+			const phData = calculatePh(substance.component.substance, freeMoles);
+			totalMolesH += phData.H;
+
+			console.log({
+				id: substance.substanceId,
+				dissociationFactor,
+				mass: substance.mass,
+				totalMoles,
+				freeMoles,
+				totalVolume,
+				phData,
+				mixturePh: -Math.log10(totalMolesH),
+			});
+		}
 		// Calculate buffer contributions
 		for (const system of bufferSystems.values()) {
 			const { acid, base, pKa } = system;

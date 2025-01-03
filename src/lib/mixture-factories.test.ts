@@ -1,18 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import {
-	isCitrus,
-	isGrapefruit,
-	isLemon,
-	isLime,
-	isOrange,
-	newGrapefruit,
-	newLemon,
-	newLime,
-	newOrange,
-	newSpirit,
-	newSyrup,
-} from './mixture-factories.js';
+import { citrus, newSpirit, newSyrup } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
+import { getCitrusPrefix } from './citrus-ids.js';
 
 describe('newSpirit', () => {
 	it('should work', () => {
@@ -76,41 +65,35 @@ describe('newSyrup', () => {
 
 describe('Citrus', () => {
 	it('lemon', () => {
-		const juice = newLemon(100);
+		const juice = citrus.lemon(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lemon)');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(3.1, 0);
-		expect(juice.pH).toBeCloseTo(2.4, 1);
-		expect(isCitrus(juice)).toBe(true);
-		expect(isLemon(juice)).toBe(true);
-		expect(isLemon(juice.updateIds())).toBe(true);
+		expect(juice.pH).toBeCloseTo(2.3, 1);
 	});
 	it('lime', () => {
-		const juice = newLime(100);
+		const juice = citrus.lime(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lime)');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(1.9, 1);
 		expect(juice.pH).toBeCloseTo(2.4, 1);
-		expect(isLemon(juice)).toBe(false);
-		expect(isLime(juice)).toBe(true);
-		expect(isLime(juice.updateIds())).toBe(true);
 	});
 	it('orange', () => {
-		const juice = newOrange(100);
+		const juice = citrus.orange(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-orange)');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
-		expect(juice.brix, 'brix').toBeCloseTo(12.35, 1);
+		expect(juice.brix, 'brix').toBeCloseTo(12.42, 1);
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
-		expect(isCitrus(juice)).toBe(true);
-		expect(isOrange(juice)).toBe(true);
 	});
 	it('grapefruit', () => {
-		const juice = newGrapefruit(100);
+		const juice = citrus.grapefruit(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-grapefruit)');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(8.78, 1);
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
-		expect(isCitrus(juice)).toBe(true);
-		expect(isGrapefruit(juice)).toBe(true);
 	});
 });
