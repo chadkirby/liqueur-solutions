@@ -1,7 +1,7 @@
 import { SubstanceComponent, isSubstanceData } from './ingredients/substance-component.js';
 import { type Component } from './ingredients/substance-component.js';
 import { setVolume, solver } from './solver.js';
-import { abvToAbw, analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
+import { analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
 import type {
 	IngredientDbData,
 	MixtureData,
@@ -14,7 +14,13 @@ import {
 	type SubstanceId,
 	Sweeteners,
 } from './ingredients/substances.js';
-import { bisectPh as pHSolver } from './ph-solver.js';
+import {
+	bisection,
+	calculateBufferedPh,
+	calculatePh,
+	getMolarConcentration,
+	type AcidSystem,
+} from './ph-solver.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -433,67 +439,52 @@ export class Mixture implements Component {
 	 */
 	get pH() {
 		let totalMolesH = 0;
-		let totalVolume = this.volume;
-		const bufferPHEstimates: number[] = [];
-		const bufferAcids: Mixture['substances'] = [];
-
+		const totalVolume = this.volume;
 		const substances = this.substances;
+		type SubstanceItem = (typeof substances)[number];
 
-		// Check for buffer pairs and calculate pH using Henderson-Hasselbalch equation
-		for (const pair of bufferPairs) {
-			const acid = substances.find((s) => s.substanceId === pair.acid);
-			const base = substances.find((s) => s.substanceId === pair.base);
+		// Group acids with their conjugate bases
+		const bufferSystems = new Map<
+			string,
+			{ acid: SubstanceItem; base: SubstanceItem; pKa: number }
+		>();
 
-			if (acid && base) {
-				const acidMoles = acid.mass / acid.component.substance.molecule.molecularMass;
-				const baseMoles = base.mass / base.component.substance.molecule.molecularMass;
-
-				const acidConc = acidMoles / (totalVolume / 1000); // convert mL to L
-				const baseConc = baseMoles / (totalVolume / 1000);
-
-				// Calculate pH for a buffer pair using the Henderson-Hasselbalch equation
-				const pH = pair.pKa + Math.log10(baseConc / acidConc);
-				bufferPHEstimates.push(pH);
-				bufferAcids.push(acid);
-			}
-		}
-
-		// Calculate total H+ contribution from non-buffer acids
 		for (const substance of substances) {
-			// Check if this acid is part of a buffer pair
-			let isBufferAcid = bufferAcids.includes(substance);
+			if (substance.component.substance.pKa.length === 0) continue;
 
-			if (isBufferAcid || substance.component.substance.pKa.length === 0) continue;
-
-			const phData = pHSolver(substance.component.substance, substance.mass, totalVolume);
-
-			totalMolesH += phData.H;
-			console.log({
-				substance: substance.component.substance.name,
-				mass: substance.mass,
-				totalVolume,
-				phData,
-				totalMolesH,
-				nonBufferPh: -Math.log10(totalMolesH),
-			});
-		}
-
-		// Calculate non-buffer pH
-		const nonBufferPh = totalMolesH ? -Math.log10(totalMolesH) : 7;
-
-		// Determine the final pH based on buffer systems and non-buffer acids
-		if (bufferPHEstimates.length > 0) {
-			// Check if nonBufferPh is approximately 7
-			if (isClose(nonBufferPh, 7, 1e-3)) {
-				return bufferPHEstimates.reduce((a, b) => a + b, 0) / bufferPHEstimates.length;
+			const bufferPair = bufferPairs.find((pair) => pair.acid === substance.substanceId);
+			if (bufferPair) {
+				const conjugateBase = substances.find((s) => s.substanceId === bufferPair.base);
+				if (conjugateBase) {
+					bufferSystems.set(bufferPair.acid, {
+						acid: substance,
+						base: conjugateBase,
+						pKa: bufferPair.pKa,
+					});
+					continue;
+				}
 			}
-			// Otherwise, adjust the buffer pH based on non-buffer H+ contribution
-			const avgBufferPH = bufferPHEstimates.reduce((a, b) => a + b, 0) / bufferPHEstimates.length;
-			const finalPH = (avgBufferPH + nonBufferPh) / 2;
-			return finalPH;
+
+			// Handle unbuffered acids
+			const phData = calculatePh(substance.component.substance, substance.mass, totalVolume);
+			totalMolesH += phData.H;
 		}
-		return nonBufferPh;
+
+		// Calculate buffer contributions
+		for (const system of bufferSystems.values()) {
+			const { acid, base, pKa } = system;
+
+			// H+ from buffer system
+			const H =
+				Math.pow(10, -pKa) *
+				(getMolarConcentration(acid.component.substance, acid.mass, totalVolume) /
+					getMolarConcentration(base.component.substance, base.mass, totalVolume));
+			totalMolesH += H;
+		}
+
+		return totalMolesH ? -Math.log10(totalMolesH) : 7;
 	}
+
 	density() {
 		const totalMass = this.mass;
 		const substanceMap = this.makeSubstanceMap();
