@@ -81,15 +81,9 @@ export function getMolarConcentration(
 
 export function calculatePh(
 	substance: AcidSubstance,
-	gOfSubstance: number,
-	mlOfSolution: number,
+	// total concentration of the substance in the solution
+	C_total: number,
 ): PhResult {
-	// Step 1: Calculate the moles of the substance
-	const molesOfSubstance = gOfSubstance / substance.molecule.molecularMass;
-
-	// Step 2: Calculate the total concentration of the substance in the solution
-	const C_total = molesOfSubstance / (mlOfSolution / 1000);
-
 	// Step 3: Calculate the Ka values from the pKa values
 	const K_a = substance.pKa.map((pk) => 10 ** -pk);
 

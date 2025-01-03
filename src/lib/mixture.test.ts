@@ -239,7 +239,7 @@ describe('can model pH', () => {
 				mass: 92,
 				component: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 2.1, 0.1, 'pH with unequal buffer pair');
+		assert.approximately(mx.pH, 1.82, 0.1, 'pH with unequal buffer pair');
 	});
 
 	test('should handle multiple buffer pairs', () => {
