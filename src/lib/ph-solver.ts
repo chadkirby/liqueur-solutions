@@ -112,19 +112,35 @@ export function calculatePh({
 		// Total citrate from both sources
 		const totalCitrate = freeAcidMolarity + conjugateBaseMolarity;
 
-		// Calculate fraction in each state using H⁺ association constants
-		const K3 = H / Ka[2]; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
-		const K2 = (K3 * H) / Ka[1]; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
+		// For n pKa values, we're dealing with species of charge -n through -1
+		const maxCharge = Ka.length; // e.g., 3 for citric acid
 
-		const denom = 1 + K3 + K3 * K2;
+		// Start with most dissociated form (charge = -maxCharge)
+		let denominator = 1;
+		let lastK = 1;
 
-		// Charge balance
-		let positiveCharges = H + 3 * conjugateBaseMolarity; // H⁺ and Na⁺
+		// Only use Ka[maxCharge-1] through Ka[1] for charged species
+		for (let i = maxCharge - 1; i >= 1; i--) {
+			if (i === maxCharge - 1) {
+				lastK = H / Ka[i]; // First K (K3)
+				log += `+ ${lastK.toFixed(2)} `;
+			} else {
+				log += `+ ${lastK.toFixed(2)} * ${((lastK * H) / Ka[i]).toFixed(2)} `;
+				lastK = (lastK * (lastK * H)) / Ka[i]; // Subsequent Ks use previous K
+			}
+
+			denominator += lastK;
+		}
+		console.log(log, `= ${denominator.toFixed(4)}`);
+
+		// Calculate charge balance
+		let positiveCharges = H + maxCharge * conjugateBaseMolarity;
+
 		let negativeCharges =
 			totalCitrate *
-			((3 * 1) / denom + // Cit³⁻ + // Cit³⁻
-				(2 * K3) / denom + // HCit²⁻
-				(1 * (K3 * K2)) / denom); // H₂Cit⁻
+			((maxCharge * 1) / denominator + // Most negative (e.g., Cit³⁻)
+				((maxCharge - 1) * (H / Ka[maxCharge - 1])) / denominator + // Next (e.g., HCit²⁻)
+				((maxCharge - 2) * (((H / Ka[maxCharge - 1]) * H) / Ka[maxCharge - 2])) / denominator); // Last (e.g., H₂Cit⁻)
 
 		negativeCharges += 1e-14 / H; // OH⁻
 
