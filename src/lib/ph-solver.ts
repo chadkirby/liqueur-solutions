@@ -20,31 +20,7 @@ export type PhResult = {
 	H: number;
 };
 
-export function equilibriumPh(
-	substance: AcidSubstance,
-	gOfSubstance: number,
-	mlOfSolution: number,
-): PhResult {
-	if (!substance.pKa.length) return { pH: 7, H: 0 };
-
-	const molesOfSubstance = getMoles(substance, gOfSubstance);
-	const concentration = molesOfSubstance / (mlOfSolution / 1000);
-
-	// assume the first dissociation dominates
-	const Ka = Math.pow(10, -substance.pKa[0]);
-
-	// Simple quadratic equation for weak acid equilibrium
-	// x^2 + Ka*x - Ka*C = 0
-	// where x is [H+]
-	const a = 1;
-	const b = Ka;
-	const c = -Ka * concentration;
-	const H = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-
-	return { pH: -Math.log10(H), H };
-}
-
-function bisection(f: (x: number) => number, a: number, b: number, tol: number): number {
+export function bisection(f: (x: number) => number, a: number, b: number, tol: number): number {
 	if (f(a) * f(b) >= 0) {
 		console.log(`f(${a}):`, f(a), `f(${b}):`, f(b));
 		throw 'Initial guesses do not bracket a root.';
@@ -59,7 +35,51 @@ function bisection(f: (x: number) => number, a: number, b: number, tol: number):
 	return c;
 }
 
-export function bisectPh(
+export type AcidSystem = {
+	acid: { conc: number; pKas: number[] };
+	base?: { conc: number };
+};
+
+export function calculateAlphas(H: number, pKas: number[]): number[] {
+	const Kas = pKas.map((pk) => Math.pow(10, -pk));
+	const alphas: number[] = [];
+
+	for (let i = 0; i < pKas.length; i++) {
+		let num = 1;
+		let denom = 1;
+
+		// Calculate numerator (product of relevant Ka's)
+		for (let j = 0; j < i; j++) {
+			num *= Kas[j];
+		}
+
+		// Calculate denominator terms
+		for (let j = 0; j <= pKas.length; j++) {
+			let term = Math.pow(H, pKas.length - j);
+			for (let k = 0; k < j; k++) {
+				term *= Kas[k];
+			}
+			denom += term;
+		}
+
+		alphas[i] = num / denom;
+	}
+	return alphas;
+}
+
+export function getMolarConcentration(
+	substance: AcidSubstance,
+	gramsOfSubstance: number,
+	solutionMl: number,
+): number {
+	const moles = gramsOfSubstance / substance.molecule.molecularMass;
+	const liters = solutionMl / 1000;
+	// molarity mol/L = M
+	const concentration = moles / liters;
+	return concentration;
+}
+
+export function calculatePh(
 	substance: AcidSubstance,
 	gOfSubstance: number,
 	mlOfSolution: number,
@@ -133,22 +153,4 @@ export function getMoles(substance: AcidSubstance, mass: number): number {
 
 export function getVolume(substance: AcidSubstance, mass: number): number {
 	return mass / substance.pureDensity;
-}
-
-export function simplePH(
-	substance: AcidSubstance,
-	gOfSubstance: number,
-	mlOfSolution: number,
-): PhResult {
-	// Use the lowest pKa for the initial approximation
-	const pKa1 = Math.min(...substance.pKa);
-	const Ka1 = Math.pow(10, -pKa1);
-
-	const concentration = getMoles(substance, gOfSubstance) / (mlOfSolution / 1000);
-
-	// Quadratic formula to solve for [H+]
-	const discriminant = Ka1 * (4 * concentration) + Math.pow(Ka1, 2);
-	const H = (-Ka1 + Math.sqrt(discriminant)) / 2;
-
-	return { pH: -Math.log10(H), H };
 }

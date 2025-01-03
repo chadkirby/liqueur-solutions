@@ -1,8 +1,8 @@
 import { test, assert, describe } from 'vitest';
-import { equilibriumPh, simplePH, bisectPh } from './ph-solver.js';
+import { calculatePh } from './ph-solver.js';
 import { Molecule } from './ingredients/substances.js';
 
-const getPh = bisectPh;
+const getPh = calculatePh;
 
 describe('pH solver', () => {
 	// Citric acid is a weak triprotic acid

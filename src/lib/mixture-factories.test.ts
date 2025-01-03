@@ -80,7 +80,7 @@ describe('Citrus', () => {
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(3.1, 0);
-		expect(juice.pH).toBeCloseTo(2.4, 0);
+		expect(juice.pH).toBeCloseTo(2.4, 1);
 		expect(isCitrus(juice)).toBe(true);
 		expect(isLemon(juice)).toBe(true);
 		expect(isLemon(juice.updateIds())).toBe(true);
@@ -89,8 +89,8 @@ describe('Citrus', () => {
 		const juice = newLime(100);
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
-		expect(juice.brix).toBeCloseTo(1.9, 0);
-		expect(juice.pH).toBeCloseTo(2.4, 0);
+		expect(juice.brix).toBeCloseTo(1.9, 1);
+		expect(juice.pH).toBeCloseTo(2.4, 1);
 		expect(isLemon(juice)).toBe(false);
 		expect(isLime(juice)).toBe(true);
 		expect(isLime(juice.updateIds())).toBe(true);
@@ -99,8 +99,8 @@ describe('Citrus', () => {
 		const juice = newOrange(100);
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
-		expect(juice.brix, 'brix').toBeCloseTo(12.35, 0);
-		expect(juice.pH, 'pH').toBeCloseTo(3.3, 0);
+		expect(juice.brix, 'brix').toBeCloseTo(12.35, 1);
+		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 		expect(isCitrus(juice)).toBe(true);
 		expect(isOrange(juice)).toBe(true);
 	});
@@ -108,8 +108,8 @@ describe('Citrus', () => {
 		const juice = newGrapefruit(100);
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
-		expect(juice.brix, 'brix').toBeCloseTo(8.78, 0);
-		expect(juice.pH, 'pH').toBeCloseTo(3.3, 0);
+		expect(juice.brix, 'brix').toBeCloseTo(8.78, 1);
+		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 		expect(isCitrus(juice)).toBe(true);
 		expect(isGrapefruit(juice)).toBe(true);
 	});

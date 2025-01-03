@@ -54,14 +54,14 @@ export function newLemon(volume: number): Mixture {
 			component: SubstanceComponent.new('citric-acid'),
 		},
 		{
+			name: 'buffer',
+			proportion: 5,
+			component: SubstanceComponent.new('sodium-citrate'),
+		},
+		{
 			name: 'malic acid',
 			proportion: 0.2,
 			component: SubstanceComponent.new('malic-acid'),
-		},
-		{
-			name: 'buffer',
-			proportion: 0.005,
-			component: SubstanceComponent.new('sodium-citrate'),
 		},
 		{
 			name: 'sugar',
