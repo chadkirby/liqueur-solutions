@@ -10,11 +10,12 @@ import type {
 import { nanoid } from 'nanoid';
 import {
 	bufferPairs,
+	getConjugateAcid,
 	isSweetenerId,
 	type SubstanceId,
 	Sweeteners,
 } from './ingredients/substances.js';
-import { calculatePh, getMolarConcentration } from './ph-solver.js';
+import { calculatePh, getMolarConcentration, type PhInput } from './ph-solver.js';
 import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -439,72 +440,48 @@ export class Mixture implements Component {
 	get pH() {
 		let totalMolesH = 0;
 		const totalVolume = this.volume;
-		const substances = this.substances;
-		type SubstanceItem = (typeof substances)[number];
-		const dissociationFactor = getCitrusDissociationFactor(this.id);
 
 		// Group acids with their conjugate bases
-		const bufferSystems = new Map<
+		const acidGroups = new Map<
 			string,
-			{ acid: SubstanceItem; base: SubstanceItem; pKa: number }
+			{
+				acid: SubstanceItem;
+				conjugateBase?: SubstanceItem;
+			}
 		>();
 
-		for (const substance of substances) {
-			if (substance.component.substance.pKa.length === 0) continue;
-
-			const bufferPair = bufferPairs.find((pair) => pair.acid === substance.substanceId);
-			if (bufferPair) {
-				const conjugateBase = substances.find((s) => s.substanceId === bufferPair.base);
-				if (conjugateBase) {
-					const acidConc = getMolarConcentration(
-						substance.component.substance,
-						substance.mass,
-						totalVolume,
-					);
-					const baseConc = getMolarConcentration(
-						conjugateBase.component.substance,
-						conjugateBase.mass,
-						totalVolume,
-					);
-					const ratio = acidConc / baseConc;
-					// Henderson-Hasselbalch equation is meant for buffer
-					// solutions where the acid and conjugate base concentrations
-					// are relatively similar (usually within an order of
-					// magnitude or so).
-					if (ratio > 0.1 && ratio < 10) {
-						// Handle as buffer
-						bufferSystems.set(bufferPair.acid, {
-							acid: substance,
-							base: conjugateBase,
-							pKa: bufferPair.pKa,
-						});
-						continue;
-					}
+		// First pass - find acids and their conjugates
+		for (const substance of this.substances) {
+			if (substance.component.substance.pKa.length > 0) {
+				// This is an acid
+				acidGroups.set(substance.substanceId, { acid: substance });
+			}
+			// Is this a conjugate base for any acid we know about?
+			const matchingAcid = getConjugateAcid(substance.substanceId);
+			if (matchingAcid) {
+				const group = acidGroups.get(matchingAcid);
+				if (group) {
+					group.conjugateBase = substance;
 				}
 			}
-
-			// Calculate the total concentration of the substance in the solution
-			const totalMoles = getMolarConcentration(
-				substance.component.substance,
-				substance.mass,
-				totalVolume,
-			);
-			// Calculate the concentration of the free acid in the solution
-			const freeMoles = totalMoles * (1 - dissociationFactor);
-
-			const phData = calculatePh(substance.component.substance, freeMoles);
-			totalMolesH += phData.H;
 		}
-		// Calculate buffer contributions
-		for (const system of bufferSystems.values()) {
-			const { acid, base, pKa } = system;
 
-			// H+ from buffer system
-			const H =
-				Math.pow(10, -pKa) *
-				(getMolarConcentration(acid.component.substance, acid.mass, totalVolume) /
-					getMolarConcentration(base.component.substance, base.mass, totalVolume));
-			totalMolesH += H;
+		// Second pass - calculate pH contribution from each acid group
+		for (const group of acidGroups.values()) {
+			const { acid, conjugateBase } = group;
+			const phData = calculatePh({
+				acidMolarity: getMolarConcentration(acid.component.substance, acid.mass, totalVolume),
+				conjugateBaseMolarity: conjugateBase
+					? getMolarConcentration(
+							conjugateBase.component.substance,
+							conjugateBase.mass,
+							totalVolume,
+						)
+					: 0,
+				pKa: acid.component.substance.pKa,
+				dissociationFactor: getCitrusDissociationFactor(this.id),
+			});
+			totalMolesH += phData.H;
 		}
 
 		return totalMolesH ? -Math.log10(totalMolesH) : 7;
