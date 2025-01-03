@@ -109,7 +109,6 @@ export function calculatePh({
 	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
 
   function f(H: number): number {
-		const Ka1 = Math.pow(10, -3.13);
 		const Ka2 = Math.pow(10, -4.76);
 		const Ka3 = Math.pow(10, -6.4);
 
@@ -119,15 +118,13 @@ export function calculatePh({
 		// Calculate fraction in each state using H⁺ association constants
 		const K3 = H / Ka3; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
 		const K2 = (K3 * H) / Ka2; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
-		const K1 = (K2 * H) / Ka1; // For H₂Cit⁻ + H⁺ ⇌ H₃Cit
 
-		const denom = 1 + K3 + K3 * K2 + K3 * K2 * K1;
+		const denom = 1 + K3 + K3 * K2;
 
 		// Fraction of each species
 		const fracCit = 1 / denom; // Cit³⁻
 		const fracHCit = K3 / denom; // HCit²⁻
 		const fracH2Cit = (K3 * K2) / denom; // H₂Cit⁻
-		const fracH3Cit = (K3 * K2 * K1) / denom; // H₃Cit
 
 		// Charge balance
 		let positiveCharges = H + 3 * conjugateBaseMolarity; // H⁺ and Na⁺
@@ -146,7 +143,11 @@ export function calculatePh({
 	for (let pH = 0; pH <= 14; pH += 1) {
 		const H = Math.pow(10, -pH);
 		const result = f(H);
-		console.log(`pH ${pH}: f(H) = ${result}`);
+		const prev = f(Math.pow(10, -pH - 1));
+		// log if the sign changes
+		if (prev * result < 0) {
+			console.log(`pH ${pH}: f(H) = ${result}`);
+		}
 	}
 
 	// Then try to find where f(H) changes sign
@@ -154,8 +155,12 @@ export function calculatePh({
 	let pH = 0;
 	while (pH <= 14) {
 		const H = Math.pow(10, -pH);
+		const prev = f(Math.pow(10, -pH - 0.25));
 		const result = f(H);
-		console.log(`pH ${pH.toFixed(2)}: f(H) = ${result}`);
+		// log if the sign changes
+		if (prev * result < 0) {
+			console.log(`pH ${pH.toFixed(2)}: f(H) = ${result}`);
+		}
 		pH += 0.25;
 	}
 	const H_root = bisection(f, H_min, H_max, 1e-9);
