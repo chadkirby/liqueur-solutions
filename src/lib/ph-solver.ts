@@ -109,23 +109,29 @@ export function calculatePh({
 	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
 
   function f(H: number): number {
-		// Na⁺ from sodium citrate plus H⁺
-		let positiveCharges = 3 * conjugateBaseMolarity + H;
-
+		const Ka1 = Math.pow(10, -3.13);
 		const Ka2 = Math.pow(10, -4.76);
 		const Ka3 = Math.pow(10, -6.4);
 
-		// Calculate distribution among H₂Cit⁻, HCit²⁻, and Cit³⁻
-		const alpha1 = 1; // H₂Cit⁻
-		const alpha2 = Ka2 / H; // HCit²⁻
-		const alpha3 = (Ka2 * Ka3) / (H * H); // Cit³⁻
-		const denom = alpha1 + alpha2 + alpha3;
+		// Let's focus on how much of each species exists
+		// For citric acid:
+		const denominatorH3 = 1 + Ka1 / H + (Ka1 * Ka2) / (H * H) + (Ka1 * Ka2 * Ka3) / (H * H * H);
 
-		// Total negative charge from all citrate species
-		const totalCitrate = conjugateBaseMolarity + freeAcidMolarity;
-		let negativeCharges = (totalCitrate * (alpha1 + 2 * alpha2 + 3 * alpha3)) / denom;
+		// Distribution fractions
+		const alphaH3 = 1 / denominatorH3;
+		const alphaH2 = Ka1 / H / denominatorH3;
+		const alphaH1 = (Ka1 * Ka2) / (H * H) / denominatorH3;
+		const alphaH0 = (Ka1 * Ka2 * Ka3) / (H * H * H) / denominatorH3;
 
-		negativeCharges += 1e-14 / H;
+		// Total charge balance
+		let positiveCharges = H + 3 * conjugateBaseMolarity; // H+ and Na+
+		let negativeCharges =
+			alphaH2 * freeAcidMolarity + // H₂Cit⁻  (-1)
+			2 * alphaH1 * freeAcidMolarity + // HCit²⁻  (-2)
+			3 * alphaH0 * freeAcidMolarity + // Cit³⁻   (-3)
+			3 * conjugateBaseMolarity; // Citrate from Na₃Cit (-3)
+
+		negativeCharges += 1e-14 / H; // OH-
 
 		return positiveCharges - negativeCharges;
 	}
