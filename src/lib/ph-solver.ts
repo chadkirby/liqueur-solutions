@@ -98,83 +98,61 @@ export function calculatePh({
 	pKa,
 	dissociationFactor = 0,
 }: PhInput): PhResult {
-	console.log('Calculating pH with:', {
-		acidMolarity,
-		conjugateBaseMolarity,
-		pKa,
-		dissociationFactor,
-	});
-
-	// Convert pKa to Ka
 	const Ka = pKa.map((pk) => 10 ** -pk);
-
-	// If this is citrus juice, adjust the free acid concentration
 	const freeAcidMolarity = acidMolarity * (1 - dissociationFactor);
-	// The dissociated portion adds to our conjugate base
 	const totalConjugateBase = conjugateBaseMolarity + acidMolarity * dissociationFactor;
 
-	console.log('After adjustments:', {
-		freeAcidMolarity,
-		totalConjugateBase,
-		Ka,
-	});
+	// For a buffer system, pH is usually near one of the pKa values
+	// Let's use that to set better bounds
+	const avgPka = pKa.reduce((a, b) => a + b, 0) / pKa.length;
+	const H_min = 10 ** -(avgPka + 4); // pH = avgPka + 4
+	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
 
 	function f(H: number): number {
-		let sumNegativelyCharged = 0;
+		// Start with H+ and Na+ from sodium citrate
+		let positiveCharges = H + 3 * conjugateBaseMolarity; // 3 Na+ per citrate
 
-		// From pre-existing citrate
-		const citrate3Minus = 3 * totalConjugateBase;
-		sumNegativelyCharged += citrate3Minus;
+		// Calculate distribution of citrate species based on pH
+		let negativeCharges = 0;
+		const denom = 1 + H / Ka[0] + (H * H) / (Ka[0] * Ka[1]) + (H * H * H) / (Ka[0] * Ka[1] * Ka[2]);
 
-		// Calculate denominators for acid dissociation
-		let denom = 1; // [H+]^n term
-		for (let j = 0; j < Ka.length; j++) {
-			let term = 1;
-			for (let k = 0; k <= j; k++) {
-				term *= Ka[k];
-			}
-			denom += term / Math.pow(H, j + 1);
+		// Cit³⁻
+		negativeCharges += (3 * conjugateBaseMolarity) / denom;
+		// HCit²⁻
+		negativeCharges += 2 * conjugateBaseMolarity * (H / (Ka[2] * denom));
+		// H₂Cit⁻
+		negativeCharges += conjugateBaseMolarity * ((H * H) / (Ka[1] * Ka[2] * denom));
+
+		for (let i = 0; i < Ka.length; i++) {
+			const numerator = Ka.slice(0, i + 1).reduce((prod, k) => prod * k, 1);
+			const alpha = numerator / (Math.pow(H, i + 1) * denom);
+			negativeCharges += (i + 1) * freeAcidMolarity * alpha;
 		}
 
-		// Calculate each dissociation state contribution
-		let dissociatedContributions = 0;
-		for (let i = 1; i <= Ka.length; i++) {
-			let num = 1;
-			for (let j = 0; j < i; j++) {
-				num *= Ka[j];
-			}
-			num /= Math.pow(H, i);
-			const alpha = num / denom;
-			const conc = freeAcidMolarity * alpha;
-			dissociatedContributions += i * conc;
-		}
-		sumNegativelyCharged += dissociatedContributions;
+		// Add OH- contribution
+		negativeCharges += 1e-14 / H;
 
-		const OH = 1e-14 / H;
-
-		// Log all contributions
-		if (Math.abs(-Math.log10(H) - 5.5) < 1) {
-			console.log('Near target pH:', {
-				pH: -Math.log10(H),
-				citrate3Minus,
-				dissociatedContributions,
-				OH,
-				total: H - sumNegativelyCharged - OH,
-			});
-		} else {
-			console.log('Not near target pH:', {
-				pH: -Math.log10(H),
-				citrate3Minus,
-				dissociatedContributions,
-				OH,
-				total: H - sumNegativelyCharged - OH,
-			});
-		}
-
-		return H - sumNegativelyCharged - OH;
+		return positiveCharges - negativeCharges;
 	}
-	// Use bisection as before
-	const H_root = bisection(f, 1e-14, 1, 1e-9);
+
+	// Before trying bisection, let's scan across a range of pH values
+	console.log('Scanning pH range for root:');
+	for (let pH = 0; pH <= 14; pH += 1) {
+		const H = Math.pow(10, -pH);
+		const result = f(H);
+		console.log(`pH ${pH}: f(H) = ${result}`);
+	}
+
+	// Then try to find where f(H) changes sign
+	console.log('\nFinding sign change:');
+	let pH = 0;
+	while (pH <= 14) {
+		const H = Math.pow(10, -pH);
+		const result = f(H);
+		console.log(`pH ${pH.toFixed(2)}: f(H) = ${result}`);
+		pH += 0.25;
+	}
+	const H_root = bisection(f, H_min, H_max, 1e-9);
 	return { pH: -Math.log10(H_root), H: H_root };
 }
 
