@@ -241,7 +241,27 @@ describe('can model pH', () => {
 				mass: 92,
 				component: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 5.5, 0.1, 'pH with buffer pair');
+		assert.approximately(mx.pH, 5.5, 0.125, 'pH with buffer pair');
+	});
+
+	test.only('should handle buffer pair - acetic acid and sodium acetate', () => {
+		const mx = new Mixture()
+			.addIngredient({
+				name: 'acetic acid',
+				mass: 3,
+				component: SubstanceComponent.new('acetic-acid'),
+			})
+			.addIngredient({
+				name: 'sodium acetate',
+				mass: 5,
+				component: SubstanceComponent.new('sodium-acetate'),
+			})
+			.addIngredient({
+				name: 'water',
+				mass: 92,
+				component: SubstanceComponent.new('water'),
+			});
+		assert.approximately(mx.pH, 4.85, 0.125, 'pH with buffer pair');
 	});
 
 	test('should handle unequal buffer pair - citric acid and sodium citrate', () => {

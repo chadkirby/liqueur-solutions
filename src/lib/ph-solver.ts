@@ -109,30 +109,22 @@ export function calculatePh({
 	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
 
   function f(H: number): number {
-		const Ka2 = Math.pow(10, -4.76);
-		const Ka3 = Math.pow(10, -6.4);
-
 		// Total citrate from both sources
 		const totalCitrate = freeAcidMolarity + conjugateBaseMolarity;
 
 		// Calculate fraction in each state using H⁺ association constants
-		const K3 = H / Ka3; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
-		const K2 = (K3 * H) / Ka2; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
+		const K3 = H / Ka[2]; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
+		const K2 = (K3 * H) / Ka[1]; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
 
 		const denom = 1 + K3 + K3 * K2;
-
-		// Fraction of each species
-		const fracCit = 1 / denom; // Cit³⁻
-		const fracHCit = K3 / denom; // HCit²⁻
-		const fracH2Cit = (K3 * K2) / denom; // H₂Cit⁻
 
 		// Charge balance
 		let positiveCharges = H + 3 * conjugateBaseMolarity; // H⁺ and Na⁺
 		let negativeCharges =
 			totalCitrate *
-			(3 * fracCit + // Cit³⁻
-				2 * fracHCit + // HCit²⁻
-				1 * fracH2Cit); // H₂Cit⁻
+			((3 * 1) / denom + // Cit³⁻ + // Cit³⁻
+				(2 * K3) / denom + // HCit²⁻
+				(1 * (K3 * K2)) / denom); // H₂Cit⁻
 
 		negativeCharges += 1e-14 / H; // OH⁻
 
