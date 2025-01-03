@@ -431,6 +431,9 @@ export class Mixture implements Component {
 		this.setMass(working.mass);
 		return this;
 	}
+	get proof() {
+		return this.abv * 2;
+	}
 
 	/**
 	 * Approximates the pH of the mixture, considering acids and buffer pairs.
@@ -495,10 +498,6 @@ export class Mixture implements Component {
 			density += partialDensity;
 		}
 		return density;
-	}
-
-	get proof() {
-		return this.abv * 2;
 	}
 
 	get volume() {
@@ -694,6 +693,8 @@ export class Mixture implements Component {
 		}
 	}
 }
+
+export type SubstanceItem = Mixture['substances'][number];
 
 export function toStorageData(mx: Mixture): Pick<StoredFileData, 'mixture' | 'ingredientDb'> {
 	return {
