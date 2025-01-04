@@ -122,6 +122,10 @@ export class SubstanceComponent implements Component {
 		return this.substance.name;
 	}
 
+	get pKa() {
+		return this.substance.pKa;
+	}
+
 	getEquivalentSugarMass(mass: number): number {
 		// sweetness of 1 is equivalent to sucrose
 		const sweetness = this.substance.sweetness;
@@ -176,7 +180,7 @@ export class SubstanceComponent implements Component {
 	}
 
 	getPH(mass: number): number {
-		if (this.substance.pKa.length) {
+		if (this.pKa.length) {
 			// Calculate pH based on dissociation constants
 			// - The first dissociation is usually the strongest contributor
 			// - Each subsequent dissociation typically has less impact
@@ -184,7 +188,7 @@ export class SubstanceComponent implements Component {
 			// equilibrium calculation would likely be smaller than natural
 			// variation in ingredients
 			let totalH = 0;
-			for (const [i, pKa] of this.substance.pKa.entries()) {
+			for (const [i, pKa] of this.pKa.entries()) {
 				const Ka = Math.pow(10, -pKa);
 				// Weight later dissociations less
 				const weight = 1 / (i + 1);
