@@ -134,38 +134,12 @@ export function calculatePh({
 		// Calculate charge balance
 		let positiveCharges = H + maxCharge * conjugateBaseMolarity;
 
-		{
-			// works:
-			const K3 = H / Ka[2]; // For Cit³⁻ + H⁺ ⇌ HCit²⁻
-			const K2 = (K3 * H) / Ka[1]; // For HCit²⁻ + H⁺ ⇌ H₂Cit⁻
-
-			let negativeCharges =
-				totalCitrate *
-				((3 * 1) / denominator + // Cit³⁻ + // Cit³⁻
-					(2 * K3) / denominator + // HCit²⁻
-					(1 * (K3 * K2)) / denominator); // H₂Cit⁻
-
-			console.log(
-				'works:',
-				`${negativeCharges.toFixed(6)} =`,
-				`${totalCitrate.toFixed(2)} * ((3 * 1) / ${denominator.toFixed(2)}`,
-				`+ (2 * ${K3.toFixed(2)}) / ${denominator.toFixed(2)}`,
-				`+ (1 * (${K3.toFixed(2)} * ${K2.toFixed(2)})) / ${denominator.toFixed(2)})`,
-			);
-		}
 		let negativeCharges =
 			totalCitrate *
 			((maxCharge * 1) / denominator + // Most dissociated
 				((maxCharge - 1) * kValues[0]) / denominator + // Using K3
 				((maxCharge - 2) * kValues[1]) / denominator); // Using K3*K2
 
-		console.log(
-			'broke:',
-			`${negativeCharges.toFixed(6)} =`,
-			`${totalCitrate.toFixed(2)} * ((${maxCharge} * 1) / ${denominator.toFixed(2)}`,
-			`+ (${maxCharge - 1} * ${kValues[0].toFixed(2)}) / ${denominator.toFixed(2)}`,
-			`+ (${maxCharge - 2} * ${kValues[1].toFixed(2)}) / ${denominator.toFixed(2)})`,
-		);
 		negativeCharges += 1e-14 / H; // OH⁻
 
 		return positiveCharges - negativeCharges;

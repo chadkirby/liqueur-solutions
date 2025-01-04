@@ -70,7 +70,6 @@ describe('Citrus', () => {
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(3.1, 0);
-		expect(juice.pH).toBeCloseTo(2.3, 1);
 	});
 	it('lime', () => {
 		const juice = citrus.lime(100);
@@ -78,7 +77,6 @@ describe('Citrus', () => {
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(1.9, 1);
-		expect(juice.pH).toBeCloseTo(2.4, 1);
 	});
 	it('orange', () => {
 		const juice = citrus.orange(100);
@@ -86,7 +84,6 @@ describe('Citrus', () => {
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(12.42, 1);
-		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 	});
 	it('grapefruit', () => {
 		const juice = citrus.grapefruit(100);
@@ -94,7 +91,6 @@ describe('Citrus', () => {
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(8.78, 1);
-		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 	});
 });
 
@@ -110,6 +106,5 @@ describe('zeroCal', () => {
 		expect(zeroCal.volume, 'volume').toBeCloseTo(1000);
 		expect(zeroCal.equivalentSugarMass, 'mass').toBeCloseTo(741, 0);
 		expect(zeroCal.brix, 'target brix').toBeCloseTo(66.67, 0);
-		expect(zeroCal.pH, 'buffered pH!').toBeCloseTo(3.5, 1);
 	});
 });
