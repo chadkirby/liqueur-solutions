@@ -9,14 +9,12 @@ import type {
 } from './ingredients/substance-component.js';
 import { nanoid } from 'nanoid';
 import {
-	bufferPairs,
-	getConjugateAcid,
 	getConjugateAcids,
 	isSweetenerId,
 	type SubstanceId,
 	Sweeteners,
 } from './ingredients/substances.js';
-import { calculatePh, getMolarConcentration, type PhInput } from './ph-solver.js';
+import { calculatePh, getMolarConcentration } from './ph-solver.js';
 import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -235,7 +233,7 @@ export class Mixture implements Component {
 
 	*eachSubstance(...ids: SubstanceId[]): Generator<{
 		mass: number;
-		substanceId: string;
+		substanceId: SubstanceId;
 		ingredientId: string;
 		component: SubstanceComponent;
 	}> {
@@ -367,7 +365,7 @@ export class Mixture implements Component {
 			return true;
 		}
 		if (key === 'pH') {
-			return this.someSubstance((x) => x.substance.pKa.length > 0);
+			return this.someSubstance((x) => x.pKa.length > 0);
 		}
 		return false;
 	}
@@ -453,7 +451,7 @@ export class Mixture implements Component {
 
 		// First pass - find acids
 		for (const substance of this.substances) {
-			if (substance.component.substance.pKa.length > 0) {
+			if (substance.component.pKa.length > 0) {
 				// Create unique ID for each acid
 				acidGroups.set(substance.substanceId, { acid: substance });
 			}
@@ -483,7 +481,7 @@ export class Mixture implements Component {
 							totalVolume,
 						)
 					: 0,
-				pKa: acid.component.substance.pKa,
+				pKa: acid.component.pKa,
 				dissociationFactor: getCitrusDissociationFactor(this.id),
 			});
 			totalMolesH += phData.H;

@@ -511,7 +511,7 @@ export function isOtherId(id: string): id is SubstanceId {
 	return OtherSubstances.some((s) => s.id === id);
 }
 
-export interface Substance extends _Substance {
+export interface Substance extends _Substance<SubstanceId> {
 	id: SubstanceId;
 }
 
