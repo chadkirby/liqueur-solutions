@@ -11,6 +11,7 @@ import { nanoid } from 'nanoid';
 import {
 	bufferPairs,
 	getConjugateAcid,
+	getConjugateAcids,
 	isSweetenerId,
 	type SubstanceId,
 	Sweeteners,
@@ -450,23 +451,27 @@ export class Mixture implements Component {
 			}
 		>();
 
-		// First pass - find acids and their conjugates
+		// First pass - find acids
 		for (const substance of this.substances) {
 			if (substance.component.substance.pKa.length > 0) {
-				// This is an acid
+				// Create unique ID for each acid
 				acidGroups.set(substance.substanceId, { acid: substance });
 			}
-			// Is this a conjugate base for any acid we know about?
-			const matchingAcid = getConjugateAcid(substance.substanceId);
-			if (matchingAcid) {
-				const group = acidGroups.get(matchingAcid);
+		}
+
+		// Second pass - match conjugate bases to acids
+		for (const substance of this.substances) {
+			const matchingAcids = getConjugateAcids(substance.substanceId);
+			// For each acid that matches this base
+			for (const acidId of matchingAcids) {
+				const group = acidGroups.get(acidId);
 				if (group) {
 					group.conjugateBase = substance;
 				}
 			}
 		}
 
-		// Second pass - calculate pH contribution from each acid group
+		// calculate pH contribution from each acid group
 		for (const group of acidGroups.values()) {
 			const { acid, conjugateBase } = group;
 			const phData = calculatePh({
