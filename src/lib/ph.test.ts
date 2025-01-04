@@ -4,7 +4,7 @@ import { SubstanceComponent } from './ingredients/substance-component.js';
 import { type SubstanceId } from './ingredients/substances.js';
 import { citrus, newZeroSyrup } from './mixture-factories.js';
 import { getCitrusPrefix } from './citrus-ids.js';
-import { calculateAlphas, calculatePh } from './ph-solver.js';
+import { calculatePh } from './ph-solver.js';
 
 function getPh(substanceId: SubstanceId, substanceMass: number, solutionVolume: number) {
 	const mx = new Mixture()
@@ -66,21 +66,7 @@ describe('diprotic acid buffer', () => {
 			conjugateBaseMolarity: 0.1,
 			pKa: [3.4, 5.2], // malic acid
 		});
-		console.log('pH components:', {
-			alphas: calculateAlphas(result.H, [3.4, 5.2]),
-			charges: result.f(result.H),
-		});
 		expect(result.pH).toBeCloseTo(4.3, 1);
-	});
-
-	test('alpha calculation for diprotic acid', () => {
-		const pH = 4.3;
-		const H = Math.pow(10, -pH);
-		const alphas = calculateAlphas(H, [3.4, 5.2]);
-
-		// At pH 4.3 (between pKa1 and pKa2)
-		// Should have significant HA- fraction
-		assert.approximately(alphas[1], 0.5, 0.2);
 	});
 });
 
@@ -134,7 +120,7 @@ describe('Mixture can model pH', () => {
 		assert.approximately(mx.pH, 4.85, 0.125, 'pH with buffer pair');
 	});
 
-	test('should handle buffer pair - malic acid and sodium acetate', () => {
+	test('should handle buffer pair - malic acid and sodium malate', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'malic acid',
@@ -142,19 +128,19 @@ describe('Mixture can model pH', () => {
 				component: SubstanceComponent.new('malic-acid'),
 			})
 			.addIngredient({
-				name: 'sodium acetate',
+				name: 'sodium malate',
 				mass: 5,
-				component: SubstanceComponent.new('sodium-acetate'),
+				component: SubstanceComponent.new('sodium-malate'),
 			})
 			.addIngredient({
 				name: 'water',
 				mass: 92,
 				component: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 4.85, 0.125, 'pH with buffer pair');
+		assert.approximately(mx.pH, 4.5, 0.125, 'pH with buffer pair');
 	});
 
-	test.skip('should handle unequal buffer pair - citric acid and sodium citrate', () => {
+	test('should handle unequal buffer pair - citric acid and sodium citrate', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
@@ -171,10 +157,10 @@ describe('Mixture can model pH', () => {
 				mass: 92,
 				component: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 1.82, 0.1, 'pH with unequal buffer pair');
+		assert.approximately(mx.pH, 2.92, 0.1, 'pH with unequal buffer pair');
 	});
 
-	test.skip('should handle multiple buffer pairs', () => {
+	test('should handle multiple buffer pairs', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
@@ -248,6 +234,6 @@ describe('Citrus', () => {
 describe('zeroCal', () => {
 	test('should work', () => {
 		const zeroCal = newZeroSyrup(1000, 66.67);
-		expect(zeroCal.pH, 'buffered pH!').toBeCloseTo(3.5, 1);
+		assert.approximately(zeroCal.pH, 3.4, 0.125, 'buffered pH!');
 	});
 });

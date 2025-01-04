@@ -40,33 +40,6 @@ export type AcidSystem = {
 	base?: { conc: number };
 };
 
-export function calculateAlphas(H: number, pKas: number[]): number[] {
-	const Kas = pKas.map((pk) => Math.pow(10, -pk));
-	const alphas: number[] = [];
-
-	for (let i = 0; i < pKas.length; i++) {
-		let num = 1;
-		let denom = 1;
-
-		// Calculate numerator (product of relevant Ka's)
-		for (let j = 0; j < i; j++) {
-			num *= Kas[j];
-		}
-
-		// Calculate denominator terms
-		for (let j = 0; j <= pKas.length; j++) {
-			let term = Math.pow(H, pKas.length - j);
-			for (let k = 0; k < j; k++) {
-				term *= Kas[k];
-			}
-			denom += term;
-		}
-
-		alphas[i] = num / denom;
-	}
-	return alphas;
-}
-
 export function getMolarConcentration(
 	substance: AcidSubstance,
 	gramsOfSubstance: number,
@@ -131,7 +104,7 @@ export function calculatePh({
 	}
 
 	const H_root = bisection(f, 1e-14, 1, 1e-9);
-	return { pH: -Math.log10(H_root), H: H_root, f };
+	return { pH: -Math.log10(H_root), H: H_root };
 }
 
 export function getMoles(substance: AcidSubstance, mass: number): number {
