@@ -51,9 +51,9 @@ export class Molecule {
 	}
 }
 
-interface _Substance {
+interface _Substance<T extends string> {
 	name: string;
-	id: string;
+	id: T;
 	molecule: Molecule;
 	pureDensity: number;
 	/** density of the pure substance in g/ml, determined according to
@@ -67,7 +67,7 @@ interface _Substance {
 	pKa: number[];
 }
 
-export interface SubstanceData extends Omit<_Substance, 'molecule'> {
+export interface SubstanceData<T extends string> extends Omit<_Substance<T>, 'molecule'> {
 	molecularFormula: string;
 }
 
@@ -92,11 +92,11 @@ export const Sweeteners = [
 			[0.5, 1.213],
 			[0.543, 1.239],
 			[0.583, 1.263],
-			[1.0, 1.582]
+			[1.0, 1.582],
 		] as const,
 		sweetness: 1,
 		kcal: 3.87,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Fructose',
@@ -111,11 +111,11 @@ export const Sweeteners = [
 			[0.2, 1.0816],
 			[0.3, 1.1276],
 			[0.4, 1.1769],
-			[1.0, 1.694]
+			[1.0, 1.694],
 		],
 		sweetness: 1.73,
 		kcal: 3.73,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Glucose',
@@ -125,7 +125,7 @@ export const Sweeteners = [
 		solutionDensityMeasurements: [],
 		sweetness: 0.74,
 		kcal: 3.75,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Allulose',
@@ -135,7 +135,7 @@ export const Sweeteners = [
 		solutionDensityMeasurements: [],
 		sweetness: 0.7,
 		kcal: 0.4,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Erythritol',
@@ -145,7 +145,7 @@ export const Sweeteners = [
 		solutionDensityMeasurements: [],
 		sweetness: 0.65,
 		kcal: 0.2,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Sucralose',
@@ -155,7 +155,7 @@ export const Sweeteners = [
 		solutionDensityMeasurements: [],
 		sweetness: 600,
 		kcal: 0,
-		pKa: []
+		pKa: [],
 	},
 	{
 		name: 'Lactose',
@@ -165,9 +165,9 @@ export const Sweeteners = [
 		solutionDensityMeasurements: [],
 		sweetness: 0.16,
 		kcal: 4,
-		pKa: []
-	}
-] satisfies Array<_Substance>;
+		pKa: [],
+	},
+] as const satisfies _Substance<string>[];
 
 export const Acids = [
 	{
@@ -240,7 +240,7 @@ export const Acids = [
 		kcal: 4,
 		pKa: [4.17, 11.8],
 	},
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
 export const Buffers = [
 	{
@@ -283,21 +283,31 @@ export const Buffers = [
 		kcal: 0,
 		pKa: [],
 	},
-] as const satisfies Array<_Substance>;
+	{
+		name: 'Sodium Malate',
+		id: 'sodium-malate',
+		molecule: new Molecule('C4H4Na2O5'),
+		pureDensity: 1.69,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
+] as const satisfies _Substance<string>[];
 
 export const bufferPairs = [
 	{ acid: 'citric-acid', base: 'sodium-citrate' },
 	{ acid: 'phosphoric-acid', base: 'sodium-phosphate' },
-	{ acid: 'malic-acid', base: 'sodium-citrate' },
+	{ acid: 'malic-acid', base: 'sodium-malate' },
 	{ acid: 'lactic-acid', base: 'sodium-citrate' },
 	{ acid: 'acetic-acid', base: 'sodium-acetate' },
 	{ acid: 'tartaric-acid', base: 'sodium-citrate' },
 	{ acid: 'ascorbic-acid', base: 'sodium-citrate' },
-];
+] as const satisfies Array<{ acid: SubstanceId; base: SubstanceId }>;
 
-export function getConjugateAcid(base: string): string | null {
-	const pair = bufferPairs.find((pair) => pair.base === base);
-	return pair?.acid ?? null;
+export function getConjugateAcids(base: string): SubstanceId[] {
+	const pair = bufferPairs.filter((pair) => pair.base === base);
+	return pair.map((pair) => pair.acid);
 }
 
 export const Preservatives = [
@@ -321,7 +331,7 @@ export const Preservatives = [
 		kcal: 0,
 		pKa: [4.76],
 	},
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
 export const Solvents = [
 	{
@@ -368,7 +378,7 @@ export const Solvents = [
 		kcal: 4.3,
 		pKa: [],
 	},
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
 export const OtherSubstances = [
 	{
@@ -401,7 +411,7 @@ export const OtherSubstances = [
 		kcal: 9,
 		pKa: [],
 	},
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
 export const Salts = [
 	{
@@ -464,7 +474,7 @@ export const Salts = [
 		kcal: 0,
 		pKa: [6.4, 10.3],
 	},
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
 export const Substances = [
 	...Solvents,
@@ -473,9 +483,8 @@ export const Substances = [
 	...Buffers,
 	...Preservatives,
 	...OtherSubstances,
-] as const satisfies Array<_Substance>;
+] as const satisfies _Substance<string>[];
 
-// TODO: this shouldn't be string[]
 export type SubstanceId = (typeof Substances)[number]['id'];
 
 export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
