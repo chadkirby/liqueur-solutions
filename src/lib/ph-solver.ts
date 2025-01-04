@@ -7,8 +7,6 @@
 	}
  */
 
-import { isClose } from './solver.js';
-
 export interface AcidSubstance {
 	molecule: {
 		molecularMass: number;
@@ -100,52 +98,40 @@ export function calculatePh({
 }: PhInput): PhResult {
 	const Ka = pKa.map((pk) => 10 ** -pk);
 	const freeAcidMolarity = acidMolarity * (1 - dissociationFactor);
-	const totalConjugateBase = conjugateBaseMolarity + acidMolarity * dissociationFactor;
 
-	// For a buffer system, pH is usually near one of the pKa values
-	// Let's use that to set better bounds
-	const avgPka = pKa.reduce((a, b) => a + b, 0) / pKa.length;
-	const H_min = 10 ** -(avgPka + 4); // pH = avgPka + 4
-	const H_max = 10 ** -(avgPka - 4); // pH = avgPka - 4
+	function f(H: number): number {
+		// Total acid from both sources
+		const totalAcid = freeAcidMolarity + conjugateBaseMolarity;
 
-  function f(H: number): number {
-		// Total citrate from both sources
-		const totalCitrate = freeAcidMolarity + conjugateBaseMolarity;
+		// Number of dissociation steps = number of pKa values
+		const maxCharge = Ka.length;
 
-		// For n pKa values, we're dealing with species of charge -n through -1
-		const maxCharge = Ka.length; // e.g., 3 for citric acid
-
-		// Start with most dissociated form (charge = -maxCharge)
+		// Calculate K products and denominator
 		let denominator = 1;
-		let lastK = 1;
-		const kValues: number[] = [];
+		let kProducts: number[] = [1]; // Start with neutral species
 
-		// Only use Ka[maxCharge-1] through Ka[1] for charged species
-		for (let i = maxCharge - 1; i >= 1; i--) {
-			if (i === maxCharge - 1) {
-				lastK = H / Ka[i]; // First K (K3)
-			} else {
-				lastK = (lastK * (lastK * H)) / Ka[i]; // Subsequent Ks use previous K
-			}
-			kValues.push(lastK);
-			denominator += lastK;
+		// Build up products of K values and H+
+		for (let i = 0; i < maxCharge; i++) {
+			const nextK = (kProducts[i] * Ka[i]) / H;
+			kProducts.push(nextK);
+			denominator += nextK;
 		}
 
 		// Calculate charge balance
 		let positiveCharges = H + maxCharge * conjugateBaseMolarity;
+		let negativeCharges = 1e-14 / H; // OH⁻
 
-		let negativeCharges =
-			totalCitrate *
-			((maxCharge * 1) / denominator + // Most dissociated
-				((maxCharge - 1) * kValues[0]) / denominator + // Using K3
-				((maxCharge - 2) * kValues[1]) / denominator); // Using K3*K2
-
-		negativeCharges += 1e-14 / H; // OH⁻
+		// Sum up negative charges from each species
+		// Skip first element (i=0) as it represents neutral species
+		for (let i = 1; i <= maxCharge; i++) {
+			negativeCharges += (totalAcid * (i * kProducts[i])) / denominator;
+		}
 
 		return positiveCharges - negativeCharges;
 	}
-	const H_root = bisection(f, H_min, H_max, 1e-9);
-	return { pH: -Math.log10(H_root), H: H_root };
+
+	const H_root = bisection(f, 1e-14, 1, 1e-9);
+	return { pH: -Math.log10(H_root), H: H_root, f };
 }
 
 export function getMoles(substance: AcidSubstance, mass: number): number {
