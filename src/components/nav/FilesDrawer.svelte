@@ -116,7 +116,7 @@
 			filesDrawer.close();
 			const mixture = await deserializeFromStorage(id);
 			if (mixture && mixture.isValid) {
-				mixtureStore.addComponentTo(filesDrawer.parentId, { name, component: mixture });
+				mixtureStore.addIngredientTo(filesDrawer.parentId, { name, item: mixture });
 			}
 		};
 	}

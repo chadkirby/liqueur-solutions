@@ -1,4 +1,4 @@
-import { componentId, isWater, Mixture } from './index.svelte.js';
+import { componentId, isWaterComponent, Mixture } from './index.svelte.js';
 import { calculateAbvProportions } from './ingredients/density.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import type { CitrusJuiceId, CitrusJuiceName } from './citrus-ids.js';
@@ -13,12 +13,12 @@ export function newSpirit(vol = 100, abv = 40): Mixture {
 		{
 			name: 'ethanol',
 			mass: props.ethanolMass,
-			component: SubstanceComponent.new('ethanol'),
+			item: SubstanceComponent.new('ethanol'),
 		},
 		{
 			name: 'water',
 			mass: props.waterMass,
-			component: SubstanceComponent.new('water'),
+			item: SubstanceComponent.new('water'),
 		},
 	]).setVolume(vol);
 
@@ -30,12 +30,12 @@ export function newSyrup(volume: number, brix: number): Mixture {
 		{
 			name: 'sugar',
 			proportion: brix / 100,
-			component: SubstanceComponent.new('sucrose'),
+			item: SubstanceComponent.new('sucrose'),
 		},
 		{
 			name: 'water',
 			proportion: 1 - brix / 100,
-			component: SubstanceComponent.new('water'),
+			item: SubstanceComponent.new('water'),
 		},
 	]).setVolume(volume);
 	return mx;
@@ -52,27 +52,27 @@ export const citrus = {
 			{
 				name: 'water',
 				proportion: 90,
-				component: SubstanceComponent.new('water'),
+				item: SubstanceComponent.new('water'),
 			},
 			{
 				name: 'citric acid',
 				proportion: 5.8,
-				component: SubstanceComponent.new('citric-acid'),
+				item: SubstanceComponent.new('citric-acid'),
 			},
 			{
 				name: 'malic acid',
 				proportion: 0.2,
-				component: SubstanceComponent.new('malic-acid'),
+				item: SubstanceComponent.new('malic-acid'),
 			},
 			{
 				name: 'sugar',
 				proportion: 1.25,
-				component: SubstanceComponent.new('fructose'),
+				item: SubstanceComponent.new('fructose'),
 			},
 			{
 				name: 'sugar',
 				proportion: 1.25,
-				component: SubstanceComponent.new('glucose'),
+				item: SubstanceComponent.new('glucose'),
 			},
 		]).setVolume(volume);
 		return mx;
@@ -88,27 +88,27 @@ export const citrus = {
 			{
 				name: 'water',
 				proportion: 90,
-				component: SubstanceComponent.new('water'),
+				item: SubstanceComponent.new('water'),
 			},
 			{
 				name: 'citric acid',
 				proportion: 5.8,
-				component: SubstanceComponent.new('citric-acid'),
+				item: SubstanceComponent.new('citric-acid'),
 			},
 			{
 				name: 'malic acid',
 				proportion: 0.2,
-				component: SubstanceComponent.new('malic-acid'),
+				item: SubstanceComponent.new('malic-acid'),
 			},
 			{
 				name: 'sugar',
 				proportion: 0.75,
-				component: SubstanceComponent.new('fructose'),
+				item: SubstanceComponent.new('fructose'),
 			},
 			{
 				name: 'sugar',
 				proportion: 0.75,
-				component: SubstanceComponent.new('glucose'),
+				item: SubstanceComponent.new('glucose'),
 			},
 		]).setVolume(volume);
 		return mx;
@@ -124,27 +124,27 @@ export const citrus = {
 			{
 				name: 'water',
 				proportion: 88,
-				component: SubstanceComponent.new('water'),
+				item: SubstanceComponent.new('water'),
 			},
 			{
 				name: 'citric acid',
 				proportion: 1.2,
-				component: SubstanceComponent.new('citric-acid'),
+				item: SubstanceComponent.new('citric-acid'),
 			},
 			{
 				name: 'malic acid',
 				proportion: 0.2,
-				component: SubstanceComponent.new('malic-acid'),
+				item: SubstanceComponent.new('malic-acid'),
 			},
 			{
 				name: 'sugar',
 				proportion: 5,
-				component: SubstanceComponent.new('fructose'),
+				item: SubstanceComponent.new('fructose'),
 			},
 			{
 				name: 'sugar',
 				proportion: 5,
-				component: SubstanceComponent.new('glucose'),
+				item: SubstanceComponent.new('glucose'),
 			},
 		]).setVolume(volume);
 		return mx;
@@ -160,27 +160,27 @@ export const citrus = {
 			{
 				name: 'water',
 				proportion: 90,
-				component: SubstanceComponent.new('water'),
+				item: SubstanceComponent.new('water'),
 			},
 			{
 				name: 'citric acid',
 				proportion: 1.2,
-				component: SubstanceComponent.new('citric-acid'),
+				item: SubstanceComponent.new('citric-acid'),
 			},
 			{
 				name: 'malic acid',
 				proportion: 0.3,
-				component: SubstanceComponent.new('malic-acid'),
+				item: SubstanceComponent.new('malic-acid'),
 			},
 			{
 				name: 'sugar',
 				proportion: 3.5,
-				component: SubstanceComponent.new('fructose'),
+				item: SubstanceComponent.new('fructose'),
 			},
 			{
 				name: 'sugar',
 				proportion: 3.5,
-				component: SubstanceComponent.new('glucose'),
+				item: SubstanceComponent.new('glucose'),
 			},
 		]).setVolume(volume);
 		return mx;
@@ -192,17 +192,17 @@ export function newPreservative(volume: number): Mixture {
 		{
 			name: 'sodium benzoate',
 			proportion: 15,
-			component: SubstanceComponent.new('sodium-benzoate'),
+			item: SubstanceComponent.new('sodium-benzoate'),
 		},
 		{
 			name: 'potassium sorbate',
 			proportion: 25,
-			component: SubstanceComponent.new('potassium-sorbate'),
+			item: SubstanceComponent.new('potassium-sorbate'),
 		},
 		{
 			name: 'water',
 			proportion: 100,
-			component: SubstanceComponent.new('water'),
+			item: SubstanceComponent.new('water'),
 		},
 	]).setVolume(volume);
 	return mx;
@@ -214,45 +214,45 @@ export function newZeroSyrup(volume: number, desiredBrix = 66.67): Mixture {
 		.addIngredient({
 			name: 'sucralose',
 			mass: 1,
-			component: SubstanceComponent.new('sucralose'),
+			item: SubstanceComponent.new('sucralose'),
 		})
 		.addIngredient({
 			name: 'allulose',
 			mass: 250,
-			component: SubstanceComponent.new('allulose'),
+			item: SubstanceComponent.new('allulose'),
 		})
 		.addIngredient({
 			name: 'preservative',
 			mass: preservative.mass / 100,
-			component: preservative,
+			item: preservative,
 		})
 		.addIngredient({
 			name: 'buffer acid',
 			mass: 1.3,
-			component: SubstanceComponent.new('citric-acid'),
+			item: SubstanceComponent.new('citric-acid'),
 		})
 		.addIngredient({
 			name: 'buffer base',
 			mass: 1,
-			component: SubstanceComponent.new('sodium-citrate'),
+			item: SubstanceComponent.new('sodium-citrate'),
 		})
 		.addIngredient({
 			name: 'water',
 			// add water to make up the volume to 1000
 			mass: 890.7899,
-			component: SubstanceComponent.new('water'),
+			item: SubstanceComponent.new('water'),
 		});
 
 	// we need to adjust the sweetness to the desired brix
 	// it's too hard to measure tiny quantities of sucralose, so we'll
 	// adjust the sweetness by adjusting the allulose mass
-	const allulose = mx.findIngredient(
-		(i) => i instanceof SubstanceComponent && i.substanceId === 'allulose',
-	);
-	if (!allulose) throw new Error('Allulose not found');
+	const [, alluloseId] = mx.ingredientIds;
+	if ((mx.ingredients.get(alluloseId)!.item as SubstanceComponent).substanceId !== 'allulose') {
+		throw new Error('Allulose not found');
+	}
 	// we'll also need to adjust the water mass to keep the volume at 1000
 	// while we're adjusting proportions to hit the desired sweetness
-	const water = mx.findIngredient(isWater);
+	const water = [...mx.ingredients.values()].find(({ item }) => isWaterComponent(item));
 	if (!water) throw new Error('Water not found');
 
 	seek(mx, {
@@ -262,7 +262,7 @@ export function newZeroSyrup(volume: number, desiredBrix = 66.67): Mixture {
 		predicate: (mx) => isClose(mx.brix, desiredBrix, 0.01),
 		adjuster: (mx) => {
 			const actualBrix = mx.brix;
-			mx.scaleIngredientMass(allulose.id, desiredBrix / actualBrix);
+			mx.scaleIngredientMass(alluloseId, desiredBrix / actualBrix);
 			// while we're dialing in the sweetnedd, keep the volume to 1000
 			const desiredVolume = 1000;
 			seek(mx, {

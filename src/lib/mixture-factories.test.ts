@@ -48,7 +48,7 @@ describe('newSyrup', () => {
 		syrup.addIngredient({
 			name: 'water',
 			mass: 60.65,
-			component: SubstanceComponent.new('water'),
+			item: SubstanceComponent.new('water'),
 		});
 		expect(syrup.ingredients.size, 'three ingredients').toBe(3);
 		expect(
