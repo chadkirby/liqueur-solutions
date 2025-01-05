@@ -13,9 +13,9 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 	const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 
 	const mixture = new Mixture(componentId(), 1, []);
-	mixture.addIngredient({ name: '', id: componentId(), component: newSpirit(500, 40) });
-	mixture.addIngredient({ name: '', id: componentId(), component: new Water(200) });
-	mixture.addIngredient({ name: '', id: componentId(), component: new Sweetener('sucrose', 80) });
+	mixture.addIngredient({ name: '', id: componentId(), item: newSpirit(500, 40) });
+	mixture.addIngredient({ name: '', id: componentId(), item: new Water(200) });
+	mixture.addIngredient({ name: '', id: componentId(), item: new Sweetener('sucrose', 80) });
 
 	const item: StoredFileData = {
 		id: generateStorageId(),

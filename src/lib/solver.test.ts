@@ -51,7 +51,7 @@ describe('Mixture', () => {
 		mixture = newSpirit(100, 40).addIngredient({
 			name: 'sugar',
 			mass: 50,
-			component: SubstanceComponent.new('sucrose'),
+			item: SubstanceComponent.new('sucrose'),
 		});
 		initialAnalysis = {
 			volume: mixture.volume,

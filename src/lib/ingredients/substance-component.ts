@@ -74,15 +74,6 @@ export interface Component {
 }
 
 export class SubstanceComponent implements Component {
-	static water() {
-		return new SubstanceComponent({ id: 'water' });
-	}
-	static ethanol() {
-		return new SubstanceComponent({ id: 'ethanol' });
-	}
-	static sucrose() {
-		return new SubstanceComponent({ id: 'sucrose' });
-	}
 	static new(substanceId: SubstanceId) {
 		return new SubstanceComponent({ id: substanceId });
 	}
@@ -93,6 +84,10 @@ export class SubstanceComponent implements Component {
 		const substance = Substances.find((s) => s.id === data.id);
 		if (!substance) throw new Error(`Unknown substance: ${data.id}`);
 		this.substance = substance;
+	}
+
+	clone() {
+		return new SubstanceComponent(this.toStorageData());
 	}
 
 	toStorageData(): SubstanceData {
@@ -148,12 +143,12 @@ export class SubstanceComponent implements Component {
 		return this.substance.id === 'ethanol' ? this.getVolume(mass) : 0;
 	}
 
-	getAbv(mass: number): number {
+	getAbv(): number {
 		return this.substance.id === 'ethanol' ? 100 : 0;
 	}
 
-	getProof(mass: number): number {
-		return this.getAbv(mass) * 2;
+	getProof(): number {
+		return this.getAbv() * 2;
 	}
 
 	getBrix(): number {

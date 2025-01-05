@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Mixture, Sweetener, Water } from '$lib/index.svelte';
+	import { Mixture } from '$lib/index.svelte';
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
@@ -14,30 +14,30 @@
 
 	function addSpirit() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: '', component: newSpirit(100, 40) });
+		mixtureStore.addIngredientTo(componentId, { name: '', item: newSpirit(100, 40) });
 	}
 	function addWater() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: '', component: new Water(100) });
+		mixtureStore.addIngredientTo(componentId, { name: '', item: new Water(100) });
 	}
 	function addSugar() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, {
+		mixtureStore.addIngredientTo(componentId, {
 			name: '',
-			component: new Sweetener('sucrose', 100)
+			item: new Sweetener('sucrose', 100)
 		});
 	}
 	function addSyrup() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, {
+		mixtureStore.addIngredientTo(componentId, {
 			name: '',
-			component: newSyrup(100, 50)
+			item: newSyrup(100, 50)
 		});
 	}
 
 	function addEmpty() {
 		if (callback) callback();
-		mixtureStore.addComponentTo(componentId, { name: '', component: new Mixture([]) });
+		mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture([]) });
 	}
 
 	function openFilesDrawer() {

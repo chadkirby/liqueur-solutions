@@ -130,7 +130,7 @@ function getNeeds(deviations: Target): Needs {
 function getMixtureProvides(ingredient: Mixture): Needs {
 	const provides = newNeeds(0);
 	const substances = ingredient.makeSubstanceMap();
-	for (const { mass, component } of substances.values()) {
+	for (const { mass, item: component } of substances.values()) {
 		for (const [key, value] of getSubstanceProvides(component, mass)) {
 			provides.set(key, provides.get(key)! + value);
 		}
@@ -168,7 +168,7 @@ export function solver(mixture: Mixture, targets: Target) {
 
 	let bestState = analyze(mixture.clone(false), targets);
 
-	const ingredientIds = [...mixture.eachIngredientId()];
+	const ingredientIds = mixture.ingredientIds;
 
 	const solver: AnnealingSolver<MixtureState, Mixture> = new AnnealingSolver({
 		chooseMove: (state, count) => {
@@ -189,9 +189,9 @@ export function solver(mixture: Mixture, targets: Target) {
 				const ingredient = provisionalMixture.ingredients.get(id)!;
 				const currentMass = provisionalMixture.getIngredientMass(id);
 				const provides =
-					ingredient.component instanceof Mixture
-						? getMixtureProvides(ingredient.component)
-						: getSubstanceProvides(ingredient.component, currentMass);
+					ingredient.item instanceof Mixture
+						? getMixtureProvides(ingredient.item)
+						: getSubstanceProvides(ingredient.item, currentMass);
 				// determine if, on balance, we need more or less of this
 				// ingredient based on what we need and what it provides
 				let massDelta = 1;
