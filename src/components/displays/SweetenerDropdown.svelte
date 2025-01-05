@@ -46,7 +46,7 @@
 		bind:value={subType}
 		{onclick}
 		onchange={(e) =>
-			mixtureStore.updateSweetenerSubType(componentId, e.currentTarget.value as SweetenerTypes)}
+			mixtureStore.updateSweetenerType(componentId, e.currentTarget.value as SweetenerTypes)}
 	>
 		{#each sweeteners as { value, name }}
 			<option {value} selected={value === subType}>{name}</option>

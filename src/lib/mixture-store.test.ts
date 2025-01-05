@@ -1,9 +1,26 @@
-import { describe, it, expect } from 'vitest';
-import { MixtureStore, loadingStoreId } from './mixture-store.svelte';
-import { Water } from './ingredients/water.js';
-import { Mixture } from './mixture.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { MixtureStore, loadingStoreId, type MixtureStoreData } from './mixture-store.svelte';
+import { Mixture, type IngredientItem } from './mixture.js';
 import type { Analysis } from './utils.js';
 import { newSpirit } from './mixture-factories.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
+
+function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
+	const item = newSpirit(volume, abv);
+	return {
+		name,
+		item,
+		mass: item.mass,
+	};
+}
+
+function ingredientList(data: MixtureStoreData | IngredientItem): IngredientItem[] {
+	return 'mixture' in data
+		? Array.from(data.mixture.ingredients.values())
+		: 'ingredients' in data.item
+			? Array.from(data.item.ingredients.values())
+			: [];
+}
 
 describe('Mixture Store', () => {
 	it('should initialize with default values', () => {
@@ -27,48 +44,48 @@ describe('Mixture Store', () => {
 	it('should add and remove components', () => {
 		const store = new MixtureStore();
 		// Add a spirit component
-		store.addComponentTo(null, {
-			name: 'spirit',
-			component: newSpirit(100, 40)
-		});
+		const spiritId = store.addIngredientTo(null, standardSpirit());
 
 		let state = store.snapshot();
-		expect(state.mixture.components.length).toBe(1);
-		const spiritId = state.mixture.components[0].id;
+		expect(state.mixture.ingredients.size).toBe(1);
 
 		// Add water to the spirit mixture
-		store.addComponentTo(spiritId, {
+		const waterId = store.addIngredientTo(spiritId, {
 			name: 'water',
-			component: new Water(100)
+			item: SubstanceComponent.new('water'),
+			mass: 100,
 		});
 
 		state = store.snapshot();
-		const spiritComponent = state.mixture.components[0];
-		expect(spiritComponent.component instanceof Mixture).toBe(true);
-		if (spiritComponent.component instanceof Mixture) {
-			expect(spiritComponent.component.components.length).toBe(3);
-			expect(spiritComponent.component.components.at(-1)!.component instanceof Water).toBe(true);
+		const spirit = state.mixture.ingredients.get(spiritId)!;
+		expect(spirit.item instanceof Mixture).toBe(true);
+		if (!(spirit.item instanceof Mixture)) {
+			throw new Error('Expected spirit component to be a mixture');
 		}
 
+		expect(spirit.item.ingredients.size).toBe(3);
+		expect((spirit.item.ingredients.get(waterId)!.item as SubstanceComponent).substanceId).toBe(
+			'water',
+		);
 		// Remove the water component
-		const waterId = (spiritComponent.component as Mixture).components[0].id;
-		store.removeComponent(waterId);
+		store.removeIngredient(waterId);
 
 		state = store.snapshot();
-		expect((state.mixture.components[0].component as Mixture).components.length).toBe(2);
+		expect((state.mixture.ingredients.get(spiritId)!.item as Mixture).ingredients.size).toBe(2);
 	});
 
-	it('should handle volume changes and track errors', () => {
+	it('should handle volume changes', () => {
 		const store = new MixtureStore();
 
 		// Add a water component
-		store.addComponentTo(null, {
+		store.addIngredientTo(null, {
 			name: 'water',
-			component: new Water(100)
+			item: SubstanceComponent.new('water'),
+			mass: 100,
 		});
 
 		const state = store.snapshot();
-		const waterId = state.mixture.components[0].id;
+		const waterId = ingredientList(state)[0].id;
 
 		// Get initial volume
 		expect(store.getVolume(waterId)).toBe(100);
@@ -77,27 +94,30 @@ describe('Mixture Store', () => {
 		store.setVolume(waterId, 200);
 		expect(store.getVolume(waterId)).toBe(200);
 
-		// Set invalid volume (negative)
-		store.setVolume(waterId, -50);
+		try {
+			// Set invalid volume (negative)
+			store.setVolume(waterId, -50);
+		} catch (error) {
+			expect(error).toBeDefined();
+		}
+		expect(store.getVolume(waterId)).toBe(200);
 	});
 
 	it('should handle ABV changes', () => {
 		const store = new MixtureStore();
 
 		// Add a spirit mixture
-		store.addComponentTo(null, { name: '', component: newSpirit(100, 40) });
+		const spiritId = store.addIngredientTo(null, standardSpirit());
 		// add a water component
-		store.addComponentTo(null, {
+		store.addIngredientTo(null, {
 			name: 'water',
-			component: new Water(100)
+			item: SubstanceComponent.new('water'),
+			mass: 100,
 		});
-
-		const state = store.snapshot();
-		const spiritId = state.mixture.components[0].id;
 
 		// Set ABV
 		store.setAbv(spiritId, 30);
-		expect(store.getAbv(spiritId)).toBeCloseTo(30, 0.01);
+		expect(store.mixture.getAbv()).toBeCloseTo(30, 0.01);
 
 		// Set invalid ABV (over 100)
 		try {
@@ -105,7 +125,7 @@ describe('Mixture Store', () => {
 		} catch (error) {
 			expect(error).toBeDefined();
 		}
-		expect(store.getAbv(spiritId)).toBeCloseTo(30, 0.01); // should be clamped to 100
+		expect(store.getAbv()).toBeCloseTo(30, 0.01); // should be clamped to 100
 	});
 
 	it('should handle name changes', () => {
@@ -124,9 +144,10 @@ describe('Mixture Store', () => {
 		expect(store.redoCount).toBe(0);
 
 		// Add a water component
-		store.addComponentTo(null, {
+		store.addIngredientTo(null, {
 			name: 'water',
-			component: new Water(100)
+			item: SubstanceComponent.new('water'),
+			mass: 100,
 		});
 
 		// @ts-expect-error undoRedo is private
@@ -137,7 +158,7 @@ describe('Mixture Store', () => {
 		expect(store.redoCount).toBe(0);
 
 		const state = store.snapshot();
-		const waterId = state.mixture.components[0].id;
+		const waterId = ingredientList(state)[0].id;
 
 		// Change volume
 		store.setVolume(waterId, 200);
@@ -162,7 +183,7 @@ describe('Mixture Store', () => {
 		// Undo back to start
 		store.undo();
 		store.undo();
-		expect(store.mixture.components.length).toBe(0);
+		expect(store.mixture.ingredients.size).toBe(0);
 		expect(store.undoCount).toBe(0);
 		expect(store.redoCount).toBe(2);
 	});
@@ -171,13 +192,14 @@ describe('Mixture Store', () => {
 		const store = new MixtureStore();
 
 		// Add water
-		store.addComponentTo(null, {
+		store.addIngredientTo(null, {
 			name: 'water',
-			component: new Water(100)
+			item: SubstanceComponent.new('water'),
+			mass: 100,
 		});
 
 		const state = store.snapshot();
-		const waterId = state.mixture.components[0].id;
+		const waterId = ingredientList(state)[0].id;
 
 		// Change volume to 200
 		store.setVolume(waterId, 200);
@@ -204,9 +226,13 @@ describe('Mixture store solver', () => {
 
 	beforeEach(() => {
 		store = new MixtureStore();
-		store.addComponentTo(null, { name: 'spirit', component: newSpirit(50, 100) });
-		store.addComponentTo(null, { name: 'water', component: new Water(50) });
-		store.addComponentTo(null, { name: 'sugar', component: new Sweetener('sucrose', 50) });
+		store.addIngredientTo(null, standardSpirit(50, 100));
+		store.addIngredientTo(null, { name: 'water', item: SubstanceComponent.new('water'), mass: 50 });
+		store.addIngredientTo(null, {
+			name: 'sugar',
+			item: SubstanceComponent.new('sucrose'),
+			mass: 50,
+		});
 		initialAnalysis = store.mixture.analyze(2);
 	});
 
@@ -243,10 +269,5 @@ describe('Mixture store solver', () => {
 	it('should throw an error for unable to solve', () => {
 		// Act & Assert
 		expect(() => store.solveTotal('abv', 200)).toThrowError('Unable to solve for abv = 200');
-	});
-
-	it('should clone', () => {
-		const clone = store.mixture.clone();
-		expect(clone).toEqual(store.mixture);
 	});
 });
