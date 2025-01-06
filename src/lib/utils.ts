@@ -1,4 +1,3 @@
-import type { Component } from './ingredients/substance-component.js';
 import type { Mixture } from './mixture.js';
 import type { Target } from './solver.js';
 
@@ -20,7 +19,7 @@ export function analyze(
 		Mixture,
 		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal' | 'pH'
 	>,
-	precision = 0
+	precision = 0,
 ): Analysis {
 	return {
 		volume: round(item.volume, precision),
@@ -30,7 +29,7 @@ export function analyze(
 		kcal: round(item.kcal, precision),
 		proof: round(item.abv * 2, precision),
 		equivalentSugarMass: round(item.equivalentSugarMass, precision),
-		pH: round(item.pH, precision)
+		pH: round(item.pH, precision),
 	};
 }
 
@@ -88,7 +87,7 @@ export function format(value: number | string, options: FormatOptions = {}) {
 	const str = `${formatted}${suffix ? thinsp + suffix : suffix}`;
 	return Object.assign(new String(str), {
 		value: formatted,
-		suffix
+		suffix,
 	});
 }
 
@@ -146,7 +145,7 @@ function getUnicodeFraction(numerator: number, denominator: number) {
 		// 		⅞
 		// VULGAR FRACTION SEVEN EIGHTHS
 		// Unicode: U+215E, UTF-8: E2 85 9E
-		'7/8': '\u215E'
+		'7/8': '\u215E',
 	};
 
 	return fractions[`${numerator}/${denominator}`] ?? `${numerator}⁄${denominator}`;
@@ -183,7 +182,7 @@ const candidates = [
 	yToX(7, 1),
 	yToX(8, 1),
 	yToX(9, 1),
-	yToX(10, 1)
+	yToX(10, 1),
 ].sort((a, b) => a.decimal - b.decimal);
 export function brixToSyrupProportion(brix: number) {
 	const diffs = candidates.map((x) => Math.abs(brix / 100 - x.decimal));

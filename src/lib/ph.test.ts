@@ -10,12 +10,12 @@ function getPh(substanceId: SubstanceId, substanceMass: number, solutionVolume: 
 	const mx = new Mixture()
 		.addIngredient({
 			name: substanceId,
-			mass: substanceMass,
+			desiredMass: substanceMass,
 			item: SubstanceComponent.new(substanceId),
 		})
 		.addIngredient({
 			name: 'water',
-			mass: solutionVolume - substanceMass,
+			desiredMass: solutionVolume - substanceMass,
 			item: SubstanceComponent.new('water'),
 		});
 	return mx.pH;
@@ -74,7 +74,7 @@ describe('Mixture can model pH', () => {
 	test('should work with water', () => {
 		const mx = new Mixture().addIngredient({
 			name: 'water',
-			mass: 100,
+			desiredMass: 100,
 			item: SubstanceComponent.new('water'),
 		});
 		assert.equal(mx.pH, 7, 'pH');
@@ -84,17 +84,17 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('citric-acid'),
 			})
 			.addIngredient({
 				name: 'sodium citrate',
-				mass: 5,
+				desiredMass: 5,
 				item: SubstanceComponent.new('sodium-citrate'),
 			})
 			.addIngredient({
 				name: 'water',
-				mass: 92,
+				desiredMass: 92,
 				item: SubstanceComponent.new('water'),
 			});
 		assert.approximately(mx.pH, 5, 0.125, 'pH with buffer pair');
@@ -104,17 +104,17 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'acetic acid',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('acetic-acid'),
 			})
 			.addIngredient({
 				name: 'sodium acetate',
-				mass: 5,
+				desiredMass: 5,
 				item: SubstanceComponent.new('sodium-acetate'),
 			})
 			.addIngredient({
 				name: 'water',
-				mass: 92,
+				desiredMass: 92,
 				item: SubstanceComponent.new('water'),
 			});
 		assert.approximately(mx.pH, 4.85, 0.125, 'pH with buffer pair');
@@ -124,17 +124,17 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'malic acid',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('malic-acid'),
 			})
 			.addIngredient({
 				name: 'sodium malate',
-				mass: 5,
+				desiredMass: 5,
 				item: SubstanceComponent.new('sodium-malate'),
 			})
 			.addIngredient({
 				name: 'water',
-				mass: 92,
+				desiredMass: 92,
 				item: SubstanceComponent.new('water'),
 			});
 		assert.approximately(mx.pH, 4.5, 0.125, 'pH with buffer pair');
@@ -144,17 +144,17 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
-				mass: 5,
+				desiredMass: 5,
 				item: SubstanceComponent.new('citric-acid'),
 			})
 			.addIngredient({
 				name: 'sodium citrate',
-				mass: 1,
+				desiredMass: 1,
 				item: SubstanceComponent.new('sodium-citrate'),
 			})
 			.addIngredient({
 				name: 'water',
-				mass: 92,
+				desiredMass: 92,
 				item: SubstanceComponent.new('water'),
 			});
 		assert.approximately(mx.pH, 2.92, 0.1, 'pH with unequal buffer pair');
@@ -164,27 +164,27 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('citric-acid'),
 			})
 			.addIngredient({
 				name: 'sodium citrate',
-				mass: 5,
+				desiredMass: 5,
 				item: SubstanceComponent.new('sodium-citrate'),
 			})
 			.addIngredient({
 				name: 'acetic acid',
-				mass: 2,
+				desiredMass: 2,
 				item: SubstanceComponent.new('acetic-acid'),
 			})
 			.addIngredient({
 				name: 'sodium acetate',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('sodium-acetate'),
 			})
 			.addIngredient({
 				name: 'water',
-				mass: 87,
+				desiredMass: 87,
 				item: SubstanceComponent.new('water'),
 			});
 		// not super-confident in this value
@@ -195,13 +195,13 @@ describe('Mixture can model pH', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'citric acid',
-				mass: 3,
+				desiredMass: 3,
 				item: SubstanceComponent.new('citric-acid'),
 			})
 			// Missing sodium citrate
 			.addIngredient({
 				name: 'water',
-				mass: 97,
+				desiredMass: 97,
 				item: SubstanceComponent.new('water'),
 			});
 		assert.approximately(mx.pH, 1.96, 0.1, 'pH with missing buffer component');
