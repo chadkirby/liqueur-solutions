@@ -1,26 +1,27 @@
 import * as fflate from 'fflate';
-import { dataToMixture, type Mixture } from '$lib/mixture.js';
-import type { AnyData } from '$lib/ingredients/substance-component.js';
+import { Mixture } from '$lib/mixture.js';
+import { isV0Data, isV1Data, type StoredFileDataV1 } from '$lib/data-format.js';
+import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 
 /**
  * Decompresses a gz parameter from a URL into a mixture.
  */
-export function decompress(qs: URLSearchParams): Mixture {
+function decompress(qs: URLSearchParams): Mixture {
 	const gz = qs.get('gz');
 	if (!gz) {
 		throw new Error('No compressed data found');
 	}
 	const buf = fflate.decompressSync(fflate.strToU8(atob(gz), true));
 	const data = JSON.parse(fflate.strFromU8(buf, true));
-	if (!('components' in data) || !(typeof data.components === 'object')) {
-		throw new Error('No components found' + qs.toString());
+	const v1Data: StoredFileDataV1 | null = isV1Data(data)
+		? data
+		: isV0Data(data)
+			? portV0DataToV1(data)
+			: null;
+	if (!v1Data) {
+		throw new Error('Unknown data format' + qs.toString());
 	}
-	const components = Array.from(Object.values(data.components as string[])) as unknown as Array<{
-		name: string;
-		id: string;
-		data: AnyData;
-	}>;
-	return dataToMixture({ type: 'mixture', components });
+	return Mixture.fromStorageData(v1Data.rootMixtureId, v1Data.ingredientDb);
 }
 
 /**

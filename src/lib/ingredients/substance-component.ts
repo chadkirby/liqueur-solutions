@@ -36,10 +36,10 @@ export class SubstanceComponent implements CommonComponent {
 	readonly referenceMass = 1;
 
 	clone() {
-		return new SubstanceComponent(this.toStorageData());
+		return new SubstanceComponent(this.serializeSubstanceData());
 	}
 
-	toStorageData(): SubstanceData {
+	serializeSubstanceData(): SubstanceData {
 		return { ...this.data };
 	}
 	get id() {

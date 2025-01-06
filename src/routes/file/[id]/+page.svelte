@@ -5,7 +5,7 @@
 	import { loadingStoreId, MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Spinner } from 'svelte-5-ui-lib';
 	import { filesDb } from '$lib/storage.svelte.js';
-	import { storedFileDataVersion } from '$lib/mixture-types.js';
+	import { currentDataVersion } from '$lib/data-format.js';
 
 	interface Props {
 		data: LoadData;
@@ -22,13 +22,13 @@
 					{
 						onUpdate(data) {
 							filesDb.write({
-								version: storedFileDataVersion,
+								version: currentDataVersion,
 								id: data.storeId,
 								accessTime: Date.now(),
 								name: data.name,
 								desc: data.mixture.describe(),
-								mixture: mixture.toStorageData(),
-								ingredientDb: mixture.toStorageDbData(),
+								rootMixtureId: mixture.id,
+								ingredientDb: mixture.serialize(),
 							});
 						},
 					},

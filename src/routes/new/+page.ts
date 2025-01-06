@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
+import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
-import { storedFileDataVersion, type StoredFileData } from '$lib/mixture-types.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { redirect } from '@sveltejs/kit';
@@ -19,14 +19,14 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 		{ name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
 	]);
 
-	const item: StoredFileData = {
-		version: storedFileDataVersion,
+	const item: StoredFileDataV1 = {
+		version: currentDataVersion,
 		id: generateStorageId(),
 		accessTime: Date.now(),
 		name,
 		desc: mixture.describe(),
-		mixture: mixture.toStorageData(),
-		ingredientDb: mixture.toStorageDbData(),
+		rootMixtureId: mixture.id,
+		ingredientDb: mixture.serialize(),
 	};
 
 	if (browser) {
