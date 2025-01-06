@@ -77,7 +77,7 @@ export class Mixture implements CommonComponent {
 		const ingredients: IngredientItem[] = [];
 
 		const db = new Map(ingredientData);
-		for (const { id, desiredMass, name } of mixtureData.ingredients) {
+		for (const { id, mass, name } of mixtureData.ingredients) {
 			const data = db.get(id);
 			if (!data) {
 				throw new Error(`Ingredient ${id} not found in ingredientDb`);
@@ -89,7 +89,7 @@ export class Mixture implements CommonComponent {
 
 			ingredients.push({
 				id,
-				desiredMass,
+				mass,
 				name,
 				item,
 			});
@@ -137,9 +137,9 @@ export class Mixture implements CommonComponent {
 	toStorageData(): MixtureData {
 		return {
 			id: this.id,
-			ingredients: [...this.ingredients.values()].map(({ id, desiredMass, name }) => ({
+			ingredients: [...this.ingredients.values()].map(({ id, mass, name }) => ({
 				id,
-				desiredMass,
+				mass,
 				name,
 			})),
 		} as const;
@@ -163,14 +163,14 @@ export class Mixture implements CommonComponent {
 	 * proportions.
 	 */
 	addIngredient(ingredient: IngredientToAdd) {
-		if (ingredient.desiredMass < 0) {
+		if (ingredient.mass < 0) {
 			throw new Error('Invalid mass');
 		}
 		const ingredientItem: IngredientItem = {
 			id: ingredient.id ?? componentId(),
 			name: ingredient.name,
 			item: ingredient.item,
-			desiredMass: ingredient.desiredMass,
+			mass: ingredient.mass,
 		};
 		this.ingredients.set(ingredientItem.id, ingredientItem);
 		return this;
@@ -225,11 +225,11 @@ export class Mixture implements CommonComponent {
 			// we expect that non-zero masses of the ingredients are encoded as negative
 			// numbers, so we'll scale them up to the new mass
 			const nonZeroMixtureMass = [...this.ingredients.values()].reduce(
-				(acc, { desiredMass }) => acc + Math.abs(desiredMass),
+				(acc, { mass }) => acc + Math.abs(mass),
 				0,
 			);
 			for (const { ingredient } of this.eachIngredient()) {
-				const nonZeroIngredientMass = Math.abs(ingredient.desiredMass);
+				const nonZeroIngredientMass = Math.abs(ingredient.mass);
 				this.setIngredientMass(
 					ingredient.id,
 					(nonZeroIngredientMass / nonZeroMixtureMass) * newMass,
@@ -242,7 +242,7 @@ export class Mixture implements CommonComponent {
 	getIngredientMass(ingredientId: string): number | -1 {
 		const ingredient = this.ingredients.get(ingredientId);
 		if (ingredient) {
-			return ingredient.desiredMass < 0 ? 0 : ingredient.desiredMass;
+			return ingredient.mass < 0 ? 0 : ingredient.mass;
 		}
 		return -1;
 	}
@@ -262,7 +262,7 @@ export class Mixture implements CommonComponent {
 		if (ingredient) {
 			// if the new mass is tiny, we'll encode the current mass as
 			// negative number so that we can scale it back up later
-			ingredient.desiredMass = newMass < 1e-6 ? -1 * Math.abs(ingredient.desiredMass) : newMass;
+			ingredient.mass = newMass < 1e-6 ? -1 * Math.abs(ingredient.mass) : newMass;
 			return true;
 		}
 		return false;
@@ -444,7 +444,7 @@ export class Mixture implements CommonComponent {
 			pH: this.pH,
 		});
 		for (const { ingredient } of working.eachIngredient()) {
-			this.setIngredientMass(ingredient.id, ingredient.desiredMass);
+			this.setIngredientMass(ingredient.id, ingredient.mass);
 		}
 		this.setMass(working.mass);
 		return this;
@@ -638,7 +638,7 @@ export class Mixture implements CommonComponent {
 		working.setVolume(this.volume);
 
 		for (const { ingredient: workingIdt } of working.eachIngredient()) {
-			this.setIngredientMass(workingIdt.id, workingIdt.desiredMass);
+			this.setIngredientMass(workingIdt.id, workingIdt.mass);
 		}
 		this.setMass(working.mass);
 		return this;
@@ -695,7 +695,7 @@ export class Mixture implements CommonComponent {
 		return (
 			this.eachSubstance().every((ig) => ig.item.isValid && ig.mass >= 0) &&
 			this.eachIngredient().every(
-				({ ingredient }) => ingredient.item.isValid && ingredient.desiredMass >= 0,
+				({ ingredient }) => ingredient.item.isValid && ingredient.mass >= 0,
 			)
 		);
 	}

@@ -24,14 +24,14 @@ export type IngredientItemComponent = Mixture | SubstanceComponent;
 type IngredientItemData = {
 	id: string;
 	name: string;
-	desiredMass: number;
+	mass: number;
 };
 
 // add in-memory item to the data
 export type IngredientItem = IngredientItemData & {
 	// id: string;
 	// name: string;
-	// desiredMass: number;
+	// mass: number;
 	item: IngredientItemComponent; // Mixture | SubstanceComponent;
 };
 
@@ -39,7 +39,7 @@ export type IngredientItem = IngredientItemData & {
 export type IngredientToAdd = Omit<IngredientItem, 'id'> & {
 	id?: string;
 	// name: string;
-	// desiredMass: number;
+	// mass: number;
 	// item: IngredientItemComponent; // Mixture | SubstanceComponent;
 };
 

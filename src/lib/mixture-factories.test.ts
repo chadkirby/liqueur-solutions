@@ -47,7 +47,7 @@ describe('newSyrup', () => {
 		expect(syrup.density(), 'density').toBeCloseTo(1.213);
 		syrup.addIngredient({
 			name: 'water',
-			desiredMass: 60.65,
+			mass: 60.65,
 			item: SubstanceComponent.new('water'),
 		});
 		expect(syrup.ingredients.size, 'three ingredients').toBe(3);

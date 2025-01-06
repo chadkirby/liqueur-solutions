@@ -63,7 +63,7 @@ export class MixtureStore {
 	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
 			return {
-				ingredient: { id, name: 'totals', desiredMass: 1, item: mixture },
+				ingredient: { id, name: 'totals', mass: 1, item: mixture },
 				parentId: mixture.id,
 			};
 		}
@@ -186,7 +186,7 @@ export class MixtureStore {
 
 		const ingredientToAdd: IngredientToAdd = {
 			name: targetIngredient.name,
-			desiredMass: getIngredientMass(this.mixture, id),
+			mass: getIngredientMass(this.mixture, id),
 			item: targetIngredient.item,
 		};
 
@@ -556,7 +556,7 @@ function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number):
 	}
 
 	for (const { ingredient } of working.eachIngredient()) {
-		mixture.ingredients.get(ingredient.id)!.desiredMass = ingredient.desiredMass;
+		mixture.setIngredientMass(ingredient.id, ingredient.mass);
 	}
 	mixture.setMass(working.mass);
 }
