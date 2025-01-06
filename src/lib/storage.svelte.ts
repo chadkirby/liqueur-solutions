@@ -4,7 +4,8 @@ import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'repli
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
 import { browser } from '$app/environment';
 import type { SessionUser } from '@corbado/types';
-import type { StoredFileData } from './mixture-types.js';
+import { type StoredFileDataV1, isV0Data, isV1Data } from '$lib/data-format.js';
+import { portV0DataToV1 } from './migrations/v0-v1.js';
 
 let user: SessionUser | null = $state(null);
 
@@ -20,8 +21,8 @@ const SPACE_STARS = 'stars';
 export const starredIds = $state<StorageId[]>([]);
 
 type Mutators = {
-	createFile: (tx: WriteTransaction, item: StoredFileData) => Promise<void>;
-	updateFile: (tx: WriteTransaction, item: StoredFileData) => Promise<void>;
+	createFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
+	updateFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
 	deleteFile: (tx: WriteTransaction, id: StorageId) => Promise<void>;
 	addStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
 	deleteStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
@@ -29,11 +30,11 @@ type Mutators = {
 
 // Define our mutations
 const mutators = {
-	async createFile(tx: WriteTransaction, item: StoredFileData) {
+	async createFile(tx: WriteTransaction, item: StoredFileDataV1) {
 		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
 	},
 
-	async updateFile(tx: WriteTransaction, item: StoredFileData) {
+	async updateFile(tx: WriteTransaction, item: StoredFileDataV1) {
 		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
 	},
 
@@ -48,7 +49,7 @@ const mutators = {
 
 	async deleteStar(tx: WriteTransaction, id: StorageId) {
 		await tx.del(`${SPACE_STARS}/${id}`);
-	}
+	},
 } satisfies Mutators;
 
 class FilesDb {
@@ -63,7 +64,7 @@ class FilesDb {
 			pushURL: '/api/replicache/push',
 			pullURL: '/api/replicache/pull',
 			pushDelay,
-			pullInterval
+			pullInterval,
 		});
 		// Listen for auth changes to enable/disable sync
 		this.initializeSync();
@@ -103,15 +104,20 @@ class FilesDb {
 		return item !== null;
 	}
 
-	async read(id: StorageId): Promise<StoredFileData | null> {
+	async read(id: StorageId): Promise<StoredFileDataV1 | null> {
 		if (!isStorageId(id)) return null;
 		const item = await this.rep?.query(async (tx) => {
-			return await tx.get(`${SPACE_FILES}/${id}`);
+			const data = await tx.get(`${SPACE_FILES}/${id}`);
+			if (isV0Data(data)) {
+				const { portV0DataToV1 } = await import('./migrations/v0-v1.js');
+				return portV0DataToV1(data);
+			}
+			return data;
 		});
-		return item as StoredFileData | null;
+		return item as StoredFileDataV1 | null;
 	}
 
-	async write(item: StoredFileData): Promise<void> {
+	async write(item: StoredFileDataV1): Promise<void> {
 		if (!isStorageId(item.id)) return;
 		await this.rep?.mutate.updateFile(item);
 	}
@@ -142,16 +148,18 @@ class FilesDb {
 		await this.rep?.mutate.deleteStar(id);
 	}
 
-	async scan(sortBy: keyof StoredFileData = 'accessTime'): Promise<Map<StorageId, StoredFileData>> {
+	async scan(
+		sortBy: keyof StoredFileDataV1 = 'accessTime',
+	): Promise<Map<StorageId, StoredFileDataV1>> {
 		const items = await this.rep?.query(async (tx) => {
-			const items = new Map<StorageId, StoredFileData>();
+			const items = new Map<StorageId, StoredFileDataV1>();
 			const starred = new Set(starredIds);
 
 			// First get starred items
 			for (const id of starred) {
 				if (isStorageId(id)) {
 					const item = await tx.get(`${SPACE_FILES}/${id}`);
-					if (item) items.set(id, item as StoredFileData);
+					if (item) items.set(id, item as StoredFileDataV1);
 				}
 			}
 
@@ -160,7 +168,7 @@ class FilesDb {
 			for (const [key, item] of allItems) {
 				const id = key.split('/')[1] as StorageId;
 				if (!starred.has(id)) {
-					items.set(id, item as StoredFileData);
+					items.set(id, item as StoredFileDataV1);
 				}
 			}
 
@@ -184,24 +192,24 @@ class FilesDb {
 				return stars.map(([key]) => key.split('/')[1] as StorageId);
 			},
 			{
-				onData: callback
-			}
+				onData: callback,
+			},
 		);
 	}
 
-	subscribe(callback: (items: Map<StorageId, StoredFileData>) => void) {
+	subscribe(callback: (items: Map<StorageId, StoredFileDataV1>) => void) {
 		// Subscribe to changes in the files space
 		return this.rep?.subscribe(
 			// Body function that computes the value
 			async (tx) => {
-				const items = new Map<StorageId, StoredFileData>();
+				const items = new Map<StorageId, StoredFileDataV1>();
 				const starred = new Set(starredIds);
 
 				// First get starred items
 				for (const id of starred) {
 					if (isStorageId(id)) {
 						const item = await tx.get(`${SPACE_FILES}/${id}`);
-						if (item) items.set(id, item as StoredFileData);
+						if (item) items.set(id, item as StoredFileDataV1);
 					}
 				}
 
@@ -210,7 +218,7 @@ class FilesDb {
 				for (const [key, item] of allItems) {
 					const id = key.split('/')[1] as StorageId;
 					if (!starred.has(id)) {
-						items.set(id, item as StoredFileData);
+						items.set(id, item as StoredFileDataV1);
 					}
 				}
 
@@ -218,8 +226,8 @@ class FilesDb {
 			},
 			// Options with callback
 			{
-				onData: callback
-			}
+				onData: callback,
+			},
 		);
 	}
 }
@@ -258,8 +266,9 @@ export async function deserializeFromStorage(id: string): Promise<Mixture> {
 		throw new Error('Invalid id');
 	}
 	const item = await filesDb.read(id);
-	if (!item) {
+	const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
+	if (!v1Data) {
 		throw new Error('No item found');
 	}
-	return Mixture.fromStorageData(item.mixture, item.ingredientDb);
+	return Mixture.fromStorageData(v1Data.rootMixtureId, v1Data.ingredientDb);
 }
