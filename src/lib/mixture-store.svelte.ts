@@ -3,6 +3,9 @@ import { SubstanceComponent } from './ingredients/substance-component.js';
 import { digitsForDisplay, getTotals, type Analysis } from './utils.js';
 import {
 	componentId,
+	isMixture,
+	isSubstance,
+	isSweetener,
 	isSweetenerMixture,
 	isSweetenerSubstance,
 	isSyrup,
@@ -12,11 +15,8 @@ import { solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
-import { isSweetenerId, Sweeteners } from './ingredients/substances.js';
+import { isSweetenerId, type SweetenerType } from './ingredients/substances.js';
 import type { IngredientItem, IngredientToAdd } from './mixture-types.js';
-
-const SweetenerTypes = Sweeteners.map(({ id }) => id);
-type SweetenerTypes = (typeof SweetenerTypes)[number];
 
 type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
 
@@ -405,27 +405,26 @@ export class MixtureStore {
 		};
 		this.update({ undoKey, updater: makeUpdater(newName), undoer: makeUpdater(originalName) });
 	}
-	private getSweetenerTypes(id: string): SweetenerTypes[] {
+	getSweetenerTypes(id: string): SweetenerType[] {
 		const { ingredient } = this.findIngredient(id, this.mixture);
 		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
-		const maybeSubstance = ingredient.item;
-		if (isSweetenerSubstance(maybeSubstance)) {
-			return [maybeSubstance.substanceId as SweetenerTypes];
+		const ingredientIsSweetener = isSweetener(ingredient.item);
+		if (isSubstance(ingredient.item) && ingredientIsSweetener) {
+			return [ingredient.item.substanceId as SweetenerType];
 		}
-		const maybeMixture = ingredient.item;
-		if (isSweetenerMixture(maybeMixture) || isSyrup(maybeMixture)) {
-			const substances = [...maybeMixture.makeSubstanceMap().values()];
+		if (isMixture(ingredient.item) && (ingredientIsSweetener || isSyrup(ingredient.item))) {
+			const substances = [...ingredient.item.makeSubstanceMap().values()];
 			return substances
 				.filter((x) => isSweetenerSubstance(x.item))
-				.map((x) => x.item.substanceId as SweetenerTypes);
+				.map((x) => x.item.substanceId as SweetenerType);
 		}
 		return [];
 	}
 	updateSweetenerType(
 		id: string,
-		newType: SweetenerTypes,
+		newType: SweetenerType,
 		undoKey = `updateSweetenerSubType-${id}`,
 	): void {
 		const originalTypes = this.getSweetenerTypes(id);
@@ -433,7 +432,7 @@ export class MixtureStore {
 			throw new Error(`Unable to update complex sweetener ${id}`);
 		}
 		const [originalType] = originalTypes;
-		const makeUpdater = (targetType: SweetenerTypes) => {
+		const makeUpdater = (targetType: SweetenerType) => {
 			return (data: MixtureStoreData) => {
 				const mcx = this.findIngredient(id, this.mixture);
 				if (!mcx) {

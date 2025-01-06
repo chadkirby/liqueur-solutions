@@ -1,5 +1,3 @@
-import type { S } from 'vitest/dist/chunks/config.Cy0C388Z.js';
-
 interface AtomicElement {
 	count: number;
 	name: string;
@@ -17,7 +15,7 @@ const Elements = {
 	P: { name: 'Phosphorus', atomicMass: 30.973762 },
 	Na: { name: 'Sodium', atomicMass: 22.989769 },
 	Mg: { name: 'Magnesium', atomicMass: 24.305 },
-	S: { name: 'Sulfur', atomicMass: 32.06 }
+	S: { name: 'Sulfur', atomicMass: 32.06 },
 } as const satisfies Record<string, Omit<AtomicElement, 'count'>>;
 
 const KnownElements = Object.keys(Elements);
@@ -41,7 +39,7 @@ export class Molecule {
 	get molecularMass(): number {
 		const mass = this.elements.reduce(
 			(acc, element) => acc + element.atomicMass * element.count,
-			0
+			0,
 		);
 		Object.defineProperty(this, 'mass', { value: mass });
 		return mass;
@@ -492,8 +490,12 @@ export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
 export function isSubstanceIid(id: string): id is SubstanceId {
 	return SubstanceIds.includes(id as SubstanceId);
 }
+
+export const sweetenerTypes = Sweeteners.map(({ id }) => id);
+export type SweetenerType = (typeof sweetenerTypes)[number];
+
 export function isSweetenerId(id: string): id is SubstanceId {
-	return Sweeteners.some((s) => s.id === id);
+	return sweetenerTypes.includes(id as SweetenerType);
 }
 export function isAcidId(id: string): id is SubstanceId {
 	return Acids.some((s) => s.id === id);
