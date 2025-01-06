@@ -19,7 +19,7 @@ describe('mixture works', () => {
 		const mx = new Mixture();
 		mx.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		});
 		assert.deepEqual(mx.makeSubstanceMap().get('water')?.mass, 100, 'water substance');
@@ -37,12 +37,12 @@ describe('mixture works', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			})
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			});
 
@@ -54,18 +54,18 @@ describe('mixture works', () => {
 	test('can add sub-mixtures', () => {
 		const mx0 = new Mixture().addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		});
 		const mx1 = new Mixture().addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		});
 
 		const mx = new Mixture()
-			.addIngredient({ name: 'water 0', desiredMass: 10, item: mx0 })
-			.addIngredient({ name: 'water 1', desiredMass: 10, item: mx1 });
+			.addIngredient({ name: 'water 0', mass: 10, item: mx0 })
+			.addIngredient({ name: 'water 1', mass: 10, item: mx1 });
 		assert.equal(mx.substances.length, 2, 'two substances');
 
 		assert.equal(mx.makeSubstanceMap().get('water')!.mass, 20, 'water substance map');
@@ -77,12 +77,12 @@ describe('mixture works', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			})
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			});
 
@@ -102,12 +102,12 @@ describe('mixture works', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			})
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			});
 
@@ -131,12 +131,12 @@ describe('mixture works', () => {
 		const mx = new Mixture()
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			})
 			.addIngredient({
 				name: 'water',
-				desiredMass: 100,
+				mass: 100,
 				item: SubstanceComponent.new('water'),
 			});
 
@@ -161,12 +161,12 @@ test('can set ingredient mass', () => {
 	const mx = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		});
 
@@ -180,12 +180,12 @@ test('can solve for abv', () => {
 	const mx = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'ethanol',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('ethanol'),
 		});
 	mx.setVolume(1000);
@@ -198,24 +198,24 @@ test('can update from other mixture', () => {
 	const mx0 = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 10,
+			mass: 10,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'sucrose',
-			desiredMass: 10,
+			mass: 10,
 			item: SubstanceComponent.new('sucrose'),
 		});
 
 	const mx1 = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'ethanol',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('ethanol'),
 		});
 
@@ -228,12 +228,12 @@ test('can getIngredientVolume', () => {
 	const mx = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'ethanol',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('ethanol'),
 		});
 	const [waterId, ethanolId] = mx.ingredientIds;
@@ -245,12 +245,12 @@ test('can getIngredientMass', () => {
 	const mx = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'ethanol',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('ethanol'),
 		});
 	const [waterId, ethanolId] = mx.ingredientIds;
@@ -262,12 +262,12 @@ test('can clone', () => {
 	const mx = new Mixture()
 		.addIngredient({
 			name: 'water',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('water'),
 		})
 		.addIngredient({
 			name: 'ethanol',
-			desiredMass: 100,
+			mass: 100,
 			item: SubstanceComponent.new('ethanol'),
 		});
 	const clone = mx.clone();
