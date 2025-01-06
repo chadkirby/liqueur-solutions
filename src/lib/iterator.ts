@@ -28,6 +28,14 @@ export class FancyIterator<T> implements Iterable<T> {
 		return results;
 	}
 
+	reduce<U>(reducer: (accumulator: U, item: T) => U, initialValue: U): U {
+		let accumulator = initialValue;
+		for (const item of this) {
+			accumulator = reducer(accumulator, item);
+		}
+		return accumulator;
+	}
+
 	every(predicate: (item: T) => boolean): boolean {
 		for (const item of this) {
 			if (!predicate(item)) return false;
