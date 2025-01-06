@@ -1,5 +1,5 @@
 import { type Updater } from 'svelte/store';
-import { SubstanceComponent, SweetenerTypes } from './ingredients/substance-component.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
 import { digitsForDisplay, getTotals, type Analysis } from './utils.js';
 import {
 	componentId,
@@ -7,18 +7,20 @@ import {
 	isSweetenerSubstance,
 	isSyrup,
 	Mixture,
-	type IngredientItem,
-	type IngredientToAdd,
 } from './mixture.js';
 import { solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
-import { isSweetenerId } from './ingredients/substances.js';
-export type ComponentValueKey = keyof Analysis;
+import { isSweetenerId, Sweeteners } from './ingredients/substances.js';
+import type { IngredientItem, IngredientToAdd } from './mixture-types.js';
 
-export type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
+const SweetenerTypes = Sweeteners.map(({ id }) => id);
+type SweetenerTypes = (typeof SweetenerTypes)[number];
 
+type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
+
+// exported for testing
 export type MixtureStoreData = {
 	storeId: StorageId;
 	name: string;
@@ -55,13 +57,19 @@ export class MixtureStore {
 		};
 	}
 
-	private findIngredient(id: string, mixture = this.mixture): IngredientItem | null {
+	private findIngredient(
+		id: string,
+		mixture = this.mixture,
+	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
-			return { id, name: 'totals', proportion: 1, item: mixture };
+			return {
+				ingredient: { id, name: 'totals', desiredMass: 1, item: mixture },
+				parentId: mixture.id,
+			};
 		}
 		for (const { ingredient } of mixture.eachIngredient()) {
 			if (ingredient.id === id) {
-				return ingredient;
+				return { ingredient, parentId: mixture.id };
 			}
 		}
 		for (const { ingredient } of mixture.eachIngredient()) {
@@ -70,13 +78,13 @@ export class MixtureStore {
 				if (found) return found;
 			}
 		}
-		return null;
+		return { ingredient: null, parentId: null };
 	}
 
 	findMixture(id: string) {
-		const item = this.findIngredient(id);
-		if (item && item.item instanceof Mixture) {
-			return item.item;
+		const { ingredient } = this.findIngredient(id);
+		if (ingredient && ingredient.item instanceof Mixture) {
+			return ingredient.item;
 		}
 		return null;
 	}
@@ -152,57 +160,61 @@ export class MixtureStore {
 				if (parentId === null) {
 					data.mixture.addIngredient({ id: newId, ...ingredientItem });
 				} else {
-					const parent = this.findIngredient(parentId, data.mixture);
-					if (!parent) {
+					const { ingredient: targetMx } = this.findIngredient(parentId, data.mixture);
+					if (!targetMx) {
 						throw new Error(`Unable to find component ${parentId}`);
 					}
-					if (!(parent.item instanceof Mixture)) {
+					if (!(targetMx.item instanceof Mixture)) {
 						throw new Error(`Ingredient ${parentId} is not a mixture`);
 					}
-					parent.item.addIngredient({ id: newId, ...ingredientItem });
+					targetMx.item.addIngredient({ id: newId, ...ingredientItem });
 				}
 				return data;
 			},
 			undoer: (data) => {
-				data.mixture.removeIngredient(newId);
+				removeIngredient(data.mixture, newId);
 				return data;
 			},
 		});
 		return newId;
 	}
 	removeIngredient(id: string, undoKey = `removeIngredient-${id}`) {
-		const mxc = this.findIngredient(id);
-		if (!mxc) {
+		const { ingredient: targetIngredient, parentId } = this.findIngredient(id);
+		if (!targetIngredient || !parentId) {
 			throw new Error(`Unable to find component ${id}`);
 		}
 
 		const ingredientToAdd: IngredientToAdd = {
-			name: mxc.name,
-			mass: this.mixture.getIngredientMass(id),
-			item: mxc.item,
+			name: targetIngredient.name,
+			desiredMass: getIngredientMass(this.mixture, id),
+			item: targetIngredient.item,
 		};
 
 		this.update({
 			undoKey,
 			updater: (data) => {
-				data.mixture.removeIngredient(id);
+				removeIngredient(data.mixture, id);
 				return data;
 			},
 			undoer: (data) => {
-				data.mixture.addIngredient(ingredientToAdd);
+				const parentMx = this.findMixture(parentId);
+				if (!parentMx) {
+					throw new Error(`Unable to find parent component ${parentId}`);
+				}
+				parentMx.addIngredient(ingredientToAdd);
 				return data;
 			},
 		});
 	}
 	increment(key: EditableComponentType, componentId: string, minMax?: MinMax) {
-		const ingredientItem = this.findIngredient(componentId);
-		if (!ingredientItem) {
+		const { ingredient } = this.findIngredient(componentId);
+		if (!ingredient) {
 			throw new Error(`Unable to find component ${componentId}`);
 		}
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
-		const originalValue = this.mixture.get(ingredientItem, key);
+		const originalValue = this.mixture.get(ingredient, key);
 		const newValue = increment(originalValue, minMax);
 		if (newValue === originalValue) return;
 
@@ -219,14 +231,14 @@ export class MixtureStore {
 		key satisfies never;
 	}
 	decrement(key: EditableComponentType, componentId: string, minMax?: MinMax) {
-		const ingredientItem = this.findIngredient(componentId);
-		if (!ingredientItem) {
+		const { ingredient } = this.findIngredient(componentId);
+		if (!ingredient) {
 			throw new Error(`Unable to find component ${componentId}`);
 		}
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
-		const originalValue = this.mixture.get(ingredientItem, key);
+		const originalValue = this.mixture.get(ingredient, key);
 		const newValue = decrement(originalValue, minMax);
 		if (newValue === originalValue) return;
 
@@ -250,7 +262,7 @@ export class MixtureStore {
 		if (!mxc) {
 			throw new Error(`Unable to find component ${id}`);
 		}
-		return this.mixture.getIngredientVolume(id);
+		return getIngredientVolume(this.mixture, id);
 	}
 	setVolume(id: string, newVolume: number, undoKey = `setVolume-${id}`): void {
 		const originalVolume = this.getVolume(id);
@@ -261,14 +273,14 @@ export class MixtureStore {
 		const makeUpdater = (targetVolume: number) => {
 			return (data: MixtureStoreData) => {
 				const working = data.mixture.clone();
-				const mxc = this.findIngredient(id, working);
-				const item = mxc?.item;
+				const { ingredient } = this.findIngredient(id, working);
+				const item = ingredient?.item;
 				if (!item) {
 					throw new Error(`Unable to find component ${id}`);
 				}
 
-				working.setIngredientVolume(id, targetVolume);
-				if (!roundEq(working.getIngredientVolume(id), targetVolume)) {
+				setIngredientVolume(working, id, targetVolume);
+				if (!roundEq(getIngredientVolume(working, id), targetVolume)) {
 					throw new Error(`Unable to set requested volume of component ${id}`);
 				}
 
@@ -282,7 +294,7 @@ export class MixtureStore {
 	getAbv(ingredientId = 'totals') {
 		return ingredientId === 'totals'
 			? this.totals.abv
-			: this.mixture.getIngredientAbv(ingredientId);
+			: getIngredientAbv(this.mixture, ingredientId);
 	}
 	setAbv(id: string, newAbv: number, undoKey = `setAbv-${id}`): void {
 		if (id === 'totals') {
@@ -292,14 +304,14 @@ export class MixtureStore {
 		const originalAbv = this.getAbv(id);
 		const makeUpdater = (targetAbv: number) => {
 			return (data: MixtureStoreData) => {
-				const mxc = this.findIngredient(id, data.mixture);
-				if (!mxc) {
+				const { ingredient } = this.findIngredient(id, data.mixture);
+				if (!ingredient) {
 					throw new Error(`Unable to find component ${id}`);
 				}
-				if (!(mxc.item instanceof Mixture)) {
+				if (!(ingredient.item instanceof Mixture)) {
 					throw new Error(`Unable to set abv of substance ${id}`);
 				}
-				if (!mxc.item.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
+				if (!ingredient.item.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
 					throw new Error(`Mixture has no ethanol ${id}`);
 				}
 				const mixture = this.mixture.clone();
@@ -317,7 +329,7 @@ export class MixtureStore {
 		this.update({ undoKey, updater: makeUpdater(newAbv), undoer: makeUpdater(originalAbv) });
 	}
 	getMass(id = 'totals') {
-		return id === 'totals' ? this.totals.mass : this.mixture.getIngredientMass(id);
+		return id === 'totals' ? this.totals.mass : getIngredientMass(this.mixture, id);
 	}
 	setMass(componentId: string, newMass: number, undoKey = `setMass-${componentId}`): void {
 		if (componentId === 'totals') {
@@ -326,7 +338,7 @@ export class MixtureStore {
 		const originalMass = this.getMass(componentId);
 		const makeUpdater = (targetMass: number) => {
 			return (data: MixtureStoreData) => {
-				data.mixture.setIngredientMass(componentId, targetMass);
+				setIngredientMass(data.mixture, componentId, targetMass);
 				return data;
 			};
 		};
@@ -336,7 +348,7 @@ export class MixtureStore {
 		if (ingredientId === 'totals') {
 			return this.totals.brix;
 		}
-		const brix = this.mixture.getIngredientBrix(ingredientId);
+		const brix = getIngredientBrix(this.mixture, ingredientId);
 		if (brix === -1) {
 			throw new Error(`Unable to find ingredient ${ingredientId}`);
 		}
@@ -350,11 +362,11 @@ export class MixtureStore {
 		const originalBrix = this.getBrix(componentId);
 		const makeUpdater = (targetBrix: number) => {
 			return (data: MixtureStoreData) => {
-				const mxc = this.findIngredient(componentId, data.mixture);
-				if (!mxc) {
+				const { ingredient } = this.findIngredient(componentId, data.mixture);
+				if (!ingredient) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				const mixture = mxc.item;
+				const mixture = ingredient.item;
 				if (mixture instanceof Mixture) {
 					const syrup = mixture.clone();
 					syrup.setBrix(targetBrix);
@@ -376,33 +388,33 @@ export class MixtureStore {
 		newName: string,
 		undoKey = `updateComponentName-${componentId}`,
 	): void {
-		const mcx = this.findIngredient(componentId);
-		if (!mcx) {
+		const { ingredient } = this.findIngredient(componentId);
+		if (!ingredient) {
 			throw new Error(`Unable to find component ${componentId}`);
 		}
-		const originalName = mcx.name;
+		const originalName = ingredient.name;
 		const makeUpdater = (targetName: string) => {
 			return (data: MixtureStoreData) => {
-				const mcx = this.findIngredient(componentId, data.mixture);
-				if (!mcx) {
+				const { ingredient } = this.findIngredient(componentId, data.mixture);
+				if (!ingredient) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				mcx.name = targetName;
+				ingredient.name = targetName;
 				return data;
 			};
 		};
 		this.update({ undoKey, updater: makeUpdater(newName), undoer: makeUpdater(originalName) });
 	}
 	private getSweetenerTypes(id: string): SweetenerTypes[] {
-		const mcx = this.findIngredient(id, this.mixture);
-		if (!mcx) {
+		const { ingredient } = this.findIngredient(id, this.mixture);
+		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
-		const maybeSubstance = mcx.item;
+		const maybeSubstance = ingredient.item;
 		if (isSweetenerSubstance(maybeSubstance)) {
 			return [maybeSubstance.substanceId as SweetenerTypes];
 		}
-		const maybeMixture = mcx.item;
+		const maybeMixture = ingredient.item;
 		if (isSweetenerMixture(maybeMixture) || isSyrup(maybeMixture)) {
 			const substances = [...maybeMixture.makeSubstanceMap().values()];
 			return substances
@@ -544,7 +556,63 @@ function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number):
 	}
 
 	for (const { ingredient } of working.eachIngredient()) {
-		mixture.ingredients.get(ingredient.id)!.proportion = ingredient.proportion;
+		mixture.ingredients.get(ingredient.id)!.desiredMass = ingredient.desiredMass;
 	}
 	mixture.setMass(working.mass);
+}
+
+function recursiveGet(getter: (mx: Mixture) => number | -1, mixture: Mixture): number | -1 {
+	const value = getter(mixture);
+	if (value !== -1) return value;
+	for (const ingredient of mixture.ingredients.values()) {
+		if (ingredient.item instanceof Mixture) {
+			const value = recursiveGet(getter, ingredient.item);
+			if (value !== -1) return value;
+		}
+	}
+	return -1;
+}
+
+function getIngredientAbv(mixture: Mixture, id: string): number | -1 {
+	return recursiveGet((mx) => mx.getIngredientAbv(id), mixture);
+}
+
+function getIngredientBrix(mixture: Mixture, id: string): number | -1 {
+	return recursiveGet((mx) => mx.getIngredientBrix(id), mixture);
+}
+
+function getIngredientVolume(mixture: Mixture, id: string): number | -1 {
+	return recursiveGet((mx) => mx.getIngredientVolume(id), mixture);
+}
+
+function getIngredientMass(mixture: Mixture, id: string): number | -1 {
+	return recursiveGet((mx) => mx.getIngredientMass(id), mixture);
+}
+
+function recursiveSet<T>(
+	setter: (mx: Mixture, value: T) => boolean,
+	mixture: Mixture,
+	value: T,
+): boolean {
+	const wasSet = setter(mixture, value);
+	if (wasSet) return true;
+	for (const ingredient of mixture.ingredients.values()) {
+		if (ingredient.item instanceof Mixture) {
+			const wasSet = recursiveSet(setter, ingredient.item, value);
+			if (wasSet) return true;
+		}
+	}
+	return false;
+}
+
+function setIngredientVolume(mixture: Mixture, id: string, value: number): boolean {
+	return recursiveSet((mx, value) => mx.setIngredientVolume(id, value), mixture, value);
+}
+
+function setIngredientMass(mixture: Mixture, id: string, value: number): boolean {
+	return recursiveSet((mx, value) => mx.setIngredientMass(id, value), mixture, value);
+}
+
+function removeIngredient(mixture: Mixture, id: string): boolean {
+	return recursiveSet((mx) => mx.removeIngredient(id), mixture, undefined);
 }

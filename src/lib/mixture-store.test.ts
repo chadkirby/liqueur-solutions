@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MixtureStore, loadingStoreId, type MixtureStoreData } from './mixture-store.svelte';
-import { Mixture, type IngredientItem } from './mixture.js';
+import { Mixture } from './mixture.js';
 import type { Analysis } from './utils.js';
 import { newSpirit } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
+import type { IngredientItem } from './mixture-types.js';
 
 function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
 	const item = newSpirit(volume, abv);
 	return {
 		name,
 		item,
-		mass: item.mass,
+		desiredMass: item.mass,
 	};
 }
 
@@ -53,7 +54,7 @@ describe('Mixture Store', () => {
 		const waterId = store.addIngredientTo(spiritId, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			mass: 100,
+			desiredMass: 100,
 		});
 
 		state = store.snapshot();
@@ -81,7 +82,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			mass: 100,
+			desiredMass: 100,
 		});
 
 		const state = store.snapshot();
@@ -112,7 +113,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			mass: 100,
+			desiredMass: 100,
 		});
 
 		// Set ABV
@@ -147,7 +148,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			mass: 100,
+			desiredMass: 100,
 		});
 
 		// @ts-expect-error undoRedo is private
@@ -195,7 +196,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			mass: 100,
+			desiredMass: 100,
 		});
 
 		const state = store.snapshot();
@@ -227,11 +228,15 @@ describe('Mixture store solver', () => {
 	beforeEach(() => {
 		store = new MixtureStore();
 		store.addIngredientTo(null, standardSpirit(50, 100));
-		store.addIngredientTo(null, { name: 'water', item: SubstanceComponent.new('water'), mass: 50 });
+		store.addIngredientTo(null, {
+			name: 'water',
+			item: SubstanceComponent.new('water'),
+			desiredMass: 50,
+		});
 		store.addIngredientTo(null, {
 			name: 'sugar',
 			item: SubstanceComponent.new('sucrose'),
-			mass: 50,
+			desiredMass: 50,
 		});
 		initialAnalysis = store.mixture.analyze(2);
 	});

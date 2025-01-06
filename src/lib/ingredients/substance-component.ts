@@ -1,6 +1,5 @@
-import { analyze, type Analysis } from '../utils.js';
+import { isSubstanceData, type CommonComponent, type SubstanceData } from '../mixture-types.js';
 import {
-	Sweeteners,
 	Substances,
 	type SubstanceId,
 	type Substance,
@@ -8,74 +7,23 @@ import {
 	interpolator,
 } from './substances.js';
 
-const NumericDataValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
-export type ComponentValueKeys = (typeof NumericDataValueKeys)[number];
-
-export function isNumericDataValueKey(key: string): key is ComponentValueKeys {
-	return NumericDataValueKeys.includes(key as ComponentValueKeys);
-}
-
-export const SweetenerTypes = Sweeteners.map(({ id }) => id);
-export type SweetenerTypes = (typeof SweetenerTypes)[number];
-
 const componentTypes = ['substance', 'mixture'] as const;
-export type ComponentTypes = (typeof componentTypes)[number];
-
-export interface Data {
-	readonly type: ComponentTypes;
-}
-export type MixtureData = {
-	id: string;
-	mass: number;
-	ingredients: Array<{ id: string; proportion: number; name: string }>;
-};
-
-export type SubstanceData = {
-	id: SubstanceId;
-};
-
-export type IngredientData = MixtureData | SubstanceData;
-
-// serialized Map<string, IngredientData>
-export type IngredientDbData = Array<[string, IngredientData]>;
-
-/**
- * FileItem represents a stored mixture file. All types must be
- * compatible with Replicache's ReadonlyJSONValue.
- */
-export type StoredFileData = {
-	id: string;
-	name: string;
-	accessTime: number;
-	desc: string;
-	mixture: MixtureData;
-	ingredientDb: IngredientDbData;
-};
-
-export function isMixtureData(data: IngredientData): data is MixtureData {
-	return 'ingredients' in data;
-}
-
-export function isSubstanceData(data: IngredientData): data is SubstanceData {
-	return !isMixtureData(data);
-}
+type ComponentTypes = (typeof componentTypes)[number];
 
 export function isComponentType(type: string): type is ComponentTypes {
 	return componentTypes.includes(type as ComponentTypes);
 }
 
-export interface Component {
-	describe(): string;
-	toStorageData(): IngredientData;
-
-	readonly isValid: boolean;
-
-	label: string;
-}
-
-export class SubstanceComponent implements Component {
+/**
+ * A SubstanceComponent has no inherent mass. It just provides
+ * convenience methods for accessing the underlying substance data.
+ */
+export class SubstanceComponent implements CommonComponent {
 	static new(substanceId: SubstanceId) {
 		return new SubstanceComponent({ id: substanceId });
+	}
+	static fromStorageData(data: SubstanceData) {
+		return new SubstanceComponent(data);
 	}
 
 	readonly substance: Substance;
@@ -85,6 +33,7 @@ export class SubstanceComponent implements Component {
 		if (!substance) throw new Error(`Unknown substance: ${data.id}`);
 		this.substance = substance;
 	}
+	readonly referenceMass = 1;
 
 	clone() {
 		return new SubstanceComponent(this.toStorageData());
