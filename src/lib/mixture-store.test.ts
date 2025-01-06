@@ -11,7 +11,7 @@ function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
 	return {
 		name,
 		item,
-		desiredMass: item.mass,
+		mass: item.mass,
 	};
 }
 
@@ -54,7 +54,7 @@ describe('Mixture Store', () => {
 		const waterId = store.addIngredientTo(spiritId, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 100,
+			mass: 100,
 		});
 
 		state = store.snapshot();
@@ -82,7 +82,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 100,
+			mass: 100,
 		});
 
 		const state = store.snapshot();
@@ -113,7 +113,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 100,
+			mass: 100,
 		});
 
 		// Set ABV
@@ -148,7 +148,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 100,
+			mass: 100,
 		});
 
 		// @ts-expect-error undoRedo is private
@@ -196,7 +196,7 @@ describe('Mixture Store', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 100,
+			mass: 100,
 		});
 
 		const state = store.snapshot();
@@ -231,12 +231,12 @@ describe('Mixture store solver', () => {
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
-			desiredMass: 50,
+			mass: 50,
 		});
 		store.addIngredientTo(null, {
 			name: 'sugar',
 			item: SubstanceComponent.new('sucrose'),
-			desiredMass: 50,
+			mass: 50,
 		});
 		initialAnalysis = store.mixture.analyze(2);
 	});

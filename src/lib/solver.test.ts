@@ -50,7 +50,7 @@ describe('Mixture', () => {
 	beforeEach(() => {
 		mixture = newSpirit(100, 40).addIngredient({
 			name: 'sugar',
-			desiredMass: 50,
+			mass: 50,
 			item: SubstanceComponent.new('sucrose'),
 		});
 		initialAnalysis = {
