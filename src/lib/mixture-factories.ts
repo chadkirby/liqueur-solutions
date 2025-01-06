@@ -2,7 +2,7 @@ import { calculateAbvProportions } from './ingredients/density.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import type { CitrusJuiceId, CitrusJuiceName } from './citrus-ids.js';
 import { isClose, seek } from './solver.js';
-import { componentId, isWaterComponent, Mixture } from './mixture.js';
+import { componentId, isWater, Mixture } from './mixture.js';
 
 export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
@@ -253,7 +253,7 @@ export function newZeroSyrup(volume: number, desiredBrix = 66.67): Mixture {
 	}
 	// we'll also need to adjust the water mass to keep the volume at 1000
 	// while we're adjusting proportions to hit the desired sweetness
-	const water = [...mx.ingredients.values()].find(({ item }) => isWaterComponent(item));
+	const water = [...mx.ingredients.values()].find(({ item }) => isWater(item));
 	if (!water) throw new Error('Water not found');
 
 	seek(mx, {

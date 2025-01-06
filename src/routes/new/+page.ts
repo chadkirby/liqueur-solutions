@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
-import { Sweetener, Water } from '$lib/index.svelte.js';
+import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
+import type { StoredFileData } from '$lib/mixture-types.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 import { generateStorageId } from '$lib/storage-id.js';
-import type { StoredFileData } from '$lib/storage.svelte.js';
 import { redirect } from '@sveltejs/kit';
 
 export async function load(args: { url: URL; params: { liqueur: string } }): Promise<never> {
@@ -12,17 +12,20 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 
 	const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 
-	const mixture = new Mixture(componentId(), 1, []);
-	mixture.addIngredient({ name: '', id: componentId(), item: newSpirit(500, 40) });
-	mixture.addIngredient({ name: '', id: componentId(), item: new Water(200) });
-	mixture.addIngredient({ name: '', id: componentId(), item: new Sweetener('sucrose', 80) });
+	const spirit = newSpirit(500, 40);
+	const mixture = new Mixture(componentId(), [
+		{ name: '', id: componentId(), item: spirit, mass: spirit.mass },
+		{ name: '', id: componentId(), item: SubstanceComponent.new('water'), mass: 200 },
+		{ name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
+	]);
 
 	const item: StoredFileData = {
 		id: generateStorageId(),
 		accessTime: Date.now(),
 		name,
 		desc: mixture.describe(),
-		mixture: { name, data: mixture.toStorageData() }
+		mixture: mixture.toStorageData(),
+		ingredientDb: mixture.toStorageDbData(),
 	};
 
 	if (browser) {

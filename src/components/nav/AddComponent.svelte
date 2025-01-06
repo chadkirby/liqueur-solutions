@@ -1,43 +1,52 @@
 <script lang="ts">
-	import { Mixture } from '$lib/index.svelte';
+	import { Mixture } from '$lib/mixture.js';
 	import { CirclePlusSolid } from 'flowbite-svelte-icons';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { newSpirit, newSyrup } from '$lib/mixture-factories.js';
+	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 
 	let {
 		componentId,
 		callback,
-		mixtureStore
+		mixtureStore,
 	}: { componentId: string | null; mixtureStore: MixtureStore; callback?: () => void } = $props();
 
 	function addSpirit() {
 		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, { name: '', item: newSpirit(100, 40) });
+		const spirit = newSpirit(100, 40);
+		mixtureStore.addIngredientTo(componentId, { name: '', item: spirit, mass: spirit.mass });
 	}
 	function addWater() {
 		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, { name: '', item: new Water(100) });
+		mixtureStore.addIngredientTo(componentId, {
+			name: '',
+			item: SubstanceComponent.new('water'),
+			mass: 100,
+		});
 	}
 	function addSugar() {
 		if (callback) callback();
 		mixtureStore.addIngredientTo(componentId, {
 			name: '',
-			item: new Sweetener('sucrose', 100)
+			item: SubstanceComponent.new('sucrose'),
+			mass: 100,
 		});
 	}
 	function addSyrup() {
 		if (callback) callback();
+		const syrup = newSyrup(100, 50);
 		mixtureStore.addIngredientTo(componentId, {
 			name: '',
-			item: newSyrup(100, 50)
+			item: syrup,
+			mass: syrup.mass,
 		});
 	}
 
 	function addEmpty() {
 		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture([]) });
+		mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture(), mass: 0 });
 	}
 
 	function openFilesDrawer() {

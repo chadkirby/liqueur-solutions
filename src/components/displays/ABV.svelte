@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { Mixture } from '$lib/index.svelte';
+	import { Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';

@@ -667,7 +667,7 @@ export class Mixture implements CommonComponent {
 		const currentSugarEquivalent = this.equivalentSugarMass;
 		if (currentSugarEquivalent === 0) {
 			const sweeteners = this.eachIngredient()
-				.filter(({ ingredient }) => isSweetenerComponent(ingredient.item))
+				.filter(({ ingredient }) => isSweetener(ingredient.item))
 				.map(({ ingredient }) => ingredient);
 			for (const sweetener of sweeteners) {
 				this.setIngredientMass(sweetener.id, newSugarEquivalent / sweeteners.length);
@@ -758,6 +758,14 @@ function isClose(a: number, b: number, delta = 0.01) {
 	return Math.abs(a - b) < delta;
 }
 
+export function isMixture(thing: IngredientItemComponent): thing is Mixture {
+	return thing instanceof Mixture;
+}
+
+export function isSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
+	return thing instanceof SubstanceComponent;
+}
+
 export function isSpirit(thing: Mixture): boolean;
 export function isSpirit(thing: IngredientItemComponent): thing is Mixture;
 export function isSpirit(thing: IngredientItemComponent) {
@@ -768,56 +776,48 @@ export function isSpirit(thing: IngredientItemComponent) {
 	);
 }
 
-export function isSimpleSpirit(thing: Mixture): boolean;
-export function isSimpleSpirit(thing: IngredientItemComponent): thing is Mixture;
 export function isSimpleSpirit(thing: IngredientItemComponent) {
 	return isSpirit(thing) && thing.ingredients.size === 2 && thing.substances.length === 2;
 }
 
-export function isSweetenerMixture(thing: IngredientItemComponent): thing is Mixture {
-	return thing instanceof Mixture && thing.everySubstance((x) => isSweetenerId(x.substanceId));
+export function isSweetenerMixture(thing: IngredientItemComponent) {
+	return isMixture(thing) && thing.everySubstance((x) => isSweetenerId(x.substanceId));
 }
-export function isSweetenerSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
-	return thing instanceof SubstanceComponent && isSweetenerId(thing.substanceId);
+export function isSweetenerSubstance(thing: IngredientItemComponent) {
+	return isSubstance(thing) && isSweetenerId(thing.substanceId);
 }
-export function isSweetenerComponent(thing: IngredientItemComponent) {
+export function isSweetener(thing: IngredientItemComponent) {
 	return isSweetenerMixture(thing) || isSweetenerSubstance(thing);
 }
 
-export function isSyrup(thing: Mixture): boolean;
-export function isSyrup(thing: IngredientItemComponent): thing is Mixture;
-export function isSyrup(thing: IngredientItemComponent) {
+export function isSyrup(thing: IngredientItemComponent): thing is Mixture {
 	return (
-		thing instanceof Mixture &&
+		isMixture(thing) &&
 		thing.hasEverySubstances(['water']) &&
 		thing.someSubstance((x) => isSweetenerId(x.substanceId)) &&
 		thing.everySubstance((x) => x.substanceId === 'water' || isSweetenerId(x.substanceId))
 	);
 }
 
-export function isSimpleSyrup(thing: Mixture): boolean;
-export function isSimpleSyrup(thing: IngredientItemComponent): thing is Mixture;
 export function isSimpleSyrup(thing: IngredientItemComponent) {
 	// simple syrup is a mixture of sweetener and water
 	return Boolean(isSyrup(thing) && thing.ingredients.size === 2 && thing.substances.length === 2);
 }
 
-export function isLiqueur(thing: Mixture): boolean;
-export function isLiqueur(thing: IngredientItemComponent): thing is Mixture;
 export function isLiqueur(thing: IngredientItemComponent) {
-	return thing instanceof Mixture && thing.abv > 0 && thing.brix > 0;
+	return isMixture(thing) && thing.abv > 0 && thing.brix > 0;
 }
 
 export function isWaterSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
-	return thing instanceof SubstanceComponent && thing.substanceId === 'water';
+	return isSubstance(thing) && thing.substanceId === 'water';
 }
 export function isWaterMixture(thing: IngredientItemComponent): thing is Mixture {
 	return (
-		thing instanceof Mixture &&
+		isMixture(thing) &&
 		thing.hasEverySubstances(['water']) &&
 		thing.everySubstance((x) => x.substanceId === 'water')
 	);
 }
-export function isWaterComponent(thing: IngredientItemComponent) {
+export function isWater(thing: IngredientItemComponent) {
 	return isWaterSubstance(thing) || isWaterMixture(thing);
 }
