@@ -12,6 +12,7 @@ import { calculatePh, getMolarConcentration } from './ph-solver.js';
 import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
 import { FancyIterator } from './iterator.js';
 import {
+	isMixtureData,
 	isSubstanceData,
 	type CommonComponent,
 	type DecoratedIngredient,
@@ -72,10 +73,14 @@ export type MappedSubstance = {
 };
 
 export class Mixture implements CommonComponent {
-	static fromStorageData(mixtureData: MixtureData, ingredientData: IngredientDbData) {
+	static fromStorageData(rootMixtureId: string, ingredientData: IngredientDbData) {
 		const ingredients: IngredientItem[] = [];
 
 		const db = new Map(ingredientData);
+		const mixtureData = db.get(rootMixtureId);
+		if (!mixtureData || !isMixtureData(mixtureData)) {
+			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
+		}
 		for (const { id, mass, name } of mixtureData.ingredients) {
 			const data = db.get(id);
 			if (!data) {
@@ -84,7 +89,7 @@ export class Mixture implements CommonComponent {
 
 			const item = isSubstanceData(data)
 				? SubstanceComponent.fromStorageData(data)
-				: Mixture.fromStorageData(data, ingredientData);
+				: Mixture.fromStorageData(id, ingredientData);
 
 			ingredients.push({
 				id,
@@ -133,7 +138,7 @@ export class Mixture implements CommonComponent {
 	/**
 	 * Get data in a format compatible with storage (ReadonlyJSONValue)
 	 */
-	toStorageData(): MixtureData {
+	private serializeMixtureData(): MixtureData {
 		return {
 			id: this.id,
 			ingredients: [...this.ingredients.values()].map(({ id, mass, name }) => ({
@@ -144,13 +149,20 @@ export class Mixture implements CommonComponent {
 		} as const;
 	}
 
-	toStorageDbData(): IngredientDbData {
-		return [...this.ingredients.values()].flatMap(({ id, item }) => {
-			if (item instanceof Mixture) {
-				return item.toStorageDbData();
-			}
-			return [[id, item.toStorageData()]];
-		});
+	serialize(): IngredientDbData {
+		const rootData: [string, MixtureData] = [this.id, this.serializeMixtureData()];
+		const ingredientData: IngredientDbData = [...this.ingredients.values()].flatMap(
+			({ id, item }) => {
+				if (item instanceof Mixture) {
+					return [[id, item.serializeMixtureData()], ...item.serialize()];
+				}
+				if (item instanceof SubstanceComponent) {
+					return [[id, item.serializeSubstanceData()]];
+				}
+				throw new Error('Invalid ingredient');
+			},
+		);
+		return [rootData, ...ingredientData];
 	}
 
 	analyze(precision = 0): Analysis {
@@ -782,7 +794,7 @@ export function isSweetener(thing: IngredientItemComponent) {
 	return isSweetenerMixture(thing) || isSweetenerSubstance(thing);
 }
 
-export function isSyrup(thing: IngredientItemComponent): thing is Mixture {
+export function isSyrup(thing: IngredientItemComponent) {
 	return (
 		isMixture(thing) &&
 		thing.hasEverySubstances(['water']) &&
@@ -793,7 +805,12 @@ export function isSyrup(thing: IngredientItemComponent): thing is Mixture {
 
 export function isSimpleSyrup(thing: IngredientItemComponent) {
 	// simple syrup is a mixture of sweetener and water
-	return Boolean(isSyrup(thing) && thing.ingredients.size === 2 && thing.substances.length === 2);
+	return Boolean(
+		isMixture(thing) &&
+			isSyrup(thing) &&
+			thing.ingredients.size === 2 &&
+			thing.substances.length === 2,
+	);
 }
 
 export function isLiqueur(thing: IngredientItemComponent) {
