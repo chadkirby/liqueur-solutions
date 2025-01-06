@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
-import type { StoredFileData } from '$lib/mixture-types.js';
+import { storedFileDataVersion, type StoredFileData } from '$lib/mixture-types.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { redirect } from '@sveltejs/kit';
@@ -20,6 +20,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 	]);
 
 	const item: StoredFileData = {
+		version: storedFileDataVersion,
 		id: generateStorageId(),
 		accessTime: Date.now(),
 		name,

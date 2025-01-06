@@ -21,7 +21,6 @@ import {
 	type IngredientItemComponent,
 	type IngredientToAdd,
 	type MixtureData,
-	type StoredFileData,
 } from './mixture-types.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -741,13 +740,6 @@ export class Mixture implements CommonComponent {
 }
 
 export type SubstanceItem = Mixture['substances'][number];
-
-export function toStorageData(mx: Mixture): Pick<StoredFileData, 'mixture' | 'ingredientDb'> {
-	return {
-		mixture: mx.toStorageData(),
-		ingredientDb: mx.toStorageDbData(),
-	};
-}
 
 export function componentId(): string {
 	// return a random string
