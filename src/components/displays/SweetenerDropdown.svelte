@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
-	import { Mixture, Sweetener, SweetenerTypes } from '$lib/index.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import type { IngredientItemComponent } from '$lib/mixture-types.js';
+	import { sweetenerTypes, type SweetenerType } from '$lib/ingredients/substances.js';
 
 	interface Props {
 		componentId: string;
-		component: Sweetener | Mixture;
+		component: IngredientItemComponent;
 		mixtureStore: MixtureStore;
 		class?: string;
 		basis: string;
@@ -14,19 +15,16 @@
 
 	let {
 		componentId,
-		component,
 		mixtureStore,
 		class: classProp,
 		basis,
 		onclick = () => {}
 	}: Props = $props();
 
-	const sweeteners = SweetenerTypes.map((type) => ({ value: type, name: type }));
+	const sweeteners = sweetenerTypes.map((id) => ({ value: id, name: id }));
 
-	let subType = $state(
-		component instanceof Sweetener
-			? component.subType
-			: component.findByType((x) => x instanceof Sweetener)!.subType
+	let subType = $derived(
+		mixtureStore.getSweetenerTypes(componentId).at(0) ?? ''
 	);
 </script>
 
@@ -43,10 +41,10 @@
 			px-6 py-0.5
 			{classProp}
 			"
-		bind:value={subType}
+		value={subType}
 		{onclick}
 		onchange={(e) =>
-			mixtureStore.updateSweetenerType(componentId, e.currentTarget.value as SweetenerTypes)}
+			mixtureStore.updateSweetenerType(componentId, e.currentTarget.value as SweetenerType)}
 	>
 		{#each sweeteners as { value, name }}
 			<option {value} selected={value === subType}>{name}</option>

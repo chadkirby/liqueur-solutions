@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { isSimpleSpirit, isSimpleSyrup, Mixture, Sweetener, Water } from '$lib/index.svelte';
 	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import Mass from './displays/Mass.svelte';
@@ -21,11 +20,13 @@
 	import { serializeToUrl } from '$lib/url-serialization.js';
 	import EquivalentSugar from './displays/EquivalentSugar.svelte';
 	import Abv from './displays/ABV.svelte';
+	import { isMixture, isSimpleSpirit, isSimpleSyrup, isSweetener, isSweetenerSubstance, isWater, Mixture } from '$lib/mixture.js';
+	import { isSweetenerId } from '$lib/ingredients/substances.js';
 
 	let {
 		mixtureStore,
 		id: parentId,
-		name
+		name,
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
@@ -84,7 +85,10 @@
 	{/if}
 
 	<Accordion flush={false} isSingle={false} class="mt-1">
-		{#each mixture?.components || [] as { name, id, component } (id)}
+		{#each mixture?.eachIngredient() || [] as { ingredient, mass } (ingredient.id)}
+			{@const id = ingredient.id}
+			{@const component = ingredient.item}
+			{@const mx = mixture as Mixture}
 			<AccordionItem
 				class="py-2 pl-1 pr-2"
 				open={openStates.get(id) ?? false}
@@ -102,11 +106,11 @@
 							/>
 						{/if}
 
-						{#if component instanceof Sweetener}
+						{#if isSweetener(component)}
 							<NumberSpinner
 								{mixtureStore}
 								class="basis-1/5"
-								value={component.mass}
+								value={mass}
 								type="mass"
 								componentId={id}
 							/>
@@ -114,7 +118,7 @@
 							<NumberSpinner
 								{mixtureStore}
 								class="basis-1/5"
-								value={component.volume}
+								value={mx.getIngredientVolume(id)}
 								type="volume"
 								componentId={id}
 							/>
@@ -126,7 +130,7 @@
 								{mixtureStore}
 								id={`edit-abv-${id}`}
 								class="basis-1/6"
-								value={component.abv}
+								value={mx.getIngredientAbv(id)}
 								type="abv"
 								componentId={id}
 							/>
@@ -139,13 +143,13 @@
 								{mixtureStore}
 								id={`edit-brix-${id}`}
 								class="basis-1/6"
-								value={component.brix}
+								value={mx.getIngredientBrix(id)}
 								type="brix"
 								componentId={id}
 							/>
 						{/if}
 
-						{#if component instanceof Sweetener || isSimpleSyrup(component)}
+						{#if isSweetener(component) || isSimpleSyrup(component)}
 							<SweetenerDropdown
 								{mixtureStore}
 								componentId={id}
@@ -160,7 +164,7 @@
 							placeholder={component.describe()}
 							class="
 								mr-2
-								{component instanceof Sweetener || isSimpleSyrup(component)
+								{isSweetener(component) || isSimpleSyrup(component)
 								? 'basis-1/3'
 								: isSimpleSpirit(component)
 									? 'basis-1/2'
@@ -177,7 +181,7 @@
 					</div>
 				{/snippet}
 				<div class="flex flex-col items-stretch">
-					{#if component instanceof Sweetener}
+					{#if isSweetener(component)}
 						<div class="flex flex-row my-1">
 							<Mass {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
 							<Volume
@@ -196,7 +200,7 @@
 							/>
 							<Cal {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/5" />
 						</div>
-					{:else if component instanceof Water}
+					{:else if isWater(component)}
 						<div class="flex flex-row my-1">
 							<Volume
 								{mixtureStore}
@@ -233,7 +237,7 @@
 							<Brix {mixtureStore} componentId={id} {component} readonly={true} class="basis-1/4" />
 							<Cal {mixtureStore} componentId={id} {component} readonly={true} />
 						</div>
-					{:else if component instanceof Mixture}
+					{:else if isMixture(component)}
 						<MixtureAccordion {mixtureStore} {id} {name} />
 					{/if}
 				</div>
