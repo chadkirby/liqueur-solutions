@@ -166,7 +166,7 @@ export function solver(mixture: Mixture, targets: Target) {
 
 	const tolerance = 0.0001;
 
-	let bestState = analyze(mixture.clone(false), targets);
+	let bestState = analyze(mixture.clone(), targets);
 
 	const ingredientIds = mixture.ingredientIds;
 
@@ -184,7 +184,7 @@ export function solver(mixture: Mixture, targets: Target) {
 
 			const needs = getNeeds(state.deviations);
 
-			const provisionalMixture = mixture.clone(false);
+			const provisionalMixture = mixture.clone();
 			for (const id of ingredientIds) {
 				const ingredient = provisionalMixture.ingredients.get(id)!;
 				const currentMass = provisionalMixture.getIngredientMass(id);
@@ -230,17 +230,22 @@ export function solver(mixture: Mixture, targets: Target) {
 	return finalState.mixture;
 }
 
-export function setVolume(working: Mixture, targetVolume: number, iteration = 0): void {
+/**
+ * Get the mass of a mixture that will result in the target volume
+ * of the mixture.
+ */
+export function solveMassForVolume(mixture: Mixture, targetVolume: number, iteration = 0): number {
 	if (targetVolume <= 0) {
-		working.setMass(0);
-		return;
+		throw new Error('Target volume must be greater than 0');
 	}
 
-	if (isClose(targetVolume, working.volume, 0.001)) return;
+	const working = mixture.clone();
+	const delta = targetVolume - working.volume;
+	if (Math.abs(delta) < 0.001) return working.mass;
 
 	// Try simple mass scaling first, but make sure we have a mass to
 	// scale
-	if (working.mass <= 0) {
+	if (isClose(working.mass, 0, 1e-6)) {
 		working.setMass(1);
 	}
 
@@ -248,18 +253,18 @@ export function setVolume(working: Mixture, targetVolume: number, iteration = 0)
 	working.setMass(working.mass * factor);
 
 	// If we hit the target, we're done
-	if (isClose(working.volume, targetVolume, 0.001)) return;
+	if (isClose(working.volume, targetVolume, 0.001)) return working.mass;
 
 	// If we get here, simple scaling didn't work
 	// This likely means we have ethanol + water interaction
-	const delta = targetVolume - working.volume;
 
 	if (iteration < 10) {
 		// If we're too small, we need to add more than the simple delta
 		// If we're too large, we need to add less than the simple delta
 		const adjustmentFactor = delta > 0 ? 1.1 : 0.9;
-		return setVolume(working, targetVolume + delta * adjustmentFactor, iteration + 1);
+		return solveMassForVolume(working, targetVolume + delta * adjustmentFactor, iteration + 1);
 	}
+	return -1;
 }
 
 export function isClose(a: number, b: number, delta = 0.01) {

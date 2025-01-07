@@ -5,7 +5,7 @@ export class FancyIterator<T> implements Iterable<T> {
 		this.iterableIterator = Symbol.iterator in iterator ? iterator[Symbol.iterator]() : iterator;
 	}
 
-	find(predicate: (item: T) => boolean): T | undefined {
+	find(predicate: (item: T) => boolean): Readonly<T> | undefined {
 		for (const item of this) {
 			if (predicate(item)) return item;
 		}

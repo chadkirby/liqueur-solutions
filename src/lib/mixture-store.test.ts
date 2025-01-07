@@ -108,13 +108,32 @@ describe('Mixture Store', () => {
 		const store = new MixtureStore();
 
 		// Add a spirit mixture
-		const spiritId = store.addIngredientTo(null, standardSpirit());
+		store.addIngredientTo(null, standardSpirit());
 		// add a water component
 		store.addIngredientTo(null, {
 			name: 'water',
 			item: SubstanceComponent.new('water'),
 			mass: 100,
 		});
+
+		// Set ABV
+		store.setAbv('totals', 30);
+		expect(store.mixture.getAbv()).toBeCloseTo(30, 0.01);
+
+		// Set invalid ABV (over 100)
+		try {
+			store.setAbv('totals', 150);
+		} catch (error) {
+			expect(error).toBeDefined();
+		}
+		expect(store.getAbv()).toBeCloseTo(30, 0.01); // should be clamped to 100
+	});
+
+	it('should handle ingredient ABV changes', () => {
+		const store = new MixtureStore();
+
+		// Add a spirit mixture
+		const spiritId = store.addIngredientTo(null, standardSpirit());
 
 		// Set ABV
 		store.setAbv(spiritId, 30);

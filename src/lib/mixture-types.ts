@@ -42,28 +42,28 @@ export type IngredientToAdd = Omit<IngredientItem, 'id'> & {
 	// item: IngredientItemComponent; // Mixture | SubstanceComponent;
 };
 
-export type DecoratedSubstance = {
+export type DecoratedSubstance = Readonly<{
 	mass: number;
 	substanceId: SubstanceId;
 	ingredientId: string;
 	item: SubstanceComponent;
-};
+}>;
 
-export type DecoratedIngredient = {
+export type DecoratedIngredient = Readonly<{
 	ingredient: IngredientItem;
 	mass: number;
-};
+}>;
 
 // Data types
 
-export type MixtureData = {
+export type MixtureData = Readonly<{
 	id: string;
 	ingredients: Array<IngredientItemData>;
-};
+}>;
 
-export type SubstanceData = {
+export type SubstanceData = Readonly<{
 	id: SubstanceId;
-};
+}>;
 
 export function isMixtureData(data: IngredientData): data is MixtureData {
 	return 'ingredients' in data;
