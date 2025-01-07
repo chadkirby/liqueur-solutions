@@ -1,5 +1,5 @@
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import { setVolume, solver } from './solver.js';
+import { solveMassForVolume, solver } from './solver.js';
 import { analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
 import { nanoid } from 'nanoid';
 import {
@@ -101,8 +101,6 @@ export class Mixture implements CommonComponent {
 		return new Mixture(mixtureData.id, ingredients);
 	}
 
-	public readonly ingredients: Map<string, IngredientItem> = new Map();
-
 	constructor(
 		private _id = componentId(),
 		ingredients: IngredientToAdd[] = [],
@@ -112,25 +110,27 @@ export class Mixture implements CommonComponent {
 		}
 	}
 
-	clone(deep = true): this {
-		const newIngredients = this.eachIngredient().map(({ ingredient }) => ({
-			...ingredient,
-			item: deep && ingredient.item instanceof Mixture ? ingredient.item.clone() : ingredient.item,
-		}));
-		return new Mixture(this.id, newIngredients) as this;
+	private readonly _ingredients: Map<string, IngredientItem> = new Map();
+	get ingredients() {
+		return this._ingredients as ReadonlyMap<string, Readonly<IngredientItem>>;
+	}
+
+	clone(): this {
+		const data = this.serialize();
+		return Mixture.deserialize(data[0][0], data) as this;
 	}
 
 	/**
 	 * update our data to match another mixture (opposite of clone)
 	 */
 	updateFrom(other: Mixture) {
-		this.ingredients.clear();
+		this._ingredients.clear();
 		for (const { ingredient } of other.eachIngredient()) {
 			const newIngredient = {
 				...ingredient,
-				item: ingredient.item instanceof Mixture ? ingredient.item.clone() : ingredient.item,
+				item: ingredient.item.clone(),
 			};
-			this.ingredients.set(newIngredient.id, newIngredient);
+			this._ingredients.set(newIngredient.id, newIngredient);
 		}
 		return this;
 	}
@@ -141,7 +141,7 @@ export class Mixture implements CommonComponent {
 	private serializeMixtureData(): MixtureData {
 		return {
 			id: this.id,
-			ingredients: [...this.ingredients.values()].map(({ id, mass, name }) => ({
+			ingredients: [...this._ingredients.values()].map(({ id, mass, name }) => ({
 				id,
 				mass,
 				name,
@@ -151,7 +151,7 @@ export class Mixture implements CommonComponent {
 
 	serialize(): IngredientDbData {
 		const rootData: [string, MixtureData] = [this.id, this.serializeMixtureData()];
-		const ingredientData: IngredientDbData = [...this.ingredients.values()].flatMap(
+		const ingredientData: IngredientDbData = [...this._ingredients.values()].flatMap(
 			({ id, item }) => {
 				if (item instanceof Mixture) {
 					return [[id, item.serializeMixtureData()], ...item.serialize()];
@@ -174,34 +174,31 @@ export class Mixture implements CommonComponent {
 	 * proportions.
 	 */
 	addIngredient(ingredient: IngredientToAdd) {
-		if (ingredient.mass < 0) {
-			throw new Error('Invalid mass');
-		}
 		const ingredientItem: IngredientItem = {
 			id: ingredient.id ?? componentId(),
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
 		};
-		this.ingredients.set(ingredientItem.id, ingredientItem);
+		this._ingredients.set(ingredientItem.id, ingredientItem);
 		return this;
 	}
 
 	removeIngredient(id: string) {
-		if (this.ingredients.has(id)) {
-			this.ingredients.delete(id);
+		if (this._ingredients.has(id)) {
+			this._ingredients.delete(id);
 			return true;
 		}
 		return false;
 	}
 
 	replaceIngredientComponent(id: string, item: IngredientItemComponent) {
-		if (this.ingredients.has(id)) {
-			const ingredient = this.ingredients.get(id)!;
+		if (this._ingredients.has(id)) {
+			const ingredient = this._ingredients.get(id)!;
 			ingredient.item = item;
 			return true;
 		}
-		for (const ingredient of this.ingredients.values()) {
+		for (const ingredient of this._ingredients.values()) {
 			if (ingredient.item instanceof Mixture) {
 				if (ingredient.item.replaceIngredientComponent(id, item)) {
 					return true;
@@ -235,7 +232,7 @@ export class Mixture implements CommonComponent {
 		} else {
 			// we expect that non-zero masses of the ingredients are encoded as negative
 			// numbers, so we'll scale them up to the new mass
-			const nonZeroMixtureMass = [...this.ingredients.values()].reduce(
+			const nonZeroMixtureMass = [...this._ingredients.values()].reduce(
 				(acc, { mass }) => acc + Math.abs(mass),
 				0,
 			);
@@ -251,7 +248,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientMass(ingredientId: string): number | -1 {
-		const ingredient = this.ingredients.get(ingredientId);
+		const ingredient = this._ingredients.get(ingredientId);
 		if (ingredient) {
 			return ingredient.mass < 0 ? 0 : ingredient.mass;
 		}
@@ -269,7 +266,7 @@ export class Mixture implements CommonComponent {
 		if (newMass < 0) {
 			throw new Error('Invalid mass');
 		}
-		const ingredient = this.ingredients.get(ingredientId);
+		const ingredient = this._ingredients.get(ingredientId);
 		if (ingredient) {
 			// if the new mass is tiny, we'll encode the current mass as
 			// negative number so that we can scale it back up later
@@ -287,12 +284,12 @@ export class Mixture implements CommonComponent {
 	}
 
 	get ingredientIds() {
-		return [...this.ingredients.keys()];
+		return [...this._ingredients.keys()];
 	}
 
 	eachIngredient() {
 		function* eachIngredient(this: Mixture): Generator<DecoratedIngredient> {
-			for (const ingredient of this.ingredients.values()) {
+			for (const ingredient of this._ingredients.values()) {
 				yield { ingredient, mass: this.getIngredientMass(ingredient.id) };
 			}
 		}
@@ -435,7 +432,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientAbv(ingredientId: string): number | -1 {
-		const ingredient = this.ingredients.get(ingredientId);
+		const ingredient = this._ingredients.get(ingredientId);
 		if (ingredient) {
 			return ingredient.item.getAbv();
 		}
@@ -454,11 +451,7 @@ export class Mixture implements CommonComponent {
 			brix: this.brix,
 			pH: this.pH,
 		});
-		for (const { ingredient } of working.eachIngredient()) {
-			this.setIngredientMass(ingredient.id, ingredient.mass);
-		}
-		this.setMass(working.mass);
-		return this;
+		return this.updateFrom(working);
 	}
 
 	get proof() {
@@ -471,6 +464,9 @@ export class Mixture implements CommonComponent {
 	 * @returns The pH of the mixture.
 	 */
 	get pH() {
+		return this.getPH();
+	}
+	getPH() {
 		let totalMolesH = 0;
 		const totalVolume = this.volume;
 
@@ -540,19 +536,29 @@ export class Mixture implements CommonComponent {
 	}
 
 	setVolume(newVolume: number) {
-		setVolume(this, newVolume);
-		return this;
+		if (newVolume < 0) {
+			throw new Error('Invalid volume');
+		}
+		if (newVolume === 0) {
+			this.setMass(0);
+			return this;
+		}
+		const newMass = solveMassForVolume(this, newVolume);
+		if (newMass < 0) {
+			throw new Error("Can't set volume");
+		}
+		return this.setMass(newMass);
 	}
 
 	getIngredientVolume(ingredientId: string): number | -1 {
-		const ingredient = this.ingredients.get(ingredientId);
-		if (ingredient) {
+		const ingredient = this._ingredients.get(ingredientId);
+		if (ingredient && isSubstance(ingredient.item)) {
 			const ingredientMass = this.getIngredientMass(ingredientId);
-			const ingredientDensity =
-				ingredient.item instanceof SubstanceComponent
-					? ingredient.item.pureDensity
-					: ingredient.item.density();
-			return ingredientMass / ingredientDensity;
+			return ingredientMass / ingredient.item.pureDensity;
+		}
+		if (ingredient && isMixture(ingredient.item)) {
+			const ingredientMass = this.getIngredientMass(ingredientId);
+			return ingredientMass / ingredient.item.density();
 		}
 		return -1;
 	}
@@ -561,13 +567,20 @@ export class Mixture implements CommonComponent {
 		if (newVolume < 0) {
 			throw new Error('Invalid volume');
 		}
-		const ingredient = this.ingredients.get(ingredientId);
-		if (ingredient) {
-			const ingredientDensity =
-				ingredient.item instanceof SubstanceComponent
-					? ingredient.item.pureDensity
-					: ingredient.item.density();
+		const ingredient = this._ingredients.get(ingredientId);
+		if (isSubstance(ingredient?.item)) {
+			const ingredientDensity = ingredient.item.pureDensity;
 			const newMass = newVolume * ingredientDensity;
+			this.setIngredientMass(ingredientId, newMass);
+			return true;
+		}
+		if (isMixture(ingredient?.item)) {
+			// set the volume of the sub-mixture to the new volume, handling
+			// cases where the sub-mixture is an ethanol solution
+			const newMass = solveMassForVolume(ingredient.item, newVolume);
+			if (newMass < 0) {
+				throw new Error("Can't set ingredient volume");
+			}
 			this.setIngredientMass(ingredientId, newMass);
 			return true;
 		}
@@ -575,6 +588,9 @@ export class Mixture implements CommonComponent {
 	}
 
 	get waterVolume() {
+		return this.getWaterVolume();
+	}
+	getWaterVolume() {
 		let waterVolume = 0;
 		for (const { item, mass } of this.eachSubstance()) {
 			waterVolume += item.getWaterVolume(mass);
@@ -646,17 +662,11 @@ export class Mixture implements CommonComponent {
 			brix: newBrix,
 			pH: this.pH,
 		});
-		working.setVolume(this.volume);
-
-		for (const { ingredient: workingIdt } of working.eachIngredient()) {
-			this.setIngredientMass(workingIdt.id, workingIdt.mass);
-		}
-		this.setMass(working.mass);
-		return this;
+		return this.updateFrom(working);
 	}
 
 	getIngredientBrix(ingredientId: string): number | -1 {
-		const ingredient = this.ingredients.get(ingredientId);
+		const ingredient = this._ingredients.get(ingredientId);
 		if (ingredient) {
 			const mass = this.getIngredientMass(ingredientId);
 			return ingredient.item.getEquivalentSugarMass(mass) / mass;
@@ -711,7 +721,7 @@ export class Mixture implements CommonComponent {
 		);
 	}
 
-	get(
+	getIngredientValue(
 		{ item, id }: { id: string; item: IngredientItemComponent },
 		what:
 			| 'equivalentSugarMass'
@@ -723,9 +733,6 @@ export class Mixture implements CommonComponent {
 			| 'brix'
 			| 'volume',
 	): number {
-		if (item instanceof Mixture) {
-			return item[what];
-		}
 		const itemMass = this.getIngredientMass(id);
 		switch (what) {
 			case 'equivalentSugarMass':
@@ -739,11 +746,11 @@ export class Mixture implements CommonComponent {
 			case 'mass':
 				return itemMass;
 			case 'abv':
-				return item.getAbv();
+				return this.getIngredientAbv(id);
 			case 'brix':
-				return item.getBrix();
+				return this.getIngredientBrix(id);
 			case 'volume':
-				return item.getVolume(itemMass);
+				return this.getIngredientVolume(id);
 			default:
 				what satisfies never;
 				throw new Error('Invalid property');
@@ -762,11 +769,11 @@ function isClose(a: number, b: number, delta = 0.01) {
 	return Math.abs(a - b) < delta;
 }
 
-export function isMixture(thing: IngredientItemComponent): thing is Mixture {
+export function isMixture(thing: unknown): thing is Mixture {
 	return thing instanceof Mixture;
 }
 
-export function isSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
+export function isSubstance(thing: unknown): thing is SubstanceComponent {
 	return thing instanceof SubstanceComponent;
 }
 
