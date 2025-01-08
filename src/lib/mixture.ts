@@ -6,6 +6,7 @@ import {
 	getConjugateAcids,
 	isSweetenerId,
 	type SubstanceId,
+	sweetenerIds,
 	Sweeteners,
 } from './ingredients/substances.js';
 import { calculatePh, getMolarConcentration } from './ph-solver.js';
@@ -17,12 +18,14 @@ import {
 	type CommonComponent,
 	type DecoratedIngredient,
 	type DecoratedSubstance,
+	type EditableProperty,
 	type IngredientDbData,
 	type IngredientItem,
 	type IngredientItemComponent,
 	type IngredientToAdd,
 	type MixtureAnalysis,
 	type MixtureData,
+	type SolverTarget,
 } from './mixture-types.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
@@ -338,20 +341,6 @@ export class Mixture implements CommonComponent {
 		return new FancyIterator(eachSubstance.call(this, this.eachIngredient(), ids));
 	}
 
-	someSubstance(predicate: (substance: SubstanceComponent) => boolean): boolean {
-		for (const substance of this.eachSubstance()) {
-			if (predicate(substance.item)) return true;
-		}
-		return false;
-	}
-
-	everySubstance(predicate: (substance: SubstanceComponent) => boolean): boolean {
-		for (const substance of this.eachSubstance()) {
-			if (!predicate(substance.item)) return false;
-		}
-		return true;
-	}
-
 	hasEverySubstances(substanceIds: SubstanceId[]): boolean {
 		const need = new Set(substanceIds);
 		const have = new Set<SubstanceId>();
@@ -360,12 +349,6 @@ export class Mixture implements CommonComponent {
 				have.add(substance.item.substanceId);
 				if (have.size === need.size) return true;
 			}
-		}
-		return false;
-	}
-	hasAnySubstances(...substanceIds: SubstanceId[]): boolean {
-		for (const substance of this.eachSubstance()) {
-			if (substanceIds.includes(substance.item.substanceId)) return true;
 		}
 		return false;
 	}
@@ -413,20 +396,21 @@ export class Mixture implements CommonComponent {
 		return undefined;
 	}
 
-	canEdit(key: MixtureEditKeys | string): boolean {
-		if (key === 'brix') {
-			return this.hasAnySubstances(...Sweeteners.map((s) => s.id));
+	canEdit(key: EditableProperty): boolean {
+		switch (key) {
+			case 'brix':
+				return this.eachSubstance().some((s) => sweetenerIds.includes(s.substanceId as any));
+			case 'abv':
+				return this.eachSubstance().some((s) => s.substanceId === 'ethanol');
+			case 'volume':
+			case 'mass':
+				return true;
+			case 'pH':
+				return this.eachSubstance().some((x) => x.item.pKa.length > 0);
+			default:
+				key satisfies never;
+				return false;
 		}
-		if (key === 'abv') {
-			return this.hasAnySubstances('ethanol');
-		}
-		if (key === 'volume' || key === 'mass') {
-			return true;
-		}
-		if (key === 'pH') {
-			return this.someSubstance((x) => x.pKa.length > 0);
-		}
-		return false;
 	}
 
 	/**
@@ -819,7 +803,7 @@ export function isSpirit(thing: IngredientItemComponent) {
 	return (
 		thing instanceof Mixture &&
 		thing.hasEverySubstances(['ethanol', 'water']) &&
-		thing.everySubstance((x) => x.substanceId === 'ethanol' || x.substanceId === 'water')
+		thing.eachSubstance().every((x) => x.substanceId === 'ethanol' || x.substanceId === 'water')
 	);
 }
 
@@ -828,7 +812,7 @@ export function isSimpleSpirit(thing: IngredientItemComponent) {
 }
 
 export function isSweetenerMixture(thing: IngredientItemComponent) {
-	return isMixture(thing) && thing.everySubstance((x) => isSweetenerId(x.substanceId));
+	return isMixture(thing) && thing.eachSubstance().every((x) => isSweetenerId(x.substanceId));
 }
 export function isSweetenerSubstance(thing: IngredientItemComponent) {
 	return isSubstance(thing) && isSweetenerId(thing.substanceId);
@@ -841,8 +825,8 @@ export function isSyrup(thing: IngredientItemComponent) {
 	return (
 		isMixture(thing) &&
 		thing.hasEverySubstances(['water']) &&
-		thing.someSubstance((x) => isSweetenerId(x.substanceId)) &&
-		thing.everySubstance((x) => x.substanceId === 'water' || isSweetenerId(x.substanceId))
+		thing.eachSubstance().some((x) => isSweetenerId(x.substanceId)) &&
+		thing.eachSubstance().every((x) => x.substanceId === 'water' || isSweetenerId(x.substanceId))
 	);
 }
 
@@ -867,7 +851,7 @@ export function isWaterMixture(thing: IngredientItemComponent): thing is Mixture
 	return (
 		isMixture(thing) &&
 		thing.hasEverySubstances(['water']) &&
-		thing.everySubstance((x) => x.substanceId === 'water')
+		thing.eachSubstance().every((x) => x.substanceId === 'water')
 	);
 }
 export function isWater(thing: IngredientItemComponent) {

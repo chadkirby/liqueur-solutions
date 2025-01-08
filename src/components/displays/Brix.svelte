@@ -18,7 +18,7 @@
 <div class="mx-1 min-w-0 w-full {classProp}" data-testid="brix-{componentId}">
 	<Helper class="tracking-tight">Sweetness</Helper>
 
-	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
+	{#if !readonly && component instanceof Mixture && component.canEdit('brix')}
 		<NumberSpinner {mixtureStore} value={brix} type="brix" {componentId} />
 		<Helper class="text-center">{parts}</Helper>
 	{:else}
