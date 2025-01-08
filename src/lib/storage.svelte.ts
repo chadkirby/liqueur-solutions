@@ -109,7 +109,6 @@ class FilesDb {
 		const item = await this.rep?.query(async (tx) => {
 			const data = await tx.get(`${SPACE_FILES}/${id}`);
 			if (isV0Data(data)) {
-				const { portV0DataToV1 } = await import('./migrations/v0-v1.js');
 				return portV0DataToV1(data);
 			}
 			return data;

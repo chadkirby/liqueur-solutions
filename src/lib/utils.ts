@@ -1,36 +1,8 @@
 import type { Mixture } from './mixture.js';
-import type { Target } from './solver.js';
 
 export function round(value: number, precision: number) {
 	const factor = 10 ** precision;
 	return Math.round(value * factor) / factor;
-}
-
-export type Analysis = Target & {
-	mass: number;
-	kcal: number;
-	proof: number;
-	equivalentSugarMass: number;
-	pH: number;
-};
-
-export function analyze(
-	item: Pick<
-		Mixture,
-		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal' | 'pH'
-	>,
-	precision = 0,
-): Analysis {
-	return {
-		volume: round(item.volume, precision),
-		mass: round(item.mass, precision),
-		abv: round(item.abv, precision),
-		brix: round(item.brix, precision),
-		kcal: round(item.kcal, precision),
-		proof: round(item.abv * 2, precision),
-		equivalentSugarMass: round(item.equivalentSugarMass, precision),
-		pH: round(item.pH, precision),
-	};
 }
 
 export function digitsForDisplay(value: number, maxVal = Infinity) {

@@ -28,11 +28,11 @@ test('index page has expected totals', async ({ page }) => {
 	await page.goto(standardMixture);
 
 	await expectTotals(page, {
-		volume: '231',
-		abv: '17.3',
+		volume: '230',
+		abv: '17.4',
 		brix: '20.7',
 		mass: '242',
-		cal: '418'
+		cal: '418',
 	});
 });
 

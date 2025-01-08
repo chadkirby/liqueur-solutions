@@ -1,6 +1,6 @@
 import { type Updater } from 'svelte/store';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import { digitsForDisplay, getTotals, type Analysis } from './utils.js';
+import { digitsForDisplay, getTotals } from './utils.js';
 import {
 	componentId,
 	isMixture,
@@ -10,12 +10,12 @@ import {
 	isSyrup,
 	Mixture,
 } from './mixture.js';
-import { solveMassForVolume, solver } from './solver.js';
+import { isClose, solveMassForVolume, solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
 import { isSweetenerId, type SweetenerType } from './ingredients/substances.js';
-import type { IngredientItem, IngredientToAdd } from './mixture-types.js';
+import type { IngredientItem, IngredientToAdd, MixtureAnalysis } from './mixture-types.js';
 import { deep } from './deep-mixture.js';
 
 type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
@@ -25,7 +25,7 @@ export type MixtureStoreData = {
 	storeId: StorageId;
 	name: string;
 	mixture: Mixture;
-	totals: Analysis;
+	totals: MixtureAnalysis;
 };
 
 export const loadingStoreId = '/loading' as StorageId;
@@ -324,20 +324,27 @@ export class MixtureStore {
 				if (!(ingredient.item instanceof Mixture)) {
 					throw new Error(`Unable to set abv of substance ${id}`);
 				}
-				if (!ingredient.item.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
+				const mx = ingredient.item;
+				if (!mx.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
 					throw new Error(`Mixture has no ethanol ${id}`);
 				}
-				try {
-					const originalVolume = this.mixture.getIngredientVolume(id);
-					ingredient.item.setAbv(targetAbv);
-					// setting the abv adjusts ingredient masses, which can change
-					// the total volume so we need to reset it
-					const newMass = solveMassForVolume(ingredient.item, originalVolume);
-					this.mixture.setIngredientMass(id, newMass);
-				} catch (error) {
-					throw new Error(`Unable to solve for abv = ${newAbv}`);
+				if (!isClose(targetAbv, mx.abv, 0.001)) {
+					try {
+						const targetVolume = this.mixture.getIngredientVolume(id);
+						const working = solver(mx, {
+							volume: targetVolume,
+							abv: targetAbv,
+							brix: mx.brix,
+							pH: mx.pH,
+						});
+						mx.updateFrom(working);
+						// the ingredient has the correct proportions now, but we
+						// need to update its mass in its parent mixture
+						deep.setIngredientMass(data.mixture, id, working.mass);
+					} catch (error) {
+						throw new Error(`Unable to solve for abv = ${newAbv}`);
+					}
 				}
-
 				return data;
 			};
 		};
@@ -475,7 +482,7 @@ export class MixtureStore {
 		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalType) });
 	}
 
-	solveTotal(key: keyof Analysis, newValue: number, undoKey = `solveTotal-${key}`): void {
+	solveTotal(key: keyof MixtureAnalysis, newValue: number, undoKey = `solveTotal-${key}`): void {
 		const originalValue = this.totals[key];
 		const makeUpdater = (targetValue: number) => {
 			return (data: MixtureStoreData) => {
@@ -537,7 +544,7 @@ function roundEq(a: number, b: number, maxVal = Infinity) {
 	return Math.abs(a - b) < Math.pow(10, -digits);
 }
 
-function solveTotal(mixture: Mixture, key: keyof Analysis, targetValue: number): Mixture {
+function solveTotal(mixture: Mixture, key: keyof MixtureAnalysis, targetValue: number): Mixture {
 	if (!mixture.canEdit(key)) {
 		throw new Error(`${key} is not editable`);
 	}

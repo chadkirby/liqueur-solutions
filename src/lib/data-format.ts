@@ -40,17 +40,20 @@ export type StoredFileDataV0 = {
 };
 
 export function isV0Data(data: unknown): data is StoredFileDataV0 {
-	return (
-		isObj(data) &&
-		'mixture' in data &&
-		isObj(data.mixture) &&
-		'data' in data.mixture &&
-		isObj(data.mixture.data) &&
-		'type' in data.mixture.data &&
-		data.mixture.data.type === 'mixture' &&
-		'components' in data.mixture.data &&
-		Array.isArray(data.mixture.data.components)
-	);
+  if (!isObj(data)) return false;
+	if (!('mixture' in data)) return false;
+
+	const mixture = data.mixture;
+	if (!isObj(mixture)) return false;
+	if (!('data' in mixture)) return false;
+
+	const mixtureData = mixture.data;
+	if (!isObj(mixtureData)) return false;
+	if (!('type' in mixtureData)) return false;
+	if (mixtureData.type !== 'mixture') return false;
+	if (!('components' in mixtureData)) return false;
+
+	return Array.isArray(mixtureData.components);
 }
 
 function isObj(obj: unknown): obj is Record<string, unknown> {

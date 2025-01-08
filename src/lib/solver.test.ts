@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, test, assert } from 'vitest';
 import { Mixture } from './mixture.js';
-import type { Analysis } from './utils.js';
-import { solver, solveMassForVolume, analyze, type Target } from './solver.js';
+import { solver, solveMassForVolume, analyze } from './solver.js';
 import { newSpirit } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
+import type { SolverTarget } from './mixture-types.js';
 
 describe('analyze analyzes deviations', () => {
 	test('should throw an error for target pH out of range', () => {
@@ -45,7 +45,7 @@ describe('analyze analyzes deviations', () => {
 
 describe('Mixture', () => {
 	let mixture: Mixture;
-	let initialAnalysis: Target;
+	let initialAnalysis: SolverTarget;
 
 	beforeEach(() => {
 		mixture = newSpirit(100, 40).addIngredient({

@@ -6,7 +6,7 @@ describe('mixture works', () => {
 	test('empty mixture', () => {
 		const mx = new Mixture();
 		assert.equal(mx.ingredients.size, 0, 'no ingredients');
-		assert.equal(mx.density(), 0, 'density');
+		assert.equal(mx.getDensity(), 0, 'density');
 		assert.equal(mx.volume, 0, 'volume');
 		assert.equal(mx.mass, 0, 'mass');
 		assert.equal(mx.abv, 0, 'abv');
@@ -24,7 +24,7 @@ describe('mixture works', () => {
 		});
 		assert.deepEqual(mx.makeSubstanceMap().get('water')?.mass, 100, 'water substance');
 		assert.equal(mx.ingredients.size, 1, 'one ingredient');
-		assert.equal(mx.density(), 1, 'density');
+		assert.equal(mx.getDensity(), 1, 'density');
 		assert.equal(mx.volume, 100, 'volume');
 		assert.equal(mx.mass, 100, 'mass');
 		assert.equal(mx.abv, 0, 'abv');
@@ -174,24 +174,6 @@ test('can set ingredient mass', () => {
 	assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 500, 'ingredient 1 mass');
 	assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 100, 'ingredient 2 mass');
 	assert.equal(mx.mass, 600, 'mass');
-});
-
-test('can solve for abv', () => {
-	const mx = new Mixture()
-		.addIngredient({
-			name: 'water',
-			mass: 100,
-			item: SubstanceComponent.new('water'),
-		})
-		.addIngredient({
-			name: 'ethanol',
-			mass: 100,
-			item: SubstanceComponent.new('ethanol'),
-		});
-	mx.setVolume(1000);
-	mx.setAbv(40);
-	assert.approximately(mx.abv, 40, 0.001, 'abv');
-	assert.approximately(mx.volume, 1000, 0.01, 'volume');
 });
 
 test('can update from other mixture', () => {

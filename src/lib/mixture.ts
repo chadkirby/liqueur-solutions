@@ -1,6 +1,6 @@
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { solveMassForVolume, solver } from './solver.js';
-import { analyze, brixToSyrupProportion, format, type Analysis } from './utils.js';
+import { brixToSyrupProportion, format, round } from './utils.js';
 import { nanoid } from 'nanoid';
 import {
 	getConjugateAcids,
@@ -21,6 +21,7 @@ import {
 	type IngredientItem,
 	type IngredientItemComponent,
 	type IngredientToAdd,
+	type MixtureAnalysis,
 	type MixtureData,
 } from './mixture-types.js';
 
@@ -165,10 +166,42 @@ export class Mixture implements CommonComponent {
 		return [rootData, ...ingredientData];
 	}
 
-	analyze(precision = 0): Analysis {
-		return analyze(this, precision);
+	analyze(precision = 0): MixtureAnalysis {
+		return {
+			volume: round(this.volume, precision),
+			mass: round(this.mass, precision),
+			abv: round(this.abv, precision),
+			brix: round(this.brix, precision),
+			kcal: round(this.kcal, precision),
+			proof: round(this.abv * 2, precision),
+			equivalentSugarMass: round(this.equivalentSugarMass, precision),
+			pH: round(this.pH, precision),
+		};
 	}
 
+	analyzeIngredient(ingredientId: string, precision = 0): MixtureAnalysis {
+		const ingredient = this._ingredients.get(ingredientId);
+		if (!ingredient) {
+			throw new Error('Invalid ingredient');
+		}
+		const mass = this.getIngredientMass(ingredientId);
+		const volume = this.getIngredientVolume(ingredientId);
+		const abv = this.getIngredientAbv(ingredientId);
+		const brix = this.getIngredientBrix(ingredientId);
+		const kcal = ingredient.item.getKcal(mass);
+		const equivalentSugarMass = ingredient.item.getEquivalentSugarMass(mass);
+		const pH = ingredient.item.getPH(mass);
+		return {
+			volume: round(volume, precision),
+			mass: round(mass, precision),
+			abv: round(abv, precision),
+			brix: round(brix, precision),
+			kcal: round(kcal, precision),
+			proof: round(abv * 2, precision),
+			equivalentSugarMass: round(equivalentSugarMass, precision),
+			pH: round(pH, precision),
+		};
+	}
 	/**
 	 * Add a quantity of an ingredient to the mixture and recompute
 	 * proportions.
@@ -516,7 +549,7 @@ export class Mixture implements CommonComponent {
 		return totalMolesH ? -Math.log10(totalMolesH) : 7;
 	}
 
-	density() {
+	getDensity() {
 		const totalMass = this.mass;
 		const substanceMap = this.makeSubstanceMap();
 		let density = 0;
@@ -530,7 +563,7 @@ export class Mixture implements CommonComponent {
 
 	get volume() {
 		const mass = this.mass;
-		const density = this.density();
+		const density = this.getDensity();
 		const volume = density !== 0 ? mass / density : 0;
 		return volume;
 	}
@@ -558,7 +591,7 @@ export class Mixture implements CommonComponent {
 		}
 		if (ingredient && isMixture(ingredient.item)) {
 			const ingredientMass = this.getIngredientMass(ingredientId);
-			return ingredientMass / ingredient.item.density();
+			return ingredientMass / ingredient.item.getDensity();
 		}
 		return -1;
 	}
@@ -705,6 +738,9 @@ export class Mixture implements CommonComponent {
 	}
 
 	get kcal() {
+		return this.getKcal();
+	}
+	getKcal() {
 		let kcal = 0;
 		for (const { item: component, mass } of this.eachSubstance()) {
 			kcal += component.getKcal(mass);
