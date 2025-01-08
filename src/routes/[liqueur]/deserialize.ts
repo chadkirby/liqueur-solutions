@@ -15,8 +15,8 @@ function decompress(qs: URLSearchParams): Mixture {
 	const data = JSON.parse(fflate.strFromU8(buf, true));
 	const v1Data: StoredFileDataV1 | null = isV1Data(data)
 		? data
-		: isV0Data(data)
-			? portV0DataToV1(data)
+		: isV0Data({ mixture: { name, data } })
+			? portV0DataToV1({ mixture: { name, data }, desc: '' })
 			: null;
 	if (!v1Data) {
 		throw new Error('Unknown data format' + qs.toString());
