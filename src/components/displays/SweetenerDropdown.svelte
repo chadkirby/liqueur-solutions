@@ -2,7 +2,7 @@
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import type { IngredientItemComponent } from '$lib/mixture-types.js';
-	import { sweetenerTypes, type SweetenerType } from '$lib/ingredients/substances.js';
+	import { sweetenerIds, type SweetenerType } from '$lib/ingredients/substances.js';
 
 	interface Props {
 		componentId: string;
@@ -21,7 +21,7 @@
 		onclick = () => {}
 	}: Props = $props();
 
-	const sweeteners = sweetenerTypes.map((id) => ({ value: id, name: id }));
+	const sweeteners = sweetenerIds.map((id) => ({ value: id, name: id }));
 
 	let subType = $derived(
 		mixtureStore.getSweetenerTypes(componentId).at(0) ?? ''

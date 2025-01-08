@@ -6,7 +6,7 @@ import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 /**
  * Decompresses a gz parameter from a URL into a mixture.
  */
-function decompress(qs: URLSearchParams): Mixture {
+function decompress(qs: URLSearchParams, name: string): Mixture {
 	const gz = qs.get('gz');
 	if (!gz) {
 		throw new Error('No compressed data found');
@@ -32,7 +32,7 @@ export function deserializeFromUrl(qs: string | URLSearchParams): {
 	mixture: Mixture;
 } {
 	const params = typeof qs === 'string' ? new URLSearchParams(qs) : qs;
-	const mixture = decompress(params);
 	const name = params.get('name') || '';
+	const mixture = decompress(params, name);
 	return { name, mixture };
 }

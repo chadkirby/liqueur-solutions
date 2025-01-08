@@ -491,11 +491,11 @@ export function isSubstanceIid(id: string): id is SubstanceId {
 	return SubstanceIds.includes(id as SubstanceId);
 }
 
-export const sweetenerTypes = Sweeteners.map(({ id }) => id);
-export type SweetenerType = (typeof sweetenerTypes)[number];
+export const sweetenerIds = Sweeteners.map(({ id }) => id);
+export type SweetenerType = (typeof sweetenerIds)[number];
 
 export function isSweetenerId(id: string): id is SubstanceId {
-	return sweetenerTypes.includes(id as SweetenerType);
+	return sweetenerIds.includes(id as SweetenerType);
 }
 export function isAcidId(id: string): id is SubstanceId {
 	return Acids.some((s) => s.id === id);
