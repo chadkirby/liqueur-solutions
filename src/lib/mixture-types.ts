@@ -89,6 +89,8 @@ export interface SolverTarget {
 	pH: number;
 }
 
+export type EditableProperty = keyof SolverTarget | 'mass';
+
 export type MixtureAnalysis = SolverTarget & {
 	mass: number;
 	kcal: number;

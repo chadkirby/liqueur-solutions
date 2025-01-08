@@ -10,15 +10,19 @@ import {
 	isSyrup,
 	Mixture,
 } from './mixture.js';
-import { isClose, solveMassForVolume, solver } from './solver.js';
+import { isClose, solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
 import { isSweetenerId, type SweetenerType } from './ingredients/substances.js';
-import type { IngredientItem, IngredientToAdd, MixtureAnalysis } from './mixture-types.js';
+import type {
+	EditableProperty,
+	IngredientItem,
+	IngredientToAdd,
+	MixtureAnalysis,
+	SolverTarget,
+} from './mixture-types.js';
 import { deep } from './deep-mixture.js';
-
-type EditableComponentType = 'abv' | 'brix' | 'volume' | 'mass';
 
 // exported for testing
 export type MixtureStoreData = {
@@ -210,55 +214,63 @@ export class MixtureStore {
 		});
 	}
 
-	increment(key: EditableComponentType, componentId: string, minMax?: MinMax) {
-		const { ingredient } = this.findIngredient(componentId);
+	increment(key: EditableProperty, id: string | 'totals', minMax?: MinMax) {
+		const { ingredient } = this.findIngredient(id);
 		if (!ingredient) {
-			throw new Error(`Unable to find component ${componentId}`);
+			throw new Error(`Unable to find component ${id}`);
 		}
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
-		const originalValue = this.mixture.getIngredientValue(ingredient, key);
+		const originalValue =
+			id === 'totals' ? this.mixture[key] : this.mixture.getIngredientValue(ingredient, key);
 		const newValue = increment(originalValue, minMax);
 		if (newValue === originalValue) return;
 
-		const actionDesc = `increment-${key}-${componentId}`;
+		const actionDesc = `increment-${key}-${id}`;
 		switch (key) {
 			case 'volume':
-				return this.setVolume(componentId, newValue, actionDesc);
+				return this.setVolume(id, newValue, actionDesc);
 			case 'abv':
-				return this.setAbv(componentId, newValue, actionDesc);
+				return this.setAbv(id, newValue, actionDesc);
 			case 'brix':
-				return this.setBrix(componentId, newValue, actionDesc);
+				return this.setBrix(id, newValue, actionDesc);
 			case 'mass':
-				return this.setMass(componentId, newValue, actionDesc);
+				return this.setMass(id, newValue, actionDesc);
+			case 'pH':
+				// TODO: implement pH
+				throw new Error('pH not implemented');
 			default:
 				key satisfies never;
 		}
 	}
 
-	decrement(key: EditableComponentType, componentId: string, minMax?: MinMax) {
-		const { ingredient } = this.findIngredient(componentId);
+	decrement(key: EditableProperty, id: string | 'totals', minMax?: MinMax) {
+		const { ingredient } = this.findIngredient(id);
 		if (!ingredient) {
-			throw new Error(`Unable to find component ${componentId}`);
+			throw new Error(`Unable to find component ${id}`);
 		}
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
-		const originalValue = this.mixture.getIngredientValue(ingredient, key);
+		const originalValue =
+			id === 'totals' ? this.mixture[key] : this.mixture.getIngredientValue(ingredient, key);
 		const newValue = decrement(originalValue, minMax);
 		if (newValue === originalValue) return;
 
-		const actionDesc = `decrement-${key}-${componentId}`;
+		const actionDesc = `decrement-${key}-${id}`;
 		switch (key) {
 			case 'volume':
-				return this.setVolume(componentId, newValue, actionDesc);
+				return this.setVolume(id, newValue, actionDesc);
 			case 'abv':
-				return this.setAbv(componentId, newValue, actionDesc);
+				return this.setAbv(id, newValue, actionDesc);
 			case 'brix':
-				return this.setBrix(componentId, newValue, actionDesc);
+				return this.setBrix(id, newValue, actionDesc);
 			case 'mass':
-				return this.setMass(componentId, newValue, actionDesc);
+				return this.setMass(id, newValue, actionDesc);
+			case 'pH':
+				// TODO: implement pH
+				throw new Error('pH not implemented');
 			default:
 				key satisfies never;
 		}
@@ -482,21 +494,12 @@ export class MixtureStore {
 		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalType) });
 	}
 
-	solveTotal(key: keyof MixtureAnalysis, newValue: number, undoKey = `solveTotal-${key}`): void {
+	solveTotal(key: keyof SolverTarget, newValue: number, undoKey = `solveTotal-${key}`): void {
 		const originalValue = this.totals[key];
 		const makeUpdater = (targetValue: number) => {
 			return (data: MixtureStoreData) => {
-				const mixture = this.mixture.clone();
-				try {
-					solveTotal(mixture, key, targetValue);
-				} catch (error) {
-					throw new Error(`Unable to solve for ${key} = ${targetValue}`);
-				}
-				if (!roundEq(mixture[key], targetValue)) {
-					throw new Error(`Unable to solve for ${key} = ${targetValue}`);
-				}
-
-				data.mixture = mixture;
+				const working = solveTotal(this.mixture, key, targetValue);
+				data.mixture.updateFrom(working);
 				return data;
 			};
 		};
@@ -544,7 +547,7 @@ function roundEq(a: number, b: number, maxVal = Infinity) {
 	return Math.abs(a - b) < Math.pow(10, -digits);
 }
 
-function solveTotal(mixture: Mixture, key: keyof MixtureAnalysis, targetValue: number): Mixture {
+function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: number): Mixture {
 	if (!mixture.canEdit(key)) {
 		throw new Error(`${key} is not editable`);
 	}

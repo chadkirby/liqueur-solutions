@@ -310,6 +310,8 @@
 					</div>
 				</AccordionItem>
 			{/each}
+
+			<!-- TOTALS -->
 			<h2 class="group">
 				<div class="items-center gap-x-2 gap-y-2">
 					<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
