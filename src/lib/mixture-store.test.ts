@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MixtureStore, loadingStoreId, type MixtureStoreData } from './mixture-store.svelte';
 import { Mixture } from './mixture.js';
-import type { Analysis } from './utils.js';
 import { newSpirit } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import type { IngredientItem } from './mixture-types.js';
+import type { IngredientItem, MixtureAnalysis } from './mixture-types.js';
 
 function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
 	const item = newSpirit(volume, abv);
@@ -242,7 +241,7 @@ describe('Mixture Store', () => {
 
 describe('Mixture store solver', () => {
 	let store: MixtureStore;
-	let initialAnalysis: Analysis;
+	let initialAnalysis: MixtureAnalysis;
 
 	beforeEach(() => {
 		store = new MixtureStore();

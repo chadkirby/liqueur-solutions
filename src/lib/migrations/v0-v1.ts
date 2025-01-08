@@ -2,7 +2,7 @@ import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import type { StoredFileDataV0, StoredFileDataV1, V0MixtureData } from '$lib/data-format.js';
 import { Mixture } from '$lib/mixture.js';
 
-export function portV0DataToV1(data: StoredFileDataV0): StoredFileDataV1 {
+export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>): StoredFileDataV1 {
 	const { components } = data.mixture.data;
 	const mixture = makeMixture(components);
 	return {

@@ -11,7 +11,7 @@ describe('newSpirit', () => {
 		// 47.41192% ABV spirit has a weight percentage of 0.4, so we expect
 		// the density to be 0.9352, which we have in the experimental
 		// measurements
-		expect(spirit.density(), 'density').toBeCloseTo(0.9352);
+		expect(spirit.getDensity(), 'density').toBeCloseTo(0.9352);
 		expect(spirit.abv, 'abv').toBeCloseTo(47.41192);
 		expect(spirit.brix).toBe(0);
 		expect(spirit.pH).toBe(7);
@@ -44,7 +44,7 @@ describe('newSyrup', () => {
 		expect(syrup.equivalentSugarMass, 'mass').toBeCloseTo(60.65, 1);
 		expect(syrup.volume, 'volume').toBe(100);
 		expect(syrup.brix).toBe(50);
-		expect(syrup.density(), 'density').toBeCloseTo(1.213);
+		expect(syrup.getDensity(), 'density').toBeCloseTo(1.213);
 		syrup.addIngredient({
 			name: 'water',
 			mass: 60.65,
@@ -56,7 +56,7 @@ describe('newSyrup', () => {
 			'masses',
 		).toStrictEqual(['60.65', '60.65', '60.65']);
 		expect(syrup.equivalentSugarMass, 'mass').toBeCloseTo(60.65, 1);
-		expect(syrup.density(), 'density').toBeCloseTo(1.13, 1);
+		expect(syrup.getDensity(), 'density').toBeCloseTo(1.13, 1);
 		expect(syrup.mass, 'mass').toBeCloseTo(3 * 60.65);
 		expect(syrup.volume, 'volume').toBeCloseTo(160.96, 1);
 		expect(syrup.brix).toBeCloseTo(33.3333, 2);

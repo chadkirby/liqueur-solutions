@@ -2,32 +2,22 @@ import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { AnnealingSolver } from 'abstract-sim-anneal';
 import { isAcidId, isSweetenerId } from './ingredients/substances.js';
+import type { SolverTarget } from './mixture-types.js';
 
 type IngredientClass = 'ethanol' | 'sweetener' | 'acid' | 'water';
 
-export interface Target {
-	/** between 0-100 */
-	abv: number;
-	/** between 0-100 */
-	brix: number;
-	/** between 0-Infinity */
-	volume: number;
-	/** between 0-7 */
-	pH: number;
-}
-
 interface MixtureState {
 	mixture: Mixture;
-	targets: Target;
-	actual: Target;
+	targets: SolverTarget;
+	actual: SolverTarget;
 	/** deviation from target values as a percentage of the target value
 	 * between -1, 1 */
-	deviations: Target;
+	deviations: SolverTarget;
 	/** total deviation from target values */
 	error: number;
 }
 
-export function analyze(mixture: Mixture, targets: Target): MixtureState {
+export function analyze(mixture: Mixture, targets: SolverTarget): MixtureState {
 	if (targets.pH === 0) {
 		throw new Error('Target pH must be between 0 and 7');
 	}
@@ -35,7 +25,7 @@ export function analyze(mixture: Mixture, targets: Target): MixtureState {
 		throw new Error('Target volume must be greater than 0');
 	}
 
-	const actual: Target = {
+	const actual: SolverTarget = {
 		abv: mixture.abv,
 		brix: mixture.brix,
 		pH: mixture.pH,
@@ -73,7 +63,7 @@ function getDeviation(actual: number, target: number): number {
 	return (actual - target) / actual;
 }
 
-function totalDeviation(deviations: Target): number {
+function totalDeviation(deviations: SolverTarget): number {
 	return Math.sqrt(
 		deviations.abv ** 2 + deviations.brix ** 2 + deviations.pH ** 2 + deviations.volume ** 2,
 	);
@@ -88,7 +78,7 @@ function newNeeds(initializer = 0): Needs {
 	]);
 }
 
-function getNeeds(deviations: Target): Needs {
+function getNeeds(deviations: SolverTarget): Needs {
 	const scale = 0.5;
 	const needs = newNeeds(1);
 	const needMore = (key: IngredientClass, howmuchMore: number) => {
@@ -153,7 +143,7 @@ function getSubstanceProvides(ingredient: SubstanceComponent, mass: number) {
 	return provides;
 }
 
-export function solver(mixture: Mixture, targets: Target) {
+export function solver(mixture: Mixture, targets: SolverTarget) {
 	if (targets.abv !== null && (targets.abv < 0 || targets.abv > 100)) {
 		throw new Error('Target ABV must be between 0 and 100');
 	}

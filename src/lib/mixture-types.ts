@@ -77,3 +77,22 @@ export type IngredientData = MixtureData | SubstanceData;
 
 // serialized Map<string, IngredientData>
 export type IngredientDbData = Array<[string, IngredientData]>;
+
+export interface SolverTarget {
+	/** between 0-100 */
+	abv: number;
+	/** between 0-100 */
+	brix: number;
+	/** between 0-Infinity */
+	volume: number;
+	/** between 0-7 */
+	pH: number;
+}
+
+export type MixtureAnalysis = SolverTarget & {
+	mass: number;
+	kcal: number;
+	proof: number;
+	equivalentSugarMass: number;
+	pH: number;
+};
