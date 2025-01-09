@@ -1,13 +1,14 @@
+import type { useClerkContext } from 'clerk-sveltekit/client';
+
 import { Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
 import { browser } from '$app/environment';
-import type { SessionUser } from '@corbado/types';
 import { type StoredFileDataV1, isV0Data, isV1Data } from '$lib/data-format.js';
 import { portV0DataToV1 } from './migrations/v0-v1.js';
 
-let user: SessionUser | null = $state(null);
+let user: ReturnType<typeof useClerkContext>['user'] | null = $state(null);
 
 // Default to offline mode, sync when user logs in
 let pushDelay = $derived(user ? 1000 : Infinity);
@@ -86,8 +87,9 @@ class FilesDb {
 	private async initializeSync() {
 		if (browser) {
 			try {
-				const { default: Corbado } = await import('@corbado/web-js');
-				user = Corbado.user ?? null;
+				const { useClerkContext } = await import('clerk-sveltekit/client');
+				const context = useClerkContext();
+				user = context.user ?? null;
 				// Enable sync when user is logged in
 				if (user) await this.rep?.pull(); // Initial pull
 			} catch (error) {
