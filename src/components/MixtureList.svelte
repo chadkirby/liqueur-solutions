@@ -1,4 +1,11 @@
 <script lang="ts">
+	import UserButton from 'clerk-sveltekit/client/UserButton.svelte';
+	import SignedIn from 'clerk-sveltekit/client/SignedIn.svelte';
+	import SignedOut from 'clerk-sveltekit/client/SignedOut.svelte';
+	import {
+		UserOutline,
+		UserSolid,
+	} from 'flowbite-svelte-icons';
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
@@ -10,6 +17,8 @@
 	import { filesDb, starredIds } from '$lib/storage.svelte.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import SignInButton from 'clerk-sveltekit/client/SignInButton.svelte';
+	import SignUpButton from 'clerk-sveltekit/client/SignUpButton.svelte';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -74,6 +83,27 @@
 				class="text-l font-bold leading-normal"
 			/>
 		</div>
+
+		<SignedIn>
+			<UserButton afterSignOutUrl={window.location.href}></UserButton>
+		</SignedIn>
+		<SignedOut>
+			<SignInButton class="rounded-full     text-center
+    border
+    border-primary-300
+    dark:border-primary-400
+    text-primary-900    font-medium
+    text-sm
+basis-1/4" mode="modal" />
+			<SignUpButton class="rounded-full     text-center
+    border
+    border-primary-300
+    dark:border-primary-400
+    bg-white    font-medium
+    text-sm
+basis-1/4" mode="modal" />
+		</SignedOut>
+
 	</section>
 
 	<MixtureAccordion {mixtureStore} id={null} name={mixtureStore.name} />

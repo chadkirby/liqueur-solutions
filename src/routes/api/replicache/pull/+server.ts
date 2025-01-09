@@ -10,14 +10,14 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 
 	const pull = await request.json();
 	const bucket = getR2Bucket(platform);
-	const userId = locals.userId; // Get from Corbado session
+	const userId = locals.auth.userId; // Get from Clerk session
 
 	if (!userId) {
 		// Return empty response for unauthenticated users
 		return json({
 			lastMutationID: pull.lastMutationID,
 			cookie: Date.now(),
-			patch: []
+			patch: [],
 		});
 	}
 
@@ -31,7 +31,7 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 			if (content) {
 				items.push({
 					key: obj.key.replace(`files/${userId}/`, 'files/'), // Strip user ID from key
-					value: await content.json()
+					value: await content.json(),
 				});
 			}
 		}
@@ -41,14 +41,14 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 		for (const obj of stars.objects) {
 			items.push({
 				key: obj.key.replace(`stars/${userId}/`, 'stars/'), // Strip user ID from key
-				value: true
+				value: true,
 			});
 		}
 
 		return json({
 			lastMutationID: pull.lastMutationID,
 			cookie: Date.now(),
-			patch: items
+			patch: items,
 		});
 	} catch (err) {
 		console.error('Pull error:', err);
