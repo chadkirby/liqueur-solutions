@@ -10,7 +10,7 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 
 	const push = await request.json();
 	const bucket = getR2Bucket(platform);
-	const userId = locals.userId; // Get from Corbado session
+	const userId = locals.auth.userId; // Get from Clerk
 
 	if (!userId) {
 		throw error(401, 'Unauthorized');

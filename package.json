@@ -31,7 +31,6 @@
 		}
 	},
 	"devDependencies": {
-		"@corbado/types": "^2.11.2",
 		"@playwright/test": "^1.49.1",
 		"@sveltejs/adapter-cloudflare": "^4.9.0",
 		"@sveltejs/kit": "^2.15.0",
@@ -81,9 +80,9 @@
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
-		"@corbado/node-sdk": "^3.0.2",
-		"@corbado/web-js": "^2.18.0",
+		"@clerk/themes": "^2.2.4",
 		"abstract-sim-anneal": "^0.1.0",
+		"clerk-sveltekit": "https://pkg.pr.new/wobsoriano/clerk-sveltekit@2202a23",
 		"lodash.debounce": "^4.0.8",
 		"nanoid": "^5.0.9",
 		"p-debounce": "^4.0.0",
