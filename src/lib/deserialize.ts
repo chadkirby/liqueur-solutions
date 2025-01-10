@@ -1,14 +1,14 @@
 import * as fflate from 'fflate';
 import { type AnyData } from './components/index.js';
 import { dataToMixture, Mixture } from './mixture.js';
-import { filesDb } from './local-storage.svelte';
+import { filesDb } from './storage.svelte.js';
 import { isStorageId } from './storage-id.js';
 
-export function deserializeFromLocalStorage(id: string): Mixture {
+export async function deserializeFromStorage(id: string): Promise<Mixture> {
 	if (!isStorageId(id)) {
 		throw new Error('Invalid id');
 	}
-	const item = filesDb.read(id);
+	const item = await filesDb.read(id);
 	if (!item) {
 		throw new Error('No item found');
 	}

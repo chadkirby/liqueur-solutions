@@ -7,7 +7,7 @@
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { starredIds, toggleStar } from '$lib/stars.svelte.js';
+	import { filesDb, starredIds } from '$lib/storage.svelte.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
@@ -16,7 +16,10 @@
 	}
 
 	let { mixtureStore }: Props = $props();
+
 	let storeId = $derived(mixtureStore.storeId);
+
+	$inspect(mixtureStore);
 
 	// hack to remove accordion focus ring
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
@@ -36,7 +39,7 @@
 
 	function handleToggleStar(event?: Event) {
 		event?.preventDefault();
-		toggleStar(storeId);
+		filesDb.toggleStar(storeId);
 	}
 </script>
 

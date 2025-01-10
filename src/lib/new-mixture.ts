@@ -1,11 +1,11 @@
-import { filesDb, type FileItem } from './local-storage.svelte.js';
+import { filesDb, type FileItem } from './storage.svelte.js';
 import { urlEncode } from './mixture-store.svelte.js';
 import { componentId, dataToMixture, newSpirit } from './mixture.js';
 import { openFile } from './open-file.js';
 import { generateStorageId } from './storage-id.js';
 import { Sweetener } from './components/sweetener.js';
 
-export function loadNewMixture() {
+export async function loadNewMixture() {
 	const mixture = dataToMixture({
 		components: [
 			{
@@ -39,6 +39,6 @@ export function loadNewMixture() {
 		href: urlEncode(name, mixture)
 	};
 
-	filesDb.write(item);
+	await filesDb.write(item);
 	openFile(item.id);
 }

@@ -4,7 +4,7 @@ import { Sweetener } from './components/sweetener.js';
 import { digitsForDisplay, type Analysis } from './utils.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
-import { filesDb } from './local-storage.svelte.js';
+import { filesDb } from './storage.svelte.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
@@ -511,7 +511,7 @@ function roundEq(a: number, b: number, maxVal = Infinity) {
 // 		if (storeId) {
 // 			const url = urlEncode(mixtureStore.getName(), mixtureStore.mixture);
 // 			// window.localStorage.setItem(storeId, url);
-// 			// goto(`/file${storeId}`, {
+// 			// goto(`/file/${storeId}`, {
 // 			// 	replaceState: true,
 // 			// 	noScroll: true,
 // 			// 	keepFocus: true

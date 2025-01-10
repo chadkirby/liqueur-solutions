@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import ShareModal from './ShareModal.svelte';
 	import FilesDrawer from './FilesDrawer.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
@@ -8,12 +9,16 @@
 		ArrowUpFromBracketOutline,
 		FileCopyOutline,
 		UndoOutline,
-		RedoOutline
+		RedoOutline,
+		UserOutline,
+		UserSolid,
 	} from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
 	import { loadNewMixture } from '$lib/new-mixture.js';
+	import { loadCorbado } from '$lib/corbado-store.js';
+	import type {SessionUser} from '@corbado/types';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -22,6 +27,17 @@
 	let { mixtureStore }: Props = $props();
 	let disableUndo = $derived(mixtureStore.undoCount === 0);
 	let disableRedo = $derived(mixtureStore.redoCount === 0);
+
+	let user: SessionUser | null = $state(null);
+
+	onMount(async () => {
+    const Corbado = await loadCorbado();
+		if (Corbado.user) {
+			user = Corbado.user;
+		} else {
+			user = null;
+		}
+	});
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(null);
@@ -126,6 +142,26 @@
 		<button id="share-button" aria-label="Share" class={btnClass} onclick={shareModal.open}>
 			<ArrowUpFromBracketOutline class="text-primary-100" />
 		</button>
+
+		{#if user}
+			<button
+				id="user-profile-button"
+				aria-label="User"
+				class={btnClass}
+				onclick={() => goto('/profile')}
+			>
+					<UserSolid class="text-primary-100" />
+			</button>
+		{:else}
+			<button
+				id="user-login-button"
+				aria-label="Login"
+				class={btnClass}
+				onclick={() => goto('/auth')}
+			>
+					<UserOutline class="text-primary-100" />
+			</button>
+		{/if}
 	</section>
 </nav>
 
@@ -141,3 +177,5 @@
 	Show saved mixture files
 </Tooltip>
 <Tooltip color="default" offset={6} triggeredBy="#share-button">Share this mixture</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#user-profile-button">Show User Profile</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#user-login-button">Login</Tooltip>
