@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button, Modal, Toast, uiHelpers } from 'svelte-5-ui-lib';
+	import { Button, Modal, Toast } from 'svelte-5-ui-lib';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
-	import { resolveUrl } from '$lib/local-storage.svelte';
+	import { resolveUrl } from '$lib/utils.js';
 	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 

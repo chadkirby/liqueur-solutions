@@ -1,14 +1,40 @@
+import { browser } from '$app/environment';
 import type { LoadDataFromStore } from '$lib/load-data.js';
-import { isStorageId } from '$lib/storage-id.js';
 
-export function load(args: { params: { id: string } }): LoadDataFromStore {
+// ha ha ha, wish this worked
+export const ssr = false;
+
+export async function load(args: { params: { id: string } }): Promise<LoadDataFromStore> {
+	if (!browser) {
+		return {
+			storeId: '',
+			mixture: null,
+			name: '',
+			totals: null
+		};
+	}
+
+	// corbado absolutely won't run on the server, and I can't figure
+	// out how to prevent this file from ever running on the server so
+	// we have to import it here
+	const { deserializeFromStorage } = await import('$lib/deserialize.js');
+	const { getTotals } = await import('$lib/mixture-store.svelte.js');
+	const { getName } = await import('$lib/storage.svelte.js');
+
 	const { params } = args;
-	const storeId = `/${params.id}`;
-	if (!storeId) throw new Error('No id');
-	if (!isStorageId(storeId)) throw new Error('Bad id');
+	if (!params.id) throw new Error('No id');
+
+	const storeId = params.id;
+	const mixture = await deserializeFromStorage(storeId);
+	if (!mixture.isValid) throw new Error('Invalid mixture');
+
+	const name = (await getName(storeId)) || 'mixture';
+	const totals = getTotals(mixture);
 
 	return {
-		storeId
+		storeId,
+		mixture,
+		name,
+		totals
 	};
 }
-export const ssr = false;

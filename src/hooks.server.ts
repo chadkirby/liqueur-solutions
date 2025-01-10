@@ -11,6 +11,6 @@ export const handleError: HandleServerError = ({ error, event }) => {
 	});
 
 	return {
-		message: 'Something went wrong!'
+		message: (error as Error).stack ?? (error as Error).message
 	};
 };

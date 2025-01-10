@@ -1,27 +1,25 @@
 import { componentId, deserialize, newSpirit, Sweetener } from '$lib/index.svelte';
 import type { LoadDataFromUrl } from '$lib/load-data.js';
 
-export const ssr = false;
-
 export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
 	const { url, params } = args;
 	// if (url.pathname.startsWith('/favicon')) return;
 	try {
 		const mixture = deserialize(url.searchParams);
 		// decode params.liqueur
-		const liqueur = decodeURIComponent(params.liqueur) ?? 'mixture';
+		const name = decodeURIComponent(params.liqueur) ?? 'mixture';
 		if (!mixture.isValid) throw new Error('Invalid mixture');
 
 		return {
 			storeId: null,
-			liqueur,
+			name,
 			components: mixture.data.components
 		};
 	} catch (err) {
 		console.error(err);
 		return {
 			storeId: null,
-			liqueur: '',
+			name: '',
 			components: [
 				{
 					name: '',

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { dataToMixture } from '$lib/index.svelte';
 	import type { LoadDataFromUrl } from '$lib/load-data.js';
-	import { filesDb, type FileItem } from '$lib/local-storage.svelte';
+	import { filesDb, type FileItem } from '$lib/storage.svelte';
 	import { urlEncode } from '$lib/mixture-store.svelte.js';
 	import { openFile } from '$lib/open-file.js';
 	import { generateStorageId } from '$lib/storage-id.js';
@@ -13,7 +13,7 @@
 
 	let { data }: Props = $props();
 
-	const name = data.liqueur;
+	const name = data.name;
 	const mixture = dataToMixture(data);
 	const href = urlEncode(name, mixture);
 

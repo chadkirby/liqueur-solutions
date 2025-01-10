@@ -200,3 +200,23 @@ function xToY(x: number, y: number) {
 function yToX(y: number, x: number) {
 	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
 }
+
+/**
+ * Resolves a relative path against the current window location
+ * without actually navigating to it.
+ * @param relativePath - The relative path to resolve
+ * @returns {string} The fully resolved absolute URL
+ */
+export function resolveUrl(relativePath: string): string {
+	// Create an anchor element
+	const link = document.createElement('a');
+
+	// Setting href on an anchor element will automatically resolve the URL
+	// relative to the current page location
+	link.href = relativePath;
+
+	// The resolved URL is available in the href property
+	// This gives us the fully qualified URL
+	return link.href;
+}
+

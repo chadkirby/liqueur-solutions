@@ -1,0 +1,7 @@
+name = "liqueur-solutions"
+compatibility_date = "2024-12-22"
+
+[[r2_buckets]]
+binding = 'MIXTURE_BUCKET'
+bucket_name = 'mixture-files'
+preview_bucket_name = 'mixture-files-dev'

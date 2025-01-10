@@ -24,5 +24,6 @@
         font-size: 2rem;
         margin-bottom: 1rem;
         color: #e74c3c;
+        width: 100%;
     }
 </style>
