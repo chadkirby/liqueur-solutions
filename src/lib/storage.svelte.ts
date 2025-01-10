@@ -2,30 +2,14 @@ import { dataToMixture, Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import { loadCorbado } from './corbado-store.js';
-
-export type StoredComponent = {
-	// Each component has a name, id, and data object that can
-	// hold any JSON value
-	name: string;
-	id: string;
-	data: {
-		[key: string]: ReadonlyJSONValue;
-	};
-};
-
-export type StoredMixtureData = {
-	// The mixture data has a literal 'type' and an array of
-	// 'components'
-	type: 'mixture';
-	components: Array<StoredComponent>;
-};
+import type { StoredMixtureData } from './components/index.js';
+import { browser } from '$app/environment';
 
 /**
  * FileItem represents a stored mixture file. All types must be
  * compatible with Replicache's ReadonlyJSONValue.
  */
-export type FileItem = {
+export type StoredFileData = {
 	id: string;
 	accessTime: number;
 	name: string;
@@ -44,8 +28,8 @@ const SPACE_STARS = 'stars';
 export const starredIds = $state<StorageId[]>([]);
 
 type Mutators = {
-	createFile: (tx: WriteTransaction, item: FileItem) => Promise<void>;
-	updateFile: (tx: WriteTransaction, item: FileItem) => Promise<void>;
+	createFile: (tx: WriteTransaction, item: StoredFileData) => Promise<void>;
+	updateFile: (tx: WriteTransaction, item: StoredFileData) => Promise<void>;
 	deleteFile: (tx: WriteTransaction, id: StorageId) => Promise<void>;
 	addStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
 	deleteStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
@@ -53,12 +37,12 @@ type Mutators = {
 
 // Define our mutations
 const mutators = {
-	async createFile(tx: WriteTransaction, item: FileItem) {
-		await tx.set(`${SPACE_FILES}/${item.id}`, item);
+	async createFile(tx: WriteTransaction, item: StoredFileData) {
+		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
 	},
 
-	async updateFile(tx: WriteTransaction, item: FileItem) {
-		await tx.set(`${SPACE_FILES}/${item.id}`, item);
+	async updateFile(tx: WriteTransaction, item: StoredFileData) {
+		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
 	},
 
 	async deleteFile(tx: WriteTransaction, id: StorageId) {
@@ -108,7 +92,10 @@ export class FilesDb {
 	}
 
 	private async initializeSync() {
+		if (!browser) return;
 		try {
+			// unimportable on the server
+			const { loadCorbado } = await import('$lib/corbado-store.js');
 			const Corbado = await loadCorbado();
 			if (Corbado.user) {
 				// Enable sync when user is logged in
@@ -133,15 +120,15 @@ export class FilesDb {
 		return item !== null;
 	}
 
-	async read(id: StorageId): Promise<FileItem | null> {
+	async read(id: StorageId): Promise<StoredFileData | null> {
 		if (!isStorageId(id)) return null;
 		const item = await this.rep.query(async (tx) => {
 			return await tx.get(`${SPACE_FILES}/${id}`);
 		});
-		return item as FileItem | null;
+		return item as StoredFileData | null;
 	}
 
-	async write(item: FileItem): Promise<void> {
+	async write(item: StoredFileData): Promise<void> {
 		if (!isStorageId(item.id)) return;
 		await this.rep.mutate.createFile(item);
 	}
@@ -172,16 +159,16 @@ export class FilesDb {
 		await this.rep.mutate.deleteStar(id);
 	}
 
-	async scan(sortBy: keyof FileItem = 'accessTime'): Promise<Map<StorageId, FileItem>> {
+	async scan(sortBy: keyof StoredFileData = 'accessTime'): Promise<Map<StorageId, StoredFileData>> {
 		const items = await this.rep.query(async (tx) => {
-			const items = new Map<StorageId, FileItem>();
+			const items = new Map<StorageId, StoredFileData>();
 			const starred = new Set(starredIds);
 
 			// First get starred items
 			for (const id of starred) {
 				if (isStorageId(id)) {
 					const item = await tx.get(`${SPACE_FILES}/${id}`);
-					if (item) items.set(id, item as FileItem);
+					if (item) items.set(id, item as StoredFileData);
 				}
 			}
 
@@ -190,7 +177,7 @@ export class FilesDb {
 			for (const [key, item] of allItems) {
 				const id = key.split('/')[1] as StorageId;
 				if (!starred.has(id)) {
-					items.set(id, item as FileItem);
+					items.set(id, item as StoredFileData);
 				}
 			}
 
@@ -219,19 +206,19 @@ export class FilesDb {
 		);
 	}
 
-	subscribe(callback: (items: Map<StorageId, FileItem>) => void) {
+	subscribe(callback: (items: Map<StorageId, StoredFileData>) => void) {
 		// Subscribe to changes in the files space
 		return this.rep.subscribe(
 			// Body function that computes the value
 			async (tx) => {
-				const items = new Map<StorageId, FileItem>();
+				const items = new Map<StorageId, StoredFileData>();
 				const starred = new Set(starredIds);
 
 				// First get starred items
 				for (const id of starred) {
 					if (isStorageId(id)) {
 						const item = await tx.get(`${SPACE_FILES}/${id}`);
-						if (item) items.set(id, item as FileItem);
+						if (item) items.set(id, item as StoredFileData);
 					}
 				}
 
@@ -240,7 +227,7 @@ export class FilesDb {
 				for (const [key, item] of allItems) {
 					const id = key.split('/')[1] as StorageId;
 					if (!starred.has(id)) {
-						items.set(id, item as FileItem);
+						items.set(id, item as StoredFileData);
 					}
 				}
 

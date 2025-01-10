@@ -17,7 +17,8 @@
 	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+	import { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import { serializeToUrl } from '$lib/url-serialization.js';
 
 	let {
 		mixtureStore,
@@ -64,7 +65,7 @@
 		{#if parentId !== null}
 			<Button
 				class="py-1 px-1.5 border-1 !justify-start gap-1"
-				onclick={() => mixture && (window.location.href = urlEncode(name, mixture))}
+				onclick={() => mixture && (window.location.href = serializeToUrl(name, mixture))}
 			>
 				<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 					>Open a copy</span

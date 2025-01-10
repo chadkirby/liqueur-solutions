@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { loadCorbado } from '$lib/corbado-store.js';
-	import Corbado from '@corbado/web-js';
 	import { onMount } from 'svelte';
 
 	interface Props {
@@ -13,7 +11,8 @@
 	let authElement: HTMLDivElement;
 
 	onMount(async () => {
-		await loadCorbado();
+		const { loadCorbado } = await import('$lib/corbado-store.js');
+		const Corbado = await loadCorbado();
 		Corbado.mountAuthUI(authElement, {
 			onLoggedIn: () => {
 				// Redirect to the next page
