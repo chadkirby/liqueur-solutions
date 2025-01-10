@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Drawer, Drawerhead, Li, Tooltip } from 'svelte-5-ui-lib';
+	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
 		ListOutline,
@@ -17,6 +17,7 @@
 	import { starredIds } from '$lib/stars.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import Helper from '../ui-primitives/Helper.svelte';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -25,8 +26,8 @@
 	let { mixtureStore }: Props = $props();
 
 	type ListedFile = FileItem & {
-		isStarred: boolean
-	}
+		isStarred: boolean;
+	};
 	let files = $state([] as ListedFile[]);
 	let drawerStatus = $state(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
@@ -35,9 +36,9 @@
 
 	function listFiles<T extends Record<string, unknown> = Record<string, never>>(
 		extra: T = {} as T
-	){
+	) {
 		const files = filesDb.scan();
-		const out: Array<ListedFile & T > = [];
+		const out: Array<ListedFile & T> = [];
 		for (const [id, item] of files) {
 			const isStarred = starredIds.includes(id);
 			if (!onlyStars || isStarred) {
@@ -108,6 +109,35 @@
 			}
 		};
 	}
+
+	function handleExport() {
+		// download a json file with all the starred files
+		const data = listFiles({}).filter((f) => f.isStarred);
+		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'saved-mixtures.json';
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	let importFiles: FileList | undefined = $state();
+
+	$effect(() => {
+		if (importFiles) {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const data = JSON.parse(reader.result as string);
+				for (const item of data) {
+					const id = asStorageId(item.id);
+					filesDb.set(id, item);
+				}
+				files = listFiles();
+			};
+			reader.readAsText(importFiles[0]);
+		}
+	});
 </script>
 
 <ListOutline class="text-white" onclick={filesDrawer.toggle} />
@@ -226,6 +256,16 @@
 					</div>
 				</div>
 			{/each}
-		</div>
-	</Drawer>
+			<!-- export-all button -->
+			<div class="flex flex-col justify-center mt-4 gap-4">
+				<Button class="px-2 py-1 text-primary-600 dark:text-primary-400" onclick={handleExport}>
+					Export All
+				</Button>
+				<section>
+					<Helper>Import</Helper>
+					<Fileupload bind:files={importFiles} />
+				</section>
+			</div>
+		</div></Drawer
+	>
 </Portal>
