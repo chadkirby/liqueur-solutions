@@ -4,7 +4,6 @@ import { Sweetener } from './components/sweetener.js';
 import { digitsForDisplay, type Analysis } from './utils.js';
 import { componentId, isSyrup, Mixture, type MixtureComponent } from './mixture.js';
 import { solver } from './solver.js';
-import { filesDb } from './storage.svelte.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
@@ -113,6 +112,7 @@ export class MixtureStore {
 	private async _save(newData: MixtureStoreData) {
 		if (!this._data) return;
 		const dataToSave = this._data;
+		const { filesDb } = await import('$lib/storage.svelte.js');
 		await filesDb.write({
 			id: dataToSave.storeId,
 			accessTime: Date.now(),

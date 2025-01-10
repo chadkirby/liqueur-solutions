@@ -2,13 +2,13 @@
 	import Corbado from '@corbado/web-js';
 	import { onMount } from 'svelte';
 	import type { SessionUser } from '@corbado/types';
-	import { loadCorbado } from '$lib/corbado-store.js';
 
 	let user: SessionUser | null;
 
 
 
 	onMount(async () => {
+		const { loadCorbado } = await import('$lib/corbado-store.js');
 		await loadCorbado();
 		if (Corbado.user) {
 			user = Corbado.user;

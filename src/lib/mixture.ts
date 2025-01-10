@@ -1,4 +1,3 @@
-import { strToU8, strFromU8, compressSync } from 'fflate';
 import { isEthanolData, isSweetenerData, isMixtureData, isWaterData } from './components/index.js';
 import {
 	BaseComponent,
@@ -11,7 +10,7 @@ import { Sweetener } from './components/sweetener.js';
 import { Water } from './components/water.js';
 import { solver } from './solver.js';
 import { brixToSyrupProportion, format } from './utils.js';
-import type { StoredMixtureData } from './storage.svelte.js';
+import type { StoredMixtureData } from './components/index.js';
 
 export type AnyComponent = Water | Sweetener | Ethanol | Mixture;
 
@@ -129,12 +128,6 @@ export class Mixture extends BaseComponent {
 				component: item.component.clone()
 			}))
 		);
-	}
-
-	serialize(): string {
-		const buf = strToU8(JSON.stringify(this.data), true);
-		const compressed = compressSync(buf);
-		return btoa(strFromU8(compressed, true));
 	}
 
 	get componentObjects() {
@@ -322,7 +315,6 @@ export function componentId(): string {
 function isClose(a: number, b: number, delta = 0.01) {
 	return Math.abs(a - b) < delta;
 }
-
 
 export function newSpirit(volume: number, abv: number): Mixture {
 	const mx = new Mixture([

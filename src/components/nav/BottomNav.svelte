@@ -15,10 +15,10 @@
 	} from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
-	import { loadNewMixture } from '$lib/new-mixture.js';
-	import { loadCorbado } from '$lib/corbado-store.js';
+	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import type {SessionUser} from '@corbado/types';
+	import { openFile } from '$lib/open-file.js';
+	import { serializeToUrl } from '$lib/url-serialization.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -31,6 +31,7 @@
 	let user: SessionUser | null = $state(null);
 
 	onMount(async () => {
+		const { loadCorbado } = await import('$lib/corbado-store.js');
     const Corbado = await loadCorbado();
 		if (Corbado.user) {
 			user = Corbado.user;
@@ -122,7 +123,7 @@
 				id="new-button"
 				aria-label="New File"
 				class={btnClass}
-				onclick={loadNewMixture}
+				onclick={() => openFile(null)}
 			>
 				<FileOutline class="text-primary-100" />
 			</button>
@@ -132,7 +133,7 @@
 				aria-label="Open a copy"
 				class={btnClass}
 				onclick={() =>
-					goto(urlEncode(mixtureStore.name, mixtureStore.mixture), {
+					goto(serializeToUrl(mixtureStore.name, mixtureStore.mixture), {
 						invalidateAll: true
 					})}
 			>

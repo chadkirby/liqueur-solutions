@@ -1,3 +1,4 @@
+import type { ReadonlyJSONValue } from 'replicache';
 import { analyze, type Analysis } from '../utils.js';
 
 const NumericDataValueKeys = ['abv', 'brix', 'volume', 'mass'] as const;
@@ -18,9 +19,32 @@ export type SweetenerTypes = (typeof SweetenerTypes)[number];
 
 const ComponentTypes = ['water', 'ethanol', 'sweetener', 'mixture'] as const;
 
-interface Data {
+export interface Data {
 	readonly type: ComponentTypes;
 }
+
+export type StoredComponentData = {
+	type: Data['type'];
+	volume?: number;
+	mass?: number;
+	subType?: SweetenerTypes;
+	components?: Array<StoredComponent>;
+};
+
+export type StoredComponent = {
+	// Each component has a name, id, and data object that can
+	// hold any JSON value
+	name: string;
+	id: string;
+	data: Readonly<AnyData>;
+};
+
+export type StoredMixtureData = {
+	// The mixture data has a literal 'type' and an array of
+	// 'components'
+	readonly type: 'mixture';
+	components: Array<StoredComponent>;
+};
 
 export interface EthanolData extends Data {
 	readonly type: 'ethanol';

@@ -1,16 +1,18 @@
 import { browser } from '$app/environment';
-import type { LoadDataFromStore } from '$lib/load-data.js';
+import { loadingStoreId } from '$lib/mixture-store.svelte.js';
+import type { LoadData } from './types.js';
 
 // ha ha ha, wish this worked
 export const ssr = false;
 
-export async function load(args: { params: { id: string } }): Promise<LoadDataFromStore> {
+export async function load(args: { params: { id: string } }): Promise<LoadData> {
 	if (!browser) {
 		return {
-			storeId: '',
+			storeId: loadingStoreId,
 			mixture: null,
 			name: '',
-			totals: null
+			totals: null,
+			filesDb: null
 		};
 	}
 
@@ -18,7 +20,7 @@ export async function load(args: { params: { id: string } }): Promise<LoadDataFr
 	// out how to prevent this file from ever running on the server so
 	// we have to import it here
 	const { getTotals } = await import('$lib/mixture-store.svelte.js');
-	const { getName, deserializeFromStorage } = await import('$lib/storage.svelte.js');
+	const { getName, deserializeFromStorage, filesDb } = await import('$lib/storage.svelte.js');
 
 	const { params } = args;
 	if (!params.id) throw new Error('No id');
@@ -34,6 +36,7 @@ export async function load(args: { params: { id: string } }): Promise<LoadDataFr
 		storeId,
 		mixture,
 		name,
-		totals
+		totals,
+		filesDb
 	};
 }
