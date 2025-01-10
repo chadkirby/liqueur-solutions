@@ -5,7 +5,7 @@ import { strToU8, strFromU8, compressSync } from 'fflate';
  * Serializes a mixture into a compressed URL-safe string.
  */
 export function serializeToUrl(name: string, mixture: Mixture): string {
-	const buf = strToU8(JSON.stringify(mixture.data), true);
+	const buf = strToU8(JSON.stringify(mixture.serialize()), true);
 	const compressed = compressSync(buf);
 	const gz = btoa(strFromU8(compressed, true));
 
