@@ -21,7 +21,7 @@ function decompress(qs: URLSearchParams): Mixture {
 	if (!v1Data) {
 		throw new Error('Unknown data format' + qs.toString());
 	}
-	return Mixture.fromStorageData(v1Data.rootMixtureId, v1Data.ingredientDb);
+	return Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb);
 }
 
 /**

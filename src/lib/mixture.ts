@@ -73,7 +73,7 @@ export type MappedSubstance = {
 };
 
 export class Mixture implements CommonComponent {
-	static fromStorageData(rootMixtureId: string, ingredientData: IngredientDbData) {
+	static deserialize(rootMixtureId: string, ingredientData: IngredientDbData) {
 		const ingredients: IngredientItem[] = [];
 
 		const db = new Map(ingredientData);
@@ -89,7 +89,7 @@ export class Mixture implements CommonComponent {
 
 			const item = isSubstanceData(data)
 				? SubstanceComponent.fromStorageData(data)
-				: Mixture.fromStorageData(id, ingredientData);
+				: Mixture.deserialize(id, ingredientData);
 
 			ingredients.push({
 				id,
