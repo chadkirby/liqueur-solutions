@@ -6,20 +6,16 @@
 		ArrowRightOutline,
 		ArrowUpRightFromSquareOutline,
 		StarSolid,
-		StarOutline
+		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import {
-		filesDb,
-		starredIds,
-		deserializeFromStorage,
-		type StoredFileData
-	} from '$lib/storage.svelte';
+	import { filesDb, starredIds, deserializeFromStorage } from '$lib/storage.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
+	import type { StoredFileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 
 	interface Props {
@@ -28,7 +24,7 @@
 
 	let { mixtureStore }: Props = $props();
 
-	type ListedFile = StoredFileData & {
+	type ListedFile = StoredFileDataV1 & {
 		isStarred: boolean;
 	};
 	let files = $state([] as ListedFile[]);
@@ -38,8 +34,8 @@
 	let onlyStars = $state(true);
 
 	function processFiles<T extends Record<string, unknown> = Record<string, never>>(
-		items: Map<StorageId, StoredFileData>,
-		extra: T = {} as T
+		items: Map<StorageId, StoredFileDataV1>,
+		extra: T = {} as T,
 	) {
 		const out: Array<ListedFile & T> = [];
 		for (const [id, item] of items) {
@@ -116,7 +112,11 @@
 			filesDrawer.close();
 			const mixture = await deserializeFromStorage(id);
 			if (mixture && mixture.isValid) {
-				mixtureStore.addIngredientTo(filesDrawer.parentId, { name, item: mixture });
+				mixtureStore.addIngredientTo(filesDrawer.parentId, {
+					name,
+					item: mixture,
+					mass: mixture.mass,
+				});
 			}
 		};
 	}

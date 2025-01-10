@@ -270,5 +270,5 @@ export async function deserializeFromStorage(id: string): Promise<Mixture> {
 	if (!v1Data) {
 		throw new Error('No item found');
 	}
-	return Mixture.fromStorageData(v1Data.rootMixtureId, v1Data.ingredientDb);
+	return Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb);
 }

@@ -10,7 +10,7 @@ describe('SubstanceComponent', () => {
 		expect(component.name).toBe('Water');
 		expect(component.getEquivalentSugarMass(50)).toBe(0);
 		expect(component.getAlcoholMass(50)).toBe(0);
-		expect(component.getAbv(50)).toBe(0);
+		expect(component.getAbv()).toBe(0);
 	});
 	it('should work with sucrose', () => {
 		const component = SubstanceComponent.new('sucrose');
@@ -48,8 +48,8 @@ describe('Substances', () => {
 		assert.equal(water.getWaterMass(50), 50, 'getWaterMass');
 		assert.equal(water.getAlcoholMass(50), 0, 'getAlcoholMass');
 		assert.equal(water.getAlcoholVolume(50), 0, 'getAlcoholVolume');
-		assert.equal(water.getAbv(50), 0, 'getAbv');
-		assert.equal(water.getProof(50), 0, 'getProof');
+		assert.equal(water.getAbv(), 0, 'getAbv');
+		assert.equal(water.getProof(), 0, 'getProof');
 		assert.equal(water.getBrix(), 0, 'getBrix');
 		assert.equal(water.getPH(1), 7, 'getPH');
 		assert.equal(water.pureDensity, 1, 'pureDensity');
@@ -68,8 +68,8 @@ describe('Substances', () => {
 		assert.equal(sucrose.getWaterMass(50), 0, 'getWaterMass');
 		assert.equal(sucrose.getAlcoholMass(50), 0, 'getAlcoholMass');
 		assert.equal(sucrose.getAlcoholVolume(50), 0, 'getAlcoholVolume');
-		assert.equal(sucrose.getAbv(50), 0, 'getAbv');
-		assert.equal(sucrose.getProof(50), 0, 'getProof');
+		assert.equal(sucrose.getAbv(), 0, 'getAbv');
+		assert.equal(sucrose.getProof(), 0, 'getProof');
 		assert.equal(sucrose.getBrix(), 100, 'getBrix');
 		assert.equal(sucrose.getPH(1), 7, 'getPH');
 		assert.equal(sucrose.pureDensity, 1.5875, 'pureDensity');
