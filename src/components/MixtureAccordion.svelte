@@ -26,13 +26,16 @@
 		isSimpleSyrup,
 		isSweetener,
 		isWater,
-		Mixture,
 	} from '$lib/mixture.js';
+	import Ph from './displays/PH.svelte';
+	import type { IngredientItem } from '$lib/mixture-types.js';
+	import { isCitrus } from '$lib/mixture-factories.js';
+	import CitrusDropdown from './displays/CitrusDropdown.svelte';
 
 	let {
 		mixtureStore,
 		id: parentId,
-		name: mixtureName,
+		name: mixtureName
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
@@ -60,6 +63,126 @@
 
 	const btnClass = 'py-1 px-1.5 border-1 !justify-start gap-1';
 </script>
+
+{#snippet nameInput(ingredient: IngredientItem, basis = 'basis-3/4')}
+	<TextInput
+		type="text"
+		value={ingredient.name}
+		placeholder={ingredient.item.describe()}
+		class="
+			mr-2
+			{basis}
+			text-sm
+			leading-[18px]
+			focus:ring-2
+			focus:border-blue-200
+			focus:ring-blue-200
+			"
+		onclick={(e) => e.stopPropagation()}
+		oninput={(e) => mixtureStore.updateComponentName(ingredient.id, e.currentTarget.value)}
+	/>
+{/snippet}
+
+{#snippet defaultHeader(ingredient: IngredientItem, volume: number)}
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/4"
+		value={volume}
+		type="volume"
+		componentId={ingredient.id}
+	/>
+
+	{@render nameInput(ingredient, 'basis-3/4')}
+{/snippet}
+
+{#snippet sweetenerHeader(ingredient: IngredientItem, mass: number)}
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/5"
+		value={mass}
+		type="mass"
+		componentId={ingredient.id}
+	/>
+	<SweetenerDropdown
+		{mixtureStore}
+		componentId={ingredient.id}
+		component={ingredient.item}
+		basis="basis-1/3"
+		onclick={(e) => e.stopPropagation()}
+	/>
+	{@render nameInput(ingredient, 'basis-1/3')}
+{/snippet}
+
+{#snippet simpleSyrupHeader(ingredient: IngredientItem, volume: number, brix: number)}
+	<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${ingredient.id}`}>Sweetness</Tooltip
+	>
+
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/6"
+		value={volume}
+		type="volume"
+		componentId={ingredient.id}
+	/>
+
+	<NumberSpinner
+		{mixtureStore}
+		id={`edit-brix-${ingredient.id}`}
+		class="basis-1/6"
+		value={brix * 100}
+		type="brix"
+		componentId={ingredient.id}
+	/>
+
+	<SweetenerDropdown
+		{mixtureStore}
+		componentId={ingredient.id}
+		component={ingredient.item}
+		basis="basis-1/3"
+		onclick={(e) => e.stopPropagation()}
+	/>
+	{@render nameInput(ingredient, 'basis-1/3')}
+{/snippet}
+
+{#snippet spiritHeader(ingredient: IngredientItem, volume: number, abv: number)}
+	<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${ingredient.id}`}>ABV</Tooltip>
+
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/5"
+		value={volume}
+		type="volume"
+		componentId={ingredient.id}
+	/>
+
+	<NumberSpinner
+		{mixtureStore}
+		id={`edit-abv-${ingredient.id}`}
+		class="basis-1/5"
+		value={abv}
+		type="abv"
+		componentId={ingredient.id}
+	/>
+	{@render nameInput(ingredient, 'basis-3/5')}
+{/snippet}
+
+{#snippet citrusHeader(ingredient: IngredientItem, volume: number)}
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/4"
+		value={volume}
+		type="volume"
+		componentId={ingredient.id}
+	/>
+	<CitrusDropdown
+		{mixtureStore}
+		componentId={ingredient.id}
+		component={ingredient.item}
+		basis="basis-1/4"
+		onclick={(e) => e.stopPropagation()}
+	/>
+	{@render nameInput(ingredient, 'basis-1/2')}
+{/snippet}
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
@@ -95,6 +218,7 @@
 			{#each mixture.eachIngredient() || [] as { ingredient, mass } (ingredient.id)}
 				{@const id = ingredient.id}
 				{@const component = ingredient.item}
+				{@const volume = mixture.getIngredientVolume(id)}
 				<AccordionItem
 					class="py-2 pl-1 pr-2"
 					open={openStates.get(id) ?? false}
@@ -113,77 +237,30 @@
 							{/if}
 
 							{#if isSweetener(component)}
-								<NumberSpinner
-									{mixtureStore}
-									class="basis-1/5"
-									value={mass}
-									type="mass"
-									componentId={id}
-								/>
+								{@render sweetenerHeader(ingredient, mass)}
+							{:else if isSimpleSpirit(component)}
+								{@render spiritHeader(
+									ingredient,
+									volume,
+									mixture.getIngredientAbv(id)
+								)}
+							{:else if isSimpleSyrup(component)}
+								{@render simpleSyrupHeader(
+									ingredient,
+									volume,
+									mixture.getIngredientBrix(id)
+								)}
+								{:else if isCitrus(component)}
+								{@render citrusHeader(ingredient, volume)}
+							<!-- {:else if isAcid(component)}
+								{@render acidHeader(ingredient, mass)}
+							{:else if isBuffer(component)}
+								{@render bufferHeader(ingredient, mass)}
+							{:else if isSalt(component)}
+								{@render saltHeader(ingredient, mass)} -->
 							{:else}
-								<NumberSpinner
-									{mixtureStore}
-									class="basis-1/5"
-									value={mixture.getIngredientVolume(id)}
-									type="volume"
-									componentId={id}
-								/>
+								{@render defaultHeader(ingredient, volume)}
 							{/if}
-
-							{#if isSimpleSpirit(component)}
-								<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${id}`}>ABV</Tooltip>
-								<NumberSpinner
-									{mixtureStore}
-									id={`edit-abv-${id}`}
-									class="basis-1/6"
-									value={mixture.getIngredientAbv(id)}
-									type="abv"
-									componentId={id}
-								/>
-							{/if}
-							{#if isSimpleSyrup(component)}
-								<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${id}`}>
-									Sweetness
-								</Tooltip>
-								<NumberSpinner
-									{mixtureStore}
-									id={`edit-brix-${id}`}
-									class="basis-1/6"
-									value={mixture.getIngredientBrix(id)}
-									type="brix"
-									componentId={id}
-								/>
-							{/if}
-
-							{#if isSweetener(component) || isSimpleSyrup(component)}
-								<SweetenerDropdown
-									{mixtureStore}
-									componentId={id}
-									{component}
-									basis="basis-1/3"
-									onclick={(e) => e.stopPropagation()}
-								/>
-							{/if}
-							<TextInput
-								type="text"
-								value={ingredient.name}
-								placeholder={component.describe()}
-								class="
-								mr-2
-								{isSweetener(component) || isSimpleSyrup(component)
-									? 'basis-1/3'
-									: isSimpleSpirit(component)
-										? 'basis-1/2'
-										: 'basis-3/4'}
-								text-sm
-								leading-[18px]
-								focus:ring-2
-								focus:border-blue-200
-								focus:ring-blue-200
-								"
-								onclick={(e) => e.stopPropagation()}
-								oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
-							/>
 						</div>
 					{/snippet}
 					<div class="flex flex-col items-stretch">
@@ -345,6 +422,13 @@
 							class="basis-1/6 min-w-20 grow-0"
 						/>
 						<CalComponent
+							{mixtureStore}
+							componentId={parentId === null ? 'totals' : parentId}
+							component={mixture}
+							mass={mixture.mass}
+							class="basis-1/6 min-w-20 grow-0"
+						/>
+						<Ph
 							{mixtureStore}
 							componentId={parentId === null ? 'totals' : parentId}
 							component={mixture}

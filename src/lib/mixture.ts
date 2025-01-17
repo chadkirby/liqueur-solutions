@@ -1,16 +1,15 @@
+import { customAlphabet, urlAlphabet } from 'nanoid';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { solveMassForVolume, solver } from './solver.js';
 import { brixToSyrupProportion, format, round } from './utils.js';
-import { nanoid } from 'nanoid';
 import {
-	getConjugateAcids,
 	isSweetenerId,
 	type SubstanceId,
 	sweetenerIds,
 	Sweeteners,
 } from './ingredients/substances.js';
-import { calculatePh, getMolarConcentration } from './ph-solver.js';
-import { getCitrusDissociationFactor, getIdPrefix } from './citrus-ids.js';
+import { getMixturePh } from './ph-solver.js';
+import { citrusJuiceNames, getCitrusPrefix, getIdPrefix } from './ingredients/citrus-ids.js';
 import { FancyIterator } from './iterator.js';
 import {
 	isMixtureData,
@@ -25,8 +24,8 @@ import {
 	type IngredientToAdd,
 	type MixtureAnalysis,
 	type MixtureData,
-	type SolverTarget,
 } from './mixture-types.js';
+import { isCitrus } from './mixture-factories.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -114,9 +113,16 @@ export class Mixture implements CommonComponent {
 		}
 	}
 
-	private readonly _ingredients: Map<string, IngredientItem> = new Map();
+	private readonly ingredientList: Array<IngredientItem> = [];
 	get ingredients() {
-		return this._ingredients as ReadonlyMap<string, Readonly<IngredientItem>>;
+		return new Map(this.ingredientList.map((i) => [i.id, i])) as ReadonlyMap<
+			string,
+			Readonly<IngredientItem>
+		>;
+	}
+
+	getIngredient(id: string) {
+		return this.ingredientList.find((i) => i.id === id);
 	}
 
 	clone(): this {
@@ -128,13 +134,14 @@ export class Mixture implements CommonComponent {
 	 * update our data to match another mixture (opposite of clone)
 	 */
 	updateFrom(other: Mixture) {
-		this._ingredients.clear();
+		// empty the ingredient list
+		this.ingredientList.splice(0, this.ingredientList.length);
 		for (const { ingredient } of other.eachIngredient()) {
 			const newIngredient = {
 				...ingredient,
 				item: ingredient.item.clone(),
 			};
-			this._ingredients.set(newIngredient.id, newIngredient);
+			this.ingredientList.push(newIngredient);
 		}
 		return this;
 	}
@@ -145,7 +152,7 @@ export class Mixture implements CommonComponent {
 	private serializeMixtureData(): MixtureData {
 		return {
 			id: this.id,
-			ingredients: [...this._ingredients.values()].map(({ id, mass, name }) => ({
+			ingredients: this.ingredientList.map(({ id, mass, name }) => ({
 				id,
 				mass,
 				name,
@@ -155,17 +162,15 @@ export class Mixture implements CommonComponent {
 
 	serialize(): IngredientDbData {
 		const rootData: [string, MixtureData] = [this.id, this.serializeMixtureData()];
-		const ingredientData: IngredientDbData = [...this._ingredients.values()].flatMap(
-			({ id, item }) => {
-				if (item instanceof Mixture) {
-					return [[id, item.serializeMixtureData()], ...item.serialize()];
-				}
-				if (item instanceof SubstanceComponent) {
-					return [[id, item.serializeSubstanceData()]];
-				}
-				throw new Error('Invalid ingredient');
-			},
-		);
+		const ingredientData: IngredientDbData = this.ingredientList.flatMap(({ id, item }) => {
+			if (item instanceof Mixture) {
+				return [[id, item.serializeMixtureData()], ...item.serialize()];
+			}
+			if (item instanceof SubstanceComponent) {
+				return [[id, item.serializeSubstanceData()]];
+			}
+			throw new Error('Invalid ingredient');
+		});
 		return [rootData, ...ingredientData];
 	}
 
@@ -183,7 +188,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	analyzeIngredient(ingredientId: string, precision = 0): MixtureAnalysis {
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (!ingredient) {
 			throw new Error('Invalid ingredient');
 		}
@@ -216,25 +221,48 @@ export class Mixture implements CommonComponent {
 			item: ingredient.item,
 			mass: ingredient.mass,
 		};
-		this._ingredients.set(ingredientItem.id, ingredientItem);
+		this.ingredientList.push(ingredientItem);
 		return this;
 	}
 
 	removeIngredient(id: string) {
-		if (this._ingredients.has(id)) {
-			this._ingredients.delete(id);
+		const index = this.ingredientList.findIndex((i) => i.id === id);
+		if (index > -1) {
+			this.ingredientList.splice(index, 1);
 			return true;
 		}
 		return false;
 	}
 
+	/**
+	 * replace an ingredient with a new one (in the same position in the
+	 * ingredients list)
+	 */
+	replaceIngredient(id: string, ingredient: IngredientToAdd) {
+		// this is kind of dumb, but because we store ingredients in a
+		// map, we have to do this dance to replace an ingredient
+		const index = this.ingredientList.findIndex((x) => x.id === id);
+		if (index === -1) {
+			return false;
+		}
+		const newIngredient = {
+			id: ingredient.id ?? componentId(),
+			name: ingredient.name,
+			item: ingredient.item,
+			mass: ingredient.mass,
+		};
+		this.ingredientList.splice(index, 1, newIngredient);
+
+		return true;
+	}
+
 	replaceIngredientComponent(id: string, item: IngredientItemComponent) {
-		if (this._ingredients.has(id)) {
-			const ingredient = this._ingredients.get(id)!;
+		const ingredient = this.getIngredient(id)!;
+		if (ingredient) {
 			ingredient.item = item;
 			return true;
 		}
-		for (const ingredient of this._ingredients.values()) {
+		for (const ingredient of this.ingredientList) {
 			if (ingredient.item instanceof Mixture) {
 				if (ingredient.item.replaceIngredientComponent(id, item)) {
 					return true;
@@ -268,7 +296,7 @@ export class Mixture implements CommonComponent {
 		} else {
 			// we expect that non-zero masses of the ingredients are encoded as negative
 			// numbers, so we'll scale them up to the new mass
-			const nonZeroMixtureMass = [...this._ingredients.values()].reduce(
+			const nonZeroMixtureMass = this.ingredientList.reduce(
 				(acc, { mass }) => acc + Math.abs(mass),
 				0,
 			);
@@ -284,7 +312,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientMass(ingredientId: string): number | -1 {
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (ingredient) {
 			return ingredient.mass < 0 ? 0 : ingredient.mass;
 		}
@@ -302,7 +330,7 @@ export class Mixture implements CommonComponent {
 		if (newMass < 0) {
 			throw new Error('Invalid mass');
 		}
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (ingredient) {
 			// if the new mass is tiny, we'll encode the current mass as
 			// negative number so that we can scale it back up later
@@ -320,12 +348,12 @@ export class Mixture implements CommonComponent {
 	}
 
 	get ingredientIds() {
-		return [...this._ingredients.keys()];
+		return this.ingredientList.map((i) => i.id);
 	}
 
 	eachIngredient() {
 		function* eachIngredient(this: Mixture): Generator<DecoratedIngredient> {
-			for (const ingredient of this._ingredients.values()) {
+			for (const ingredient of this.ingredientList) {
 				yield { ingredient, mass: this.getIngredientMass(ingredient.id) };
 			}
 		}
@@ -371,6 +399,11 @@ export class Mixture implements CommonComponent {
 		}
 		if (isLiqueur(this)) {
 			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
+		}
+		if (isCitrus(this)) {
+			const type = getCitrusPrefix(this.id);
+			const name = citrusJuiceNames.find((n) => this.id.includes(n)) ?? 'citrus';
+			return `${name} juice`;
 		}
 		return this.eachIngredient()
 			.map(({ ingredient }) => ingredient.item.describe())
@@ -449,7 +482,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientAbv(ingredientId: string): number | -1 {
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (ingredient) {
 			return ingredient.item.getAbv();
 		}
@@ -484,53 +517,18 @@ export class Mixture implements CommonComponent {
 		return this.getPH();
 	}
 	getPH() {
-		let totalMolesH = 0;
-		const totalVolume = this.volume;
+		return getMixturePh(this.volume, this.substances, getCitrusPrefix(this.id));
+	}
 
-		// Group acids with their conjugate bases
-		const acidGroups = new Map<
-			string,
-			{
-				acid: SubstanceItem;
-				conjugateBase?: SubstanceItem;
-			}
-		>();
-
-		// First pass - find acids
-		for (const substance of this.substances) {
-			if (substance.item.pKa.length > 0) {
-				// Create unique ID for each acid
-				acidGroups.set(substance.substanceId, { acid: substance });
-			}
-		}
-
-		// Second pass - match conjugate bases to acids
-		for (const substance of this.substances) {
-			const matchingAcids = getConjugateAcids(substance.substanceId);
-			// For each acid that matches this base
-			for (const acidId of matchingAcids) {
-				const group = acidGroups.get(acidId);
-				if (group) {
-					group.conjugateBase = substance;
-				}
-			}
-		}
-
-		// calculate pH contribution from each acid group
-		for (const group of acidGroups.values()) {
-			const { acid, conjugateBase } = group;
-			const phData = calculatePh({
-				acidMolarity: getMolarConcentration(acid.item.substance, acid.mass, totalVolume),
-				conjugateBaseMolarity: conjugateBase
-					? getMolarConcentration(conjugateBase.item.substance, conjugateBase.mass, totalVolume)
-					: 0,
-				pKa: acid.item.pKa,
-				dissociationFactor: getCitrusDissociationFactor(this.id),
-			});
-			totalMolesH += phData.H;
-		}
-
-		return totalMolesH ? -Math.log10(totalMolesH) : 7;
+	setPH(newPH: number) {
+		if (isClose(newPH, this.getPH(), 0.001)) return;
+		const working = solver(this, {
+			volume: this.volume,
+			abv: this.abv,
+			brix: this.brix,
+			pH: newPH,
+		});
+		return this.updateFrom(working);
 	}
 
 	getDensity() {
@@ -546,6 +544,9 @@ export class Mixture implements CommonComponent {
 	}
 
 	get volume() {
+		return this.getVolume();
+	}
+	getVolume() {
 		const mass = this.mass;
 		const density = this.getDensity();
 		const volume = density !== 0 ? mass / density : 0;
@@ -568,7 +569,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientVolume(ingredientId: string): number | -1 {
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (ingredient && isSubstance(ingredient.item)) {
 			const ingredientMass = this.getIngredientMass(ingredientId);
 			return ingredientMass / ingredient.item.pureDensity;
@@ -584,7 +585,7 @@ export class Mixture implements CommonComponent {
 		if (newVolume < 0) {
 			throw new Error('Invalid volume');
 		}
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (isSubstance(ingredient?.item)) {
 			const ingredientDensity = ingredient.item.pureDensity;
 			const newMass = newVolume * ingredientDensity;
@@ -683,7 +684,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientBrix(ingredientId: string): number | -1 {
-		const ingredient = this._ingredients.get(ingredientId);
+		const ingredient = this.getIngredient(ingredientId);
 		if (ingredient) {
 			const mass = this.getIngredientMass(ingredientId);
 			return ingredient.item.getEquivalentSugarMass(mass) / mass;
@@ -780,9 +781,10 @@ export class Mixture implements CommonComponent {
 
 export type SubstanceItem = Mixture['substances'][number];
 
+const nanoid = customAlphabet(urlAlphabet, 8);
 export function componentId(): string {
 	// return a random string
-	return nanoid(12);
+	return nanoid();
 }
 
 function isClose(a: number, b: number, delta = 0.01) {
@@ -856,4 +858,8 @@ export function isWaterMixture(thing: IngredientItemComponent): thing is Mixture
 }
 export function isWater(thing: IngredientItemComponent) {
 	return isWaterSubstance(thing) || isWaterMixture(thing);
+}
+
+export function isAcidicMixture(thing: IngredientItemComponent) {
+	return isMixture(thing) && thing.eachSubstance().some((x) => x.item.pKa.length > 0);
 }

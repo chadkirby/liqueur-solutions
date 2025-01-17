@@ -9,7 +9,7 @@
 		mixtureStore: MixtureStore;
 		id?: string;
 		componentId: string;
-		type: 'brix' | 'abv' | 'volume' | 'mass';
+		type: 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 		min?: number;
 		max?: number;
 		class?: string;
@@ -28,13 +28,17 @@
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
-	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
+	const unit =
+		type === 'volume' ? 'ml'
+		: type === 'mass' ? 'g'
+		: type === 'brix' || type === 'abv' ? '%'
+		: '';
 
 	// Internal state
 	let touchStartY = $state(0);
 	let isKeyboardEditing = $state(false);
 	let touchStartTime = $state(0);
-	let rawInputValue = $state('');
+	let rawInputValue = $state(format(value, { unit }).value);
 	let input: HTMLInputElement | null = $state(null);
 
 	// Handle keyboard input
