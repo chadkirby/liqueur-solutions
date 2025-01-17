@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { citrus, newSpirit, newSyrup, newZeroSyrup } from './mixture-factories.js';
+import { citrusFactory, newSpirit, newSyrup, newZeroSyrup } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { getCitrusPrefix } from './ingredients/citrus-ids.js';
 
@@ -65,29 +65,29 @@ describe('newSyrup', () => {
 
 describe('Citrus', () => {
 	it('lemon', () => {
-		const juice = citrus.lemon(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lemon)');
+		const juice = citrusFactory.lemon(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-lemon__');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(3.1, 0);
 	});
 	it('lime', () => {
-		const juice = citrus.lime(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lime)');
+		const juice = citrusFactory.lime(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-lime__');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix).toBeCloseTo(1.9, 1);
 	});
 	it('orange', () => {
-		const juice = citrus.orange(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-orange)');
+		const juice = citrusFactory.orange(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-orange__');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(12.42, 1);
 	});
 	it('grapefruit', () => {
-		const juice = citrus.grapefruit(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-grapefruit)');
+		const juice = citrusFactory.grapefruit(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-grapefruit__');
 		expect(juice.volume, 'volume').toBeCloseTo(100);
 		expect(juice.abv).toBe(0);
 		expect(juice.brix, 'brix').toBeCloseTo(8.78, 1);

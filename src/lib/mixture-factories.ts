@@ -1,8 +1,8 @@
 import { calculateAbvProportions } from './ingredients/density.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import type { CitrusJuiceId, CitrusJuiceName } from './ingredients/citrus-ids.js';
+import { makeCitrusId, type CitrusJuiceName } from './ingredients/citrus-ids.js';
 import { isClose, seek } from './solver.js';
-import { componentId, isMixture, isWater, Mixture } from './mixture.js';
+import { componentId, isWater, Mixture } from './mixture.js';
 
 export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
@@ -41,14 +41,14 @@ export function newSyrup(volume: number, brix: number): Mixture {
 	return mx;
 }
 
-export const citrus = {
+export const citrusFactory = {
 	lemon(volume: number): Mixture {
 		// Lemon juice (~100ml):
 		// Water: ~89-90ml
 		// Citric acid: ~5-6g (primary acid)
 		// Malic acid: ~0.2-0.3g
 		// Sugars: ~2.5g (mix of fructose/glucose)
-		const mx = new Mixture(`(citrus-lemon)${componentId()}` satisfies CitrusJuiceId, [
+		const mx = new Mixture(makeCitrusId('lemon'), [
 			{
 				name: 'water',
 				mass: 90,
@@ -84,7 +84,7 @@ export const citrus = {
 		// Water: ~90-91ml
 		// Citric acid: ~5-6g (similar to lemon)
 		// Malic acid: ~0.1-0.2g
-		const mx = new Mixture(`(citrus-lime)${componentId()}` satisfies CitrusJuiceId, [
+		const mx = new Mixture(makeCitrusId('lime'), [
 			{
 				name: 'water',
 				mass: 90,
@@ -120,7 +120,7 @@ export const citrus = {
 		// Citric acid: ~1-1.2g
 		// Malic acid: ~0.1-0.2g
 		// Sugars: ~9-10g
-		const mx = new Mixture(`(citrus-orange)${componentId()}` satisfies CitrusJuiceId, [
+		const mx = new Mixture(makeCitrusId('orange'), [
 			{
 				name: 'water',
 				mass: 88,
@@ -156,7 +156,7 @@ export const citrus = {
 		// Citric acid: ~1.2-1.5g
 		// Malic acid: ~0.3-0.4g
 		// Sugars: ~7-8g
-		const mx = new Mixture(`(citrus-grapefruit)${componentId()}` satisfies CitrusJuiceId, [
+		const mx = new Mixture(makeCitrusId('grapefruit'), [
 			{
 				name: 'water',
 				mass: 90,
@@ -186,10 +186,6 @@ export const citrus = {
 		return mx;
 	},
 } as const satisfies Record<CitrusJuiceName, (volume: number) => Mixture>;
-
-export function isCitrus(mx: unknown): mx is Mixture & { id: PrefixedId } {
-	return isMixture(mx) && mx.id.startsWith('(citrus-');
-}
 
 export function newPreservative(volume: number): Mixture {
 	const mx = new Mixture(componentId(), [

@@ -26,10 +26,10 @@
 		isSimpleSyrup,
 		isSweetener,
 		isWater,
+		isCitrusMixture
 	} from '$lib/mixture.js';
 	import Ph from './displays/PH.svelte';
 	import type { IngredientItem } from '$lib/mixture-types.js';
-	import { isCitrus } from '$lib/mixture-factories.js';
 	import CitrusDropdown from './displays/CitrusDropdown.svelte';
 
 	let {
@@ -250,7 +250,7 @@
 									volume,
 									mixture.getIngredientBrix(id)
 								)}
-								{:else if isCitrus(component)}
+								{:else if isCitrusMixture(component)}
 								{@render citrusHeader(ingredient, volume)}
 							<!-- {:else if isAcid(component)}
 								{@render acidHeader(ingredient, mass)}
