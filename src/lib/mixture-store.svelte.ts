@@ -23,7 +23,7 @@ import type {
 	SolverTarget,
 } from './mixture-types.js';
 import { deep } from './deep-mixture.js';
-import { citrus, isCitrus } from './mixture-factories.js';
+import { citrusFactory } from './mixture-factories.js';
 import {
 	citrusJuiceNames,
 	getCitrusPrefix,
@@ -563,7 +563,7 @@ export class MixtureStore {
 				if (!mcx) {
 					throw new Error(`Unable to find component ${id}`);
 				}
-				const newJuice = citrus[newName](deep.getIngredientVolume(data.mixture, id));
+				const newJuice = citrusFactory[newName](deep.getIngredientVolume(data.mixture, id));
 
 				data.mixture.replaceIngredient(id, {
 					id: makeCitrusId(newName),

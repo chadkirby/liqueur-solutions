@@ -40,7 +40,7 @@ describe('Substances', () => {
 	it('should have unique IDs', () => {
 		const ids = new Set();
 		for (const substance of Substances) {
-			expect(ids.has(substance.id), 'unique ID').toBeFalsy();
+			expect(ids.has(substance.id), `${substance.id} is unique`).toBeFalsy();
 			ids.add(substance.id);
 		}
 	});

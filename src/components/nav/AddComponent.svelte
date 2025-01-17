@@ -4,7 +4,7 @@
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import { newSpirit, newSyrup, citrus } from '$lib/mixture-factories.js';
+	import { newSpirit, newSyrup, citrusFactory } from '$lib/mixture-factories.js';
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 	import type { SubstanceId } from '$lib/ingredients/substances.js';
 	import { makeCitrusId } from '$lib/ingredients/citrus-ids.js';
@@ -58,7 +58,7 @@
 
 	function addCitrus() {
 		if (callback) callback();
-		const juice = citrus.lemon(100);
+		const juice = citrusFactory.lemon(100);
 		mixtureStore.addIngredientTo(componentId, {
 			name: 'lemon juice',
 			id: makeCitrusId('lemon'),
