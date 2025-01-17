@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { redirect } from '@sveltejs/kit';
-import { deserializeFromUrl } from './deserialize.js';
+import { deserializeFromUrl } from '$lib/deserialize-from-url.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { filesDb } from '$lib/storage.svelte.js';
 import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';

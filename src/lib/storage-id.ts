@@ -1,6 +1,8 @@
-import { nanoid } from 'nanoid';
+import { customAlphabet, urlAlphabet } from 'nanoid';
 
 export type StorageId = string;
+
+const nanoid = customAlphabet(urlAlphabet, 16);
 
 /**
  * Generates a new LocalStorageId.

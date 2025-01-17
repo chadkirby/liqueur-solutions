@@ -12,23 +12,24 @@
 	}
 
 	let { data }: Props = $props();
-	const { storeId, mixture, name, totals } = data;
+	const { storeId, mixture: originalMixture, name, totals } = data;
 
 	let title = $state(`${name} - Liqueur Solutions`);
 	const mixtureStore =
-		mixture && totals
+		originalMixture && totals
 			? new MixtureStore(
-					{ storeId, name, mixture, totals },
+					{ storeId, name, mixture: originalMixture, totals },
 					{
 						onUpdate(data) {
+							const updatedMixture = data.mixture;
 							filesDb.write({
 								version: currentDataVersion,
 								id: data.storeId,
 								accessTime: Date.now(),
 								name: data.name,
-								desc: data.mixture.describe(),
-								rootMixtureId: mixture.id,
-								ingredientDb: mixture.serialize(),
+								desc: updatedMixture.describe(),
+								rootMixtureId: updatedMixture.id,
+								ingredientDb: updatedMixture.serialize(),
 							});
 						},
 					},

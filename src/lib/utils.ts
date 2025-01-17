@@ -14,7 +14,7 @@ export function digitsForDisplay(value: number, maxVal = Infinity) {
 
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
 export type MassUnit = 'kg' | 'g' | 'mg' | 'lb' | 'oz';
-export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
+export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal' | 'pH';
 
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
@@ -28,6 +28,8 @@ function suffixForUnit(unit: VolumeUnit | MassUnit | OtherUnit) {
 			return `fl.${thinsp}oz`;
 		case 'brix':
 			return 'ºBx';
+		case 'pH':
+			return '';
 		default:
 			return unit;
 	}
@@ -51,7 +53,8 @@ export function format(value: number | string, options: FormatOptions = {}) {
 		return Object.assign(new String(value), { value, suffix: '' });
 	}
 	const unit = options.unit;
-	const maxVal = unit === 'proof' || unit === '%' || unit === 'brix' ? 100 : Infinity;
+	const maxVal =
+		unit === 'proof' || unit === '%' || unit === 'brix' ? 100 : unit === 'pH' ? 14 : Infinity;
 	const digits = digitsForDisplay(value, maxVal);
 	const formatted =
 		options.decimal === 'fraction' ? convertToFraction(value) : value.toFixed(digits);

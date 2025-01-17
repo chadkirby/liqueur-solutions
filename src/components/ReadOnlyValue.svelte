@@ -2,7 +2,7 @@
 	import { brixToSyrupProportion, format, type FormatOptions } from '$lib/utils.js';
 	interface Props {
 		value: number;
-		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal';
+		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal' | 'pH';
 	}
 	let { value, type }: Props = $props();
 
@@ -37,7 +37,8 @@
 					fn: (v: number) => (v < 100 && v >= 50 ? brixToSyrupProportion(v) : '')
 				}
 			] as Alternate[],
-			kcal: [{ options: { unit: 'kcal' }, fn: (v: number) => v }] as Alternate[]
+			kcal: [{ options: { unit: 'kcal' }, fn: (v: number) => v }] as Alternate[],
+			pH: [{ options: { unit: 'pH' }, fn: (v: number) => v }] as Alternate[]
 		}[type]
 	);
 
