@@ -3,7 +3,7 @@ import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { type SubstanceId } from './ingredients/substances.js';
 import { citrus, newZeroSyrup } from './mixture-factories.js';
-import { getCitrusPrefix } from './citrus-ids.js';
+import { getCitrusPrefix } from './ingredients/citrus-ids.js';
 import { calculatePh } from './ph-solver.js';
 
 function getPh(substanceId: SubstanceId, substanceMass: number, solutionVolume: number) {
@@ -231,9 +231,35 @@ describe('Citrus', () => {
 	});
 });
 
+test('super juice', () => {
+	const mx = new Mixture()
+		.addIngredient({
+			name: 'water',
+			mass: 568,
+			item: SubstanceComponent.new('water'),
+		})
+		.addIngredient({
+			name: 'citric acid',
+			mass: 34,
+			item: SubstanceComponent.new('citric-acid'),
+		})
+		.addIngredient({
+			name: 'sodium citrate',
+			mass: 6,
+			item: SubstanceComponent.new('sodium-citrate'),
+		})
+		.addIngredient({
+			name: 'sugar',
+			mass: 10,
+			item: SubstanceComponent.new('sucrose'),
+		});
+	assert.approximately(mx.pH, 2.8, 0.1, 'super juice');
+});
+
 describe('zeroCal', () => {
 	test('should work', () => {
 		const zeroCal = newZeroSyrup(1000, 66.67);
 		assert.approximately(zeroCal.pH, 3.4, 0.125, 'buffered pH!');
 	});
 });
+

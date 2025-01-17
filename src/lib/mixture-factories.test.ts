@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { citrus, newSpirit, newSyrup, newZeroSyrup } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import { getCitrusPrefix } from './citrus-ids.js';
+import { getCitrusPrefix } from './ingredients/citrus-ids.js';
 
 describe('newSpirit', () => {
 	it('should work', () => {

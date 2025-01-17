@@ -1,3 +1,4 @@
+import type { IngredientToAdd } from './mixture-types.js';
 import { Mixture } from './mixture.js';
 
 function deepGet(getter: (mx: Mixture) => number | -1, mixture: Mixture): number | -1 {
@@ -45,6 +46,10 @@ export const deep = {
 		return deepGet((mx) => mx.getIngredientMass(id), mixture);
 	},
 
+	getIngredientPH(mixture: Mixture, id: string): number | -1 {
+		return deepGet((mx) => (mx.id === id ? mx.getPH() : -1), mixture);
+	},
+
 	setIngredientVolume(mixture: Mixture, id: string, value: number): boolean {
 		return deepSet((mx, value) => mx.setIngredientVolume(id, value), mixture, value);
 	},
@@ -55,5 +60,9 @@ export const deep = {
 
 	removeIngredient(mixture: Mixture, id: string): boolean {
 		return deepSet((mx) => mx.removeIngredient(id), mixture, undefined);
+	},
+
+	replaceIngredient(mixture: Mixture, id: string, replacement: IngredientToAdd): boolean {
+		return deepSet((mx) => mx.replaceIngredient(id, replacement), mixture, replacement);
 	},
 };

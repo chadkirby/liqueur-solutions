@@ -6,7 +6,7 @@
 		ArrowRightOutline,
 		ArrowUpRightFromSquareOutline,
 		StarSolid,
-		StarOutline,
+		StarOutline
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import { filesDb, starredIds, deserializeFromStorage } from '$lib/storage.svelte';
@@ -15,8 +15,17 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import type { StoredFileDataV1 } from '$lib/data-format.js';
+	import {
+		currentDataVersion,
+		isV0Data,
+		isV1Data,
+		type StoredFileDataV1
+	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
+	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
+	import { deserializeFromUrl } from '$lib/deserialize-from-url.js';
+	import { componentId } from '$lib/mixture.js';
+	import { resolveUrl } from '$lib/utils.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -35,7 +44,7 @@
 
 	function processFiles<T extends Record<string, unknown> = Record<string, never>>(
 		items: Map<StorageId, StoredFileDataV1>,
-		extra: T = {} as T,
+		extra: T = {} as T
 	) {
 		const out: Array<ListedFile & T> = [];
 		for (const [id, item] of items) {
@@ -115,7 +124,7 @@
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
 					item: mixture,
-					mass: mixture.mass,
+					mass: mixture.mass
 				});
 			}
 		};
@@ -123,7 +132,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = listFiles({}).filter((f) => f.isStarred);
+		const data = files.filter((f) => f.isStarred);
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -141,10 +150,25 @@
 			reader.onload = () => {
 				const data = JSON.parse(reader.result as string);
 				for (const item of data) {
-					const id = asStorageId(item.id);
-					filesDb.set(id, item);
+					if ('href' in item && 'name' in item) {
+						const url = new URL(resolveUrl(item.href));
+						const { mixture } = deserializeFromUrl(url.searchParams);
+						const v1Data: StoredFileDataV1 = {
+							id: componentId(),
+							name: item.name,
+							accessTime: item.accessTime || Date.now(),
+							version: currentDataVersion,
+							desc: item.desc || mixture.describe(),
+							rootMixtureId: mixture.id,
+							ingredientDb: mixture.serialize()
+						};
+						filesDb.write(v1Data);
+						filesDb.toggleStar(v1Data.id);
+						continue;
+					}
+					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
+					if (v1Data) filesDb.write(v1Data);
 				}
-				files = listFiles();
 			};
 			reader.readAsText(importFiles[0]);
 		}

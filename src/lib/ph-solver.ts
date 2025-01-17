@@ -1,3 +1,61 @@
+import { getCitrusDissociationFactor, type CitrusJuiceIdPrefix } from './ingredients/citrus-ids.js';
+import { getConjugateAcids } from './ingredients/substances.js';
+import type { DecoratedSubstance } from './mixture-types.js';
+import type { SubstanceItem } from './mixture.js';
+
+export function getMixturePh(
+	mxVolume: number,
+	substances: DecoratedSubstance[],
+	citrusId: CitrusJuiceIdPrefix | null,
+): number {
+	let totalMolesH = 0;
+
+	// Group acids with their conjugate bases
+	const acidGroups = new Map<
+		string,
+		{
+			acid: SubstanceItem;
+			conjugateBase?: SubstanceItem;
+		}
+	>();
+
+	// First pass - find acids
+	for (const substance of substances) {
+		if (substance.item.pKa.length > 0) {
+			// Create unique ID for each acid
+			acidGroups.set(substance.substanceId, { acid: substance });
+		}
+	}
+
+	// Second pass - match conjugate bases to acids
+	for (const substance of substances) {
+		const matchingAcids = getConjugateAcids(substance.substanceId);
+		// For each acid that matches this base
+		for (const acidId of matchingAcids) {
+			const group = acidGroups.get(acidId);
+			if (group) {
+				group.conjugateBase = substance;
+			}
+		}
+	}
+
+	// calculate pH contribution from each acid group
+	for (const group of acidGroups.values()) {
+		const { acid, conjugateBase } = group;
+		const phData = calculatePh({
+			acidMolarity: getMolarConcentration(acid.item.substance, acid.mass, mxVolume),
+			conjugateBaseMolarity: conjugateBase
+				? getMolarConcentration(conjugateBase.item.substance, conjugateBase.mass, mxVolume)
+				: 0,
+			pKa: acid.item.pKa,
+			dissociationFactor: getCitrusDissociationFactor(citrusId ?? ''),
+		});
+		totalMolesH += phData.H;
+	}
+
+	return totalMolesH ? -Math.log10(totalMolesH) : 7;
+}
+
 /*
   Example substance:
 	{
@@ -35,7 +93,7 @@ export type PhResult = {
  * const f = (x: number) => x*x - 2; // find square root of 2
  * const root = bisection(f, 1, 2, 0.0001); // ≈ 1.4142
  */
-export function bisection(
+function bisection(
 	fn: (x: number) => number,
 	left: number,
 	right: number,
@@ -76,7 +134,7 @@ export function bisection(
  * const hcl = { molecule: { molecularMass: 36.46 } };
  * const molarity = getMolarConcentration(hcl, 3.646, 1000); // = 0.1M
  */
-export function getMolarConcentration(
+function getMolarConcentration(
 	substance: AcidSubstance,
 	gramsOfSubstance: number,
 	solutionMl: number,

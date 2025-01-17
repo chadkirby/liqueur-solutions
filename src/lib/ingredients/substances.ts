@@ -481,6 +481,7 @@ export const Substances = [
 	...Buffers,
 	...Preservatives,
 	...OtherSubstances,
+	...Salts,
 ] as const satisfies _Substance<string>[];
 
 export type SubstanceId = (typeof Substances)[number]['id'];

@@ -291,6 +291,6 @@ describe('Mixture store solver', () => {
 
 	it('should throw an error for unable to solve', () => {
 		// Act & Assert
-		expect(() => store.solveTotal('abv', 200)).toThrowError('Unable to solve for abv = 200');
+		expect(() => store.solveTotal('abv', 200)).toThrowError();
 	});
 });

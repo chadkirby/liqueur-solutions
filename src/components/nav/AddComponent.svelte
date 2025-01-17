@@ -4,8 +4,10 @@
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import Button from '../ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import { newSpirit, newSyrup } from '$lib/mixture-factories.js';
+	import { newSpirit, newSyrup, citrus } from '$lib/mixture-factories.js';
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
+	import type { SubstanceId } from '$lib/ingredients/substances.js';
+	import { makeCitrusId } from '$lib/ingredients/citrus-ids.js';
 
 	let {
 		componentId,
@@ -53,6 +55,26 @@
 		filesDrawer.openWith(componentId);
 		if (callback) callback();
 	}
+
+	function addCitrus() {
+		if (callback) callback();
+		const juice = citrus.lemon(100);
+		mixtureStore.addIngredientTo(componentId, {
+			name: 'lemon juice',
+			id: makeCitrusId('lemon'),
+			item: juice,
+			mass: juice.mass,
+		});
+	}
+
+	function addSubstance(substanceId: SubstanceId, mass = 1, name = '') {
+		if (callback) callback();
+		mixtureStore.addIngredientTo(componentId, {
+			name,
+			item: SubstanceComponent.new(substanceId),
+			mass,
+		});
+	}
 </script>
 
 <div class="flex flex-row flex-wrap gap-1">
@@ -70,6 +92,22 @@
 
 	<Button class="p-1" onclick={addWater}>
 		<CirclePlusSolid size="sm" /><span class="mr-1">water</span>
+	</Button>
+
+	<Button class="p-1" onclick={addCitrus}>
+		<CirclePlusSolid size="sm" /><span class="mr-1">citrus juice</span>
+	</Button>
+
+	<Button class="p-1" onclick={() => addSubstance('sodium-chloride', 1)}>
+		<CirclePlusSolid size="sm" /><span class="mr-1">salt</span>
+	</Button>
+
+	<Button class="p-1" onclick={() => addSubstance('citric-acid', 10)}>
+		<CirclePlusSolid size="sm" /><span class="mr-1">acid</span>
+	</Button>
+
+	<Button class="p-1" onclick={() => addSubstance('sodium-citrate', 5)}>
+		<CirclePlusSolid size="sm" /><span class="mr-1">buffer</span>
 	</Button>
 
 	{#if componentId === null}

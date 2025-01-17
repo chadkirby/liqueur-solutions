@@ -23,6 +23,15 @@ import type {
 	SolverTarget,
 } from './mixture-types.js';
 import { deep } from './deep-mixture.js';
+import { citrus, isCitrus } from './mixture-factories.js';
+import {
+	citrusJuiceNames,
+	getCitrusPrefix,
+	makeCitrusId,
+	type CitrusJuiceId,
+	type CitrusJuiceIdPrefix,
+	type CitrusJuiceName,
+} from './ingredients/citrus-ids.js';
 
 // exported for testing
 export type MixtureStoreData = {
@@ -422,6 +431,45 @@ export class MixtureStore {
 		this.update({ undoKey, updater: makeUpdater(newBrix), undoer: makeUpdater(originalBrix) });
 	}
 
+	getPH(ingredientId = 'totals') {
+		if (ingredientId === 'totals') {
+			return this.totals.pH;
+		}
+		const pH = deep.getIngredientPH(this.mixture, ingredientId);
+		if (pH === -1) {
+			throw new Error(`Unable to find ingredient ${ingredientId}`);
+		}
+		return pH;
+	}
+
+	setPH(componentId: string, newPH: number, undoKey = `setPH-${componentId}`): void {
+		if (componentId === 'totals') {
+			this.solveTotal('pH', newPH);
+			return;
+		}
+		const originalPH = this.getPH(componentId);
+		const makeUpdater = (targetPH: number) => {
+			return (data: MixtureStoreData) => {
+				const { ingredient } = this.findIngredient(componentId, data.mixture);
+				if (!ingredient) {
+					throw new Error(`Unable to find component ${componentId}`);
+				}
+				const mixture = ingredient.item;
+				if (mixture instanceof Mixture) {
+					mixture.setPH(targetPH);
+					if (!roundEq(mixture.pH, targetPH)) {
+						throw new Error(`Unable to set requested pH of mixture ${componentId}`);
+					}
+				} else {
+					throw new Error(`Unable to set pH of component ${componentId}`);
+				}
+
+				return data;
+			};
+		};
+		this.update({ undoKey, updater: makeUpdater(newPH), undoer: makeUpdater(originalPH) });
+	}
+
 	updateComponentName(
 		componentId: string,
 		newName: string,
@@ -492,6 +540,42 @@ export class MixtureStore {
 			};
 		};
 		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalType) });
+	}
+
+	updateCitrusType(
+		id: string,
+		newCitrusId: CitrusJuiceIdPrefix,
+		undoKey = `updateCitrusType-${id}`,
+	): void {
+		const newName = citrusJuiceNames.find((n) => newCitrusId.includes(n));
+		if (!newName) {
+			throw new Error(`Unable to find citrus component ${newCitrusId}`);
+		}
+		const originalCitrusPrefix = getCitrusPrefix(id);
+		const originalName = citrusJuiceNames.find((n) => originalCitrusPrefix?.includes(n));
+		if (!originalName) {
+			throw new Error(`Unable to find citrus component ${id}`);
+		}
+		if (originalName === newName) return;
+		const makeUpdater = (targetCitrus: CitrusJuiceName) => {
+			return (data: MixtureStoreData) => {
+				const mcx = this.findIngredient(id, data.mixture);
+				if (!mcx) {
+					throw new Error(`Unable to find component ${id}`);
+				}
+				const newJuice = citrus[newName](deep.getIngredientVolume(data.mixture, id));
+
+				data.mixture.replaceIngredient(id, {
+					id: makeCitrusId(newName),
+					name: newName,
+					mass: newJuice.mass,
+					item: newJuice,
+				});
+
+				return data;
+			};
+		};
+		this.update({ undoKey, updater: makeUpdater(newName), undoer: makeUpdater(originalName) });
 	}
 
 	solveTotal(key: keyof SolverTarget, newValue: number, undoKey = `solveTotal-${key}`): void {

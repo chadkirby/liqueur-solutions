@@ -1,8 +1,8 @@
 import { calculateAbvProportions } from './ingredients/density.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import type { CitrusJuiceId, CitrusJuiceName } from './citrus-ids.js';
+import type { CitrusJuiceId, CitrusJuiceName } from './ingredients/citrus-ids.js';
 import { isClose, seek } from './solver.js';
-import { componentId, isWater, Mixture } from './mixture.js';
+import { componentId, isMixture, isWater, Mixture } from './mixture.js';
 
 export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
@@ -186,6 +186,10 @@ export const citrus = {
 		return mx;
 	},
 } as const satisfies Record<CitrusJuiceName, (volume: number) => Mixture>;
+
+export function isCitrus(mx: unknown): mx is Mixture & { id: PrefixedId } {
+	return isMixture(mx) && mx.id.startsWith('(citrus-');
+}
 
 export function newPreservative(volume: number): Mixture {
 	const mx = new Mixture(componentId(), [

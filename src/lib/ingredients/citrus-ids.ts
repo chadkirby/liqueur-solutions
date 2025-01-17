@@ -1,3 +1,5 @@
+import { componentId } from '$lib/mixture.js';
+
 export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
 
@@ -6,16 +8,37 @@ export function getIdPrefix(id: string): IdPrefix | null {
 	return (match?.at(0) as IdPrefix) ?? null;
 }
 
-const citrusJuiceNames = ['lemon', 'lime', 'orange', 'grapefruit'] as const;
+export const citrusJuiceNames = ['lemon', 'lime', 'orange', 'grapefruit'] as const;
 export type CitrusJuiceName = (typeof citrusJuiceNames)[number];
 export type CitrusJuiceIdPrefix = `(citrus-${CitrusJuiceName})`;
 export type CitrusJuiceId = `${CitrusJuiceIdPrefix}${string}`;
+
+export function makeCitrusPrefix(name: CitrusJuiceName): CitrusJuiceIdPrefix {
+	return `(citrus-${name})`;
+}
+
+export function makeCitrusId(name: CitrusJuiceName): CitrusJuiceId {
+	return `${makeCitrusPrefix(name)}${componentId()}`;
+}
 
 const citrusPrefixPattern = new RegExp(`^\\(citrus-(?:${citrusJuiceNames.join('|')})\\)`, 'i');
 
 export function getCitrusPrefix(id: string): CitrusJuiceIdPrefix | null {
 	const match = id.match(citrusPrefixPattern);
 	return (match?.at(0) as CitrusJuiceIdPrefix) ?? null;
+}
+
+export class CitrusId {
+	readonly citrusName: CitrusJuiceName;
+	readonly id: string;
+	constructor(name: CitrusJuiceName, id = componentId()) {
+		this.citrusName = name;
+		this.id = id;
+	}
+
+	toString(): CitrusJuiceId | string {
+		return `${makeCitrusPrefix(this.citrusName)}${this.id}`;
+	}
 }
 
 /**
