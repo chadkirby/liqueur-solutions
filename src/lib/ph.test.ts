@@ -2,7 +2,7 @@ import { test, assert, describe, expect } from 'vitest';
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { type SubstanceId } from './ingredients/substances.js';
-import { citrus, newZeroSyrup } from './mixture-factories.js';
+import { citrusFactory, newZeroSyrup } from './mixture-factories.js';
 import { getCitrusPrefix } from './ingredients/citrus-ids.js';
 import { calculatePh } from './ph-solver.js';
 
@@ -210,23 +210,23 @@ describe('Mixture can model pH', () => {
 
 describe('Citrus', () => {
 	test('lemon', () => {
-		const juice = citrus.lemon(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lemon)');
+		const juice = citrusFactory.lemon(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-lemon__');
 		expect(juice.pH).toBeCloseTo(2.3, 1);
 	});
 	test('lime', () => {
-		const juice = citrus.lime(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-lime)');
+		const juice = citrusFactory.lime(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-lime__');
 		expect(juice.pH).toBeCloseTo(2.4, 1);
 	});
 	test('orange', () => {
-		const juice = citrus.orange(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-orange)');
+		const juice = citrusFactory.orange(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-orange__');
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 	});
 	test('grapefruit', () => {
-		const juice = citrus.grapefruit(100);
-		expect(getCitrusPrefix(juice.id), 'prefix').toBe('(citrus-grapefruit)');
+		const juice = citrusFactory.grapefruit(100);
+		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-grapefruit__');
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 	});
 });

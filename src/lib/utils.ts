@@ -217,3 +217,7 @@ export function abvToAbw(abv: number) {
 	// ABW = 0.1893*ABV*ABV + 0.7918*ABV + 0.0002 => 0.3472
 	return 0.1893 * abv ** 2 + 0.7918 * abv + 0.0002;
 }
+
+export function capitalize(str: string) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}

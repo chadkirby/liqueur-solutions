@@ -262,16 +262,6 @@ export const Buffers = [
 		pKa: [],
 	},
 	{
-		name: 'Sodium Bicarbonate',
-		id: 'sodium-bicarbonate',
-		molecule: new Molecule('NaHCO3'),
-		pureDensity: 2.2,
-		solutionDensityMeasurements: [],
-		sweetness: 0,
-		kcal: 0,
-		pKa: [],
-	},
-	{
 		name: 'Sodium Acetate',
 		id: 'sodium-acetate',
 		molecule: new Molecule('C2H3NaO2'),

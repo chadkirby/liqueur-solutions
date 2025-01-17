@@ -4,24 +4,24 @@ export type IdPrefix = `(${string})`;
 export type PrefixedId = `${IdPrefix}${string}`;
 
 export function getIdPrefix(id: string): IdPrefix | null {
-	const match = id.match(/^\([-\w]+\)/i);
+	const match = id.match(/^__[-\w]+__/i);
 	return (match?.at(0) as IdPrefix) ?? null;
 }
 
 export const citrusJuiceNames = ['lemon', 'lime', 'orange', 'grapefruit'] as const;
 export type CitrusJuiceName = (typeof citrusJuiceNames)[number];
-export type CitrusJuiceIdPrefix = `(citrus-${CitrusJuiceName})`;
+export type CitrusJuiceIdPrefix = `__citrus-${CitrusJuiceName}__`;
 export type CitrusJuiceId = `${CitrusJuiceIdPrefix}${string}`;
 
 export function makeCitrusPrefix(name: CitrusJuiceName): CitrusJuiceIdPrefix {
-	return `(citrus-${name})`;
+	return `__citrus-${name}__`;
 }
 
 export function makeCitrusId(name: CitrusJuiceName): CitrusJuiceId {
 	return `${makeCitrusPrefix(name)}${componentId()}`;
 }
 
-const citrusPrefixPattern = new RegExp(`^\\(citrus-(?:${citrusJuiceNames.join('|')})\\)`, 'i');
+const citrusPrefixPattern = new RegExp(`^__citrus-(?:${citrusJuiceNames.join('|')})__`, 'i');
 
 export function getCitrusPrefix(id: string): CitrusJuiceIdPrefix | null {
 	const match = id.match(citrusPrefixPattern);
@@ -60,10 +60,10 @@ export class CitrusId {
  * their higher pH values.
  */
 const citrusDissociationFactors: Record<CitrusJuiceIdPrefix, number> = {
-	'(citrus-lemon)': 0.9057,
-	'(citrus-lime)': 0.93828,
-	'(citrus-orange)': 0.99157,
-	'(citrus-grapefruit)': 0.9924,
+	'__citrus-lemon__': 0.9057,
+	'__citrus-lime__': 0.93828,
+	'__citrus-orange__': 0.99157,
+	'__citrus-grapefruit__': 0.9924,
 };
 export function getCitrusDissociationFactor(id: string): number {
 	const prefix = getCitrusPrefix(id);

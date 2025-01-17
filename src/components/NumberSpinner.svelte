@@ -197,6 +197,7 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
+			console.log('value', value);
 			input.value = format(value, { unit }).value;
 		}
 	});

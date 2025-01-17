@@ -1,7 +1,7 @@
 import { customAlphabet, urlAlphabet } from 'nanoid';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { solveMassForVolume, solver } from './solver.js';
-import { brixToSyrupProportion, format, round } from './utils.js';
+import { brixToSyrupProportion, capitalize, format, round } from './utils.js';
 import {
 	isSweetenerId,
 	type SubstanceId,
@@ -9,7 +9,12 @@ import {
 	Sweeteners,
 } from './ingredients/substances.js';
 import { getMixturePh } from './ph-solver.js';
-import { citrusJuiceNames, getCitrusPrefix, getIdPrefix } from './ingredients/citrus-ids.js';
+import {
+	citrusJuiceNames,
+	getCitrusPrefix,
+	getIdPrefix,
+	type PrefixedId,
+} from './ingredients/citrus-ids.js';
 import { FancyIterator } from './iterator.js';
 import {
 	isMixtureData,
@@ -25,7 +30,6 @@ import {
 	type MixtureAnalysis,
 	type MixtureData,
 } from './mixture-types.js';
-import { isCitrus } from './mixture-factories.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -395,15 +399,15 @@ export class Mixture implements CommonComponent {
 			return summary.join(' ').replace('sucrose syrup', 'simple syrup');
 		}
 		if (isSpirit(this)) {
-			return `spirit`;
+			return `Spirit`;
 		}
 		if (isLiqueur(this)) {
 			return `${format(this.proof, { unit: 'proof' })} ${format(this.brix, { unit: 'brix' })} liqueur`;
 		}
-		if (isCitrus(this)) {
+		if (isCitrusMixture(this)) {
 			const type = getCitrusPrefix(this.id);
-			const name = citrusJuiceNames.find((n) => this.id.includes(n)) ?? 'citrus';
-			return `${name} juice`;
+			const name = citrusJuiceNames.find((n) => type?.includes(n)) ?? 'citrus';
+			return `${capitalize(name)} juice`;
 		}
 		return this.eachIngredient()
 			.map(({ ingredient }) => ingredient.item.describe())
@@ -863,3 +867,8 @@ export function isWater(thing: IngredientItemComponent) {
 export function isAcidicMixture(thing: IngredientItemComponent) {
 	return isMixture(thing) && thing.eachSubstance().some((x) => x.item.pKa.length > 0);
 }
+
+export function isCitrusMixture(mx: unknown): mx is Mixture & { id: PrefixedId } {
+	return isMixture(mx) && getCitrusPrefix(mx.id) !== null;
+}
+
