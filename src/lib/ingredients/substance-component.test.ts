@@ -26,17 +26,6 @@ describe('SubstanceComponent', () => {
 		expect(component.getEquivalentSugarMass(39.5)).toBe(0);
 		expect(component.getAlcoholMass(39.5)).toBeCloseTo(39.5, 1);
 	});
-	it('should compute pH', () => {
-		for (const substance of Substances) {
-			const component = SubstanceComponent.new(substance.id);
-			if (substance.pKa.length === 0) {
-				expect(component.getPH(1), `${substance.name} is not acidic`).toBe(7);
-			} else {
-				console.log(substance.name, 'pH =', component.getPH(1).toFixed(2));
-				expect(component.getPH(1), `${substance.name}.pH `).not.toBeNaN();
-			}
-		}
-	});
 });
 
 describe('Substances', () => {
@@ -51,7 +40,6 @@ describe('Substances', () => {
 		assert.equal(water.getAbv(), 0, 'getAbv');
 		assert.equal(water.getProof(), 0, 'getProof');
 		assert.equal(water.getBrix(), 0, 'getBrix');
-		assert.equal(water.getPH(1), 7, 'getPH');
 		assert.equal(water.pureDensity, 1, 'pureDensity');
 		assert.equal(water.isValid, true, 'isValid');
 		assert.equal(water.partialSolutionDensity(1), 1, 'partialSolutionDensity');
@@ -71,7 +59,6 @@ describe('Substances', () => {
 		assert.equal(sucrose.getAbv(), 0, 'getAbv');
 		assert.equal(sucrose.getProof(), 0, 'getProof');
 		assert.equal(sucrose.getBrix(), 100, 'getBrix');
-		assert.equal(sucrose.getPH(1), 7, 'getPH');
 		assert.equal(sucrose.pureDensity, 1.5875, 'pureDensity');
 		assert.equal(sucrose.isValid, true, 'isValid');
 		assert.equal(sucrose.getKcal(1), 3.87, 'getKcal');

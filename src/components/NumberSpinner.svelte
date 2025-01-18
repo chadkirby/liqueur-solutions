@@ -26,6 +26,10 @@
 		class: classProp
 	}: Props = $props();
 
+	if (value === undefined) {
+		throw new Error('Value is required');
+	}
+
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
 	const unit =
@@ -197,7 +201,6 @@
 	// Display either the formatted value or raw input value based on editing state
 	$effect(() => {
 		if (input && !isKeyboardEditing) {
-			console.log('value', value);
 			input.value = format(value, { unit }).value;
 		}
 	});

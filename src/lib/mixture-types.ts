@@ -34,6 +34,13 @@ export type IngredientItem = IngredientItemData & {
 	item: IngredientItemComponent; // Mixture | SubstanceComponent;
 };
 
+export type IngredientSubstanceItem = IngredientItemData & {
+	// id: string;
+	// name: string;
+	// mass: number;
+	item: SubstanceComponent;
+};
+
 // make id optional for adding new items
 export type IngredientToAdd = Omit<IngredientItem, 'id'> & {
 	id?: string;

@@ -26,16 +26,21 @@
 		isSimpleSyrup,
 		isSweetener,
 		isWater,
-		isCitrusMixture
+		isCitrusMixture,
+		isAcidSubstance,
+		Mixture,
 	} from '$lib/mixture.js';
 	import Ph from './displays/PH.svelte';
-	import type { IngredientItem } from '$lib/mixture-types.js';
+	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import CitrusDropdown from './displays/CitrusDropdown.svelte';
+	import AcidDropdown from './displays/AcidDropdown.svelte';
+	import Helper from './ui-primitives/Helper.svelte';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 
 	let {
 		mixtureStore,
 		id: parentId,
-		name: mixtureName
+		name: mixtureName,
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
@@ -184,6 +189,143 @@
 	{@render nameInput(ingredient, 'basis-1/2')}
 {/snippet}
 
+{#snippet acidHeader(ingredient: IngredientSubstanceItem, mass: number)}
+	<NumberSpinner
+		{mixtureStore}
+		class="basis-1/4"
+		value={mass}
+		type="mass"
+		componentId={ingredient.id}
+	/>
+	<AcidDropdown
+		{mixtureStore}
+		componentId={ingredient.id}
+		component={ingredient.item}
+		basis="basis-1/4"
+		onclick={(e) => e.stopPropagation()}
+	/>
+	{@render nameInput(ingredient, 'basis-1/2')}
+{/snippet}
+
+{#snippet sweetenerDetails(ingredient: IngredientItem, mass: number, volume: number)}
+	{@const id = ingredient.id}
+	{@const component = ingredient.item}
+	<div class="flex flex-row my-1">
+		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			{component}
+			{volume}
+			readonly={true}
+			class="basis-1/5"
+		/>
+		<EquivalentSugar
+			{mixtureStore}
+			componentId={id}
+			{component}
+			{mass}
+			readonly={true}
+			class="basis-1/5"
+		/>
+		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
+	</div>
+{/snippet}
+
+{#snippet waterDetails(ingredient: IngredientItem, mass: number, volume: number)}
+	{@const id = ingredient.id}
+	{@const component = ingredient.item}
+	<div class="flex flex-row my-1">
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			{component}
+			{volume}
+			readonly={true}
+			class="basis-1/2"
+		/>
+		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/2" />
+	</div>
+{/snippet}
+
+{#snippet spiritDetails(ingredient: IngredientItem, mass: number, _volume: number)}
+	{@const id = ingredient.id}
+	{@const component = ingredient.item as Mixture}
+	<div class="flex flex-row my-1">
+		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			header="Alcohol Volume"
+			{component}
+			volume={component.alcoholVolume}
+			readonly={true}
+			class="basis-1/4"
+		/>
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			header="Water Volume"
+			{component}
+			volume={component.waterVolume}
+			readonly={true}
+			class="basis-1/4"
+		/>
+		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	</div>
+{/snippet}
+
+{#snippet syrupDetails(ingredient: IngredientItem, mass: number, volume: number)}
+	{@const id = ingredient.id}
+	{@const component = ingredient.item}
+	<div class="flex flex-row my-1">
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			{component}
+			{volume}
+			readonly={true}
+			class="basis-1/4"
+		/>
+		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+		<Brix {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	</div>
+{/snippet}
+
+{#snippet acidDetails(ingredient: IngredientSubstanceItem, mass: number, volume: number)}
+	{@const id = ingredient.id}
+	{@const substance = ingredient.item}
+	{@const density = substance.pureDensity}
+	<div class="flex flex-row my-1">
+		<Volume
+			{mixtureStore}
+			componentId={id}
+			component={substance}
+			{volume}
+			readonly={true}
+			class="basis-1/4"
+		/>
+		<div class="mx-1 min-w-0 w-full basis-1/4">
+			<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
+			<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
+		</div>
+		<div class="mx-1 min-w-0 w-full basis-1/4">
+			<Helper class="tracking-tight">Density</Helper>
+			<ReadOnlyValue value={density} type="density" />
+		</div>
+
+		<Cal
+			{mixtureStore}
+			componentId={id}
+			component={substance}
+			{mass}
+			readonly={true}
+			class="basis-1/4"
+		/>
+	</div>
+{/snippet}
+
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
 		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
@@ -239,22 +381,14 @@
 							{#if isSweetener(component)}
 								{@render sweetenerHeader(ingredient, mass)}
 							{:else if isSimpleSpirit(component)}
-								{@render spiritHeader(
-									ingredient,
-									volume,
-									mixture.getIngredientAbv(id)
-								)}
+								{@render spiritHeader(ingredient, volume, mixture.getIngredientAbv(id))}
 							{:else if isSimpleSyrup(component)}
-								{@render simpleSyrupHeader(
-									ingredient,
-									volume,
-									mixture.getIngredientBrix(id)
-								)}
-								{:else if isCitrusMixture(component)}
+								{@render simpleSyrupHeader(ingredient, volume, mixture.getIngredientBrix(id))}
+							{:else if isCitrusMixture(component)}
 								{@render citrusHeader(ingredient, volume)}
-							<!-- {:else if isAcid(component)}
-								{@render acidHeader(ingredient, mass)}
-							{:else if isBuffer(component)}
+							{:else if isAcidSubstance(component)}
+								{@render acidHeader(ingredient as IngredientSubstanceItem, mass)}
+								<!-- {:else if isBuffer(component)}
 								{@render bufferHeader(ingredient, mass)}
 							{:else if isSalt(component)}
 								{@render saltHeader(ingredient, mass)} -->
@@ -265,124 +399,36 @@
 					{/snippet}
 					<div class="flex flex-col items-stretch">
 						{#if isSweetener(component)}
-							<div class="flex flex-row my-1">
-								<Mass
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Volume
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/5"
-								/>
-								<EquivalentSugar
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/5"
-								/>
-								<Cal
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/5"
-								/>
-							</div>
+							{@render sweetenerDetails(ingredient, mass, volume)}
 						{:else if isWater(component)}
-							<div class="flex flex-row my-1">
-								<Volume
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/2"
-								/>
-								<Mass
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/2"
-								/>
-							</div>
+							{@render waterDetails(ingredient, mass, volume)}
 						{:else if isSimpleSpirit(component)}
-							<div class="flex flex-row my-1">
-								<Volume
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Mass
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/5"
-								/>
-								<Abv
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Cal
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/5"
-								/>
-							</div>
+							{@render spiritDetails(ingredient, mass, volume)}
 						{:else if isSimpleSyrup(component)}
-							<div class="flex flex-row my-1">
-								<Volume
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Mass
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Brix
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/4"
-								/>
-								<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} />
-							</div>
+							{@render syrupDetails(ingredient, mass, volume)}
 						{:else if isMixture(component)}
 							<MixtureAccordion {mixtureStore} {id} name={ingredient.name} />
+						{:else if isAcidSubstance(component)}
+							{@render acidDetails(ingredient as IngredientSubstanceItem, mass, volume)}
+						{:else}
+							<div class="flex flex-row my-1">
+								<Volume
+									{mixtureStore}
+									componentId={id}
+									{component}
+									{volume}
+									readonly={true}
+									class="basis-1/2"
+								/>
+								<Mass
+									{mixtureStore}
+									componentId={id}
+									{component}
+									{mass}
+									readonly={true}
+									class="basis-1/2"
+								/>
+							</div>
 						{/if}
 					</div>
 				</AccordionItem>
@@ -397,7 +443,7 @@
 							{mixtureStore}
 							componentId={parentId === null ? 'totals' : parentId}
 							component={mixture}
-							mass={mixture.mass}
+							volume={mixture.volume}
 							class="basis-1/6 min-w-20 grow-0"
 						/>
 						<ABVComponent

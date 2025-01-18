@@ -3,6 +3,7 @@ import { SubstanceComponent } from './ingredients/substance-component.js';
 import { solveMassForVolume, solver } from './solver.js';
 import { brixToSyrupProportion, capitalize, format, round } from './utils.js';
 import {
+	isAcidId,
 	isSweetenerId,
 	type SubstanceId,
 	sweetenerIds,
@@ -202,7 +203,6 @@ export class Mixture implements CommonComponent {
 		const brix = this.getIngredientBrix(ingredientId);
 		const kcal = ingredient.item.getKcal(mass);
 		const equivalentSugarMass = ingredient.item.getEquivalentSugarMass(mass);
-		const pH = ingredient.item.getPH(mass);
 		return {
 			volume: round(volume, precision),
 			mass: round(mass, precision),
@@ -211,7 +211,7 @@ export class Mixture implements CommonComponent {
 			kcal: round(kcal, precision),
 			proof: round(abv * 2, precision),
 			equivalentSugarMass: round(equivalentSugarMass, precision),
-			pH: round(pH, precision),
+			pH: isMixture(ingredient.item) ? round(ingredient.item.getPH(), precision) : NaN,
 		};
 	}
 	/**
@@ -751,7 +751,6 @@ export class Mixture implements CommonComponent {
 		what:
 			| 'equivalentSugarMass'
 			| 'alcoholMass'
-			| 'pH'
 			| 'waterVolume'
 			| 'mass'
 			| 'abv'
@@ -764,8 +763,6 @@ export class Mixture implements CommonComponent {
 				return item.getEquivalentSugarMass(itemMass);
 			case 'alcoholMass':
 				return item.getAlcoholMass(itemMass);
-			case 'pH':
-				return item.getPH(itemMass);
 			case 'waterVolume':
 				return item.getWaterVolume(itemMass);
 			case 'mass':
@@ -864,6 +861,9 @@ export function isWater(thing: IngredientItemComponent) {
 	return isWaterSubstance(thing) || isWaterMixture(thing);
 }
 
+export function isAcidSubstance(thing: IngredientItemComponent) {
+	return isSubstance(thing) && isAcidId(thing.substanceId);
+}
 export function isAcidicMixture(thing: IngredientItemComponent) {
 	return isMixture(thing) && thing.eachSubstance().some((x) => x.item.pKa.length > 0);
 }
