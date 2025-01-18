@@ -123,27 +123,6 @@ export class SubstanceComponent implements CommonComponent {
 		return mass * this.substance.kcal;
 	}
 
-	getPH(mass: number): number {
-		if (this.pKa.length) {
-			// Calculate pH based on dissociation constants
-			// - The first dissociation is usually the strongest contributor
-			// - Each subsequent dissociation typically has less impact
-			// - The differences between our simplified model and a full
-			// equilibrium calculation would likely be smaller than natural
-			// variation in ingredients
-			let totalH = 0;
-			for (const [i, pKa] of this.pKa.entries()) {
-				const Ka = Math.pow(10, -pKa);
-				// Weight later dissociations less
-				const weight = 1 / (i + 1);
-				totalH += weight * Math.sqrt(Ka * this.getMoles(mass));
-			}
-			return -Math.log10(totalH);
-		}
-		// Default to neutral pH for substances without acid dissociation
-		return 7;
-	}
-
 	getMoles(mass: number): number {
 		return mass / this.substance.molecule.molecularMass;
 	}

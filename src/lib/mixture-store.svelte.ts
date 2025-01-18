@@ -14,7 +14,12 @@ import { isClose, solver } from './solver.js';
 import { type StorageId } from './storage-id.js';
 import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
-import { isSweetenerId, type SweetenerType } from './ingredients/substances.js';
+import {
+	isAcidId,
+	isSweetenerId,
+	type AcidType,
+	type SweetenerType,
+} from './ingredients/substances.js';
 import type {
 	EditableProperty,
 	IngredientItem,
@@ -514,7 +519,7 @@ export class MixtureStore {
 	updateSweetenerType(
 		id: string,
 		newType: SweetenerType,
-		undoKey = `updateSweetenerSubType-${id}`,
+		undoKey = `updateSweetenerType-${id}`,
 	): void {
 		const originalTypes = this.getSweetenerTypes(id);
 		if (originalTypes.length !== 1) {
@@ -523,23 +528,48 @@ export class MixtureStore {
 		const [originalType] = originalTypes;
 		const makeUpdater = (targetType: SweetenerType) => {
 			return (data: MixtureStoreData) => {
-				const mcx = this.findIngredient(id, this.mixture);
-				if (!mcx) {
+				const { ingredient } = this.findIngredient(id, data.mixture);
+				if (!ingredient) {
 					throw new Error(`Unable to find component ${id}`);
 				}
-				// replace every sweetener with the new type
-				for (const substance of data.mixture.eachSubstance()) {
-					if (isSweetenerId(substance.item.substanceId)) {
-						data.mixture.replaceIngredientComponent(
-							substance.ingredientId,
-							SubstanceComponent.new(targetType),
-						);
+				if (isSubstance(ingredient.item)) {
+					data.mixture.replaceIngredientComponent(id, SubstanceComponent.new(targetType));
+				} else if (isMixture(ingredient.item)) {
+					// For a syrup, we need to find and replace its sweetener component
+					for (const substance of ingredient.item.eachSubstance()) {
+						if (isSweetenerId(substance.item.substanceId)) {
+							ingredient.item.replaceIngredientComponent(
+								substance.ingredientId,
+								SubstanceComponent.new(targetType),
+							);
+						}
 					}
 				}
 				return data;
 			};
 		};
 		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalType) });
+	}
+
+	updateAcidType(id: string, newType: AcidType, undoKey = `updateAcidType-${id}`): void {
+		const { ingredient } = this.findIngredient(id, this.mixture);
+		if (!ingredient) {
+			throw new Error(`Unable to find component ${id}`);
+		}
+		if (!isSubstance(ingredient.item)) {
+			throw new Error(`Unable to set acid type of mixture ${id}`);
+		}
+		const originalAcidType = ingredient.item.substanceId;
+		if (!isAcidId(originalAcidType)) {
+			throw new Error(`${originalAcidType} is not an acid`);
+		}
+		const makeUpdater = (targetType: AcidType) => {
+			return (data: MixtureStoreData) => {
+				data.mixture.replaceIngredientComponent(id, SubstanceComponent.new(targetType));
+				return data;
+			};
+		};
+		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalAcidType) });
 	}
 
 	updateCitrusType(

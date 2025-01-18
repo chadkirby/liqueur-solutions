@@ -11,7 +11,7 @@
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}" data-testid="abv-{componentId}">
-	<Helper class="tracking-tight">pH</Helper>
+	<Helper class="tracking-tight">𝗉𝖧</Helper>
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner {mixtureStore} value={pH} type="pH" {componentId} max={100} />
 	{:else}

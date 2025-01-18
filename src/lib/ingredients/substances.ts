@@ -53,9 +53,14 @@ interface _Substance<T extends string> {
 	name: string;
 	id: T;
 	molecule: Molecule;
+	/**
+	 * density of the pure substance in g/ml
+	 */
 	pureDensity: number;
-	/** density of the pure substance in g/ml, determined according to
-	 * concentration by weight */
+	/**
+	 * density of the pure substance in g/ml, determined according to
+	 * concentration by weight
+	 */
 	solutionDensityMeasurements: InterplTable;
 	// how sweet (sucrose = 1)
 	sweetness: number;
@@ -488,7 +493,11 @@ export type SweetenerType = (typeof sweetenerIds)[number];
 export function isSweetenerId(id: string): id is SubstanceId {
 	return sweetenerIds.includes(id as SweetenerType);
 }
-export function isAcidId(id: string): id is SubstanceId {
+
+export const acidIds = Acids.map(({ id }) => id);
+export type AcidType = (typeof acidIds)[number];
+
+export function isAcidId(id: string): id is AcidType {
 	return Acids.some((s) => s.id === id);
 }
 export function isBufferId(id: string): id is SubstanceId {

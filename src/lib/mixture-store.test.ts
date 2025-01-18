@@ -237,6 +237,75 @@ describe('Mixture Store', () => {
 		expect(store.redoCount).toBe(0);
 		expect(store.getVolume(waterId)).toBe(300);
 	});
+
+	it('should update sweetener type only for target ingredient', () => {
+		const store = new MixtureStore();
+
+		// Add first sweetener
+		const sugar1Id = store.addIngredientTo(null, {
+			name: 'sugar1',
+			item: SubstanceComponent.new('sucrose'),
+			mass: 50,
+		});
+
+		// Add second sweetener
+		store.addIngredientTo(null, {
+			name: 'sugar2',
+			item: SubstanceComponent.new('sucrose'),
+			mass: 50,
+		});
+
+		// Update first sweetener to fructose
+		store.updateSweetenerType(sugar1Id, 'fructose');
+
+		// Check first sweetener was updated
+		expect(store.getSweetenerTypes(sugar1Id)).toEqual(['fructose']);
+
+		// Get all ingredients
+		const ingredients = Array.from(store.mixture.ingredients.values());
+		const sugar2 = ingredients.find((i) => i.name === 'sugar2');
+		expect(sugar2).toBeDefined();
+		if (!sugar2) throw new Error('sugar2 not found');
+
+		// Check second sweetener remained unchanged
+		expect(store.getSweetenerTypes(sugar2.id)).toEqual(['sucrose']);
+	});
+
+	it('should update acid type only for target ingredient', () => {
+		const store = new MixtureStore();
+
+		// Add first acid
+		const acid1Id = store.addIngredientTo(null, {
+			name: 'citric',
+			item: SubstanceComponent.new('citric-acid'),
+			mass: 50,
+		});
+
+		// Add second acid
+		store.addIngredientTo(null, {
+			name: 'citric2',
+			item: SubstanceComponent.new('citric-acid'),
+			mass: 50,
+		});
+
+		// Update first acid to tartaric
+		store.updateAcidType(acid1Id, 'tartaric-acid');
+
+		// Get all ingredients
+		const ingredients = Array.from(store.mixture.ingredients.values());
+
+		// Check first acid was updated
+		const acid1 = ingredients.find((i) => i.id === acid1Id);
+		expect(acid1).toBeDefined();
+		if (!acid1) throw new Error('acid1 not found');
+		expect((acid1.item as SubstanceComponent).substanceId).toBe('tartaric-acid');
+
+		// Check second acid remained unchanged
+		const acid2 = ingredients.find((i) => i.name === 'citric2');
+		expect(acid2).toBeDefined();
+		if (!acid2) throw new Error('acid2 not found');
+		expect((acid2.item as SubstanceComponent).substanceId).toBe('citric-acid');
+	});
 });
 
 describe('Mixture store solver', () => {
