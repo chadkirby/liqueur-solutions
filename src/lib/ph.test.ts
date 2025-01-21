@@ -229,6 +229,16 @@ describe('Citrus', () => {
 		expect(getCitrusPrefix(juice.id), 'prefix').toBe('__citrus-grapefruit__');
 		expect(juice.pH, 'pH').toBeCloseTo(3.3, 1);
 	});
+	test('citrus in a mxture', () => {
+		const juice = citrusFactory.lemon(100);
+		const mx = new Mixture().addIngredient({
+			name: 'lemon',
+			mass: 100,
+			item: juice,
+		});
+		expect(juice.pH).toBeCloseTo(2.3, 1);
+		expect(mx.pH, 'pH').toBeCloseTo(2.3, 1);
+	});
 });
 
 test('super juice', () => {

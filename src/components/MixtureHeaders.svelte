@@ -223,7 +223,7 @@
 			{component}
 			{volume}
 			readonly={true}
-			class="basis-1/5"
+			class="basis-1/4"
 		/>
 		<EquivalentSugar
 			{mixtureStore}
@@ -231,9 +231,9 @@
 			{component}
 			{mass}
 			readonly={true}
-			class="basis-1/5"
+			class="basis-1/4"
 		/>
-		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
+		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
 	</div>
 {/snippet}
 
@@ -399,11 +399,12 @@
 	{@const component = ingredient.item}
 	<div class="flex flex-row my-1">
 		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-		<Ph
+		<Ph {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
+		<Brix
 			{mixtureStore}
 			componentId={id}
-			component={component}
-			mass={mass}
+			{component}
+			{mass}
 			class="basis-1/4 min-w-20 grow-0"
 		/>
 		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
