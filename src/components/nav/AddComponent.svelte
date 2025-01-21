@@ -98,7 +98,7 @@
 		<CirclePlusSolid size="sm" /><span class="mr-1">citrus juice</span>
 	</Button>
 
-	<Button class="p-1" onclick={() => addSubstance('sodium-chloride', 1)}>
+	<Button class="p-1" onclick={() => addSubstance('sodium-citrate', 1)}>
 		<CirclePlusSolid size="sm" /><span class="mr-1">salt</span>
 	</Button>
 
@@ -106,14 +106,10 @@
 		<CirclePlusSolid size="sm" /><span class="mr-1">acid</span>
 	</Button>
 
-	<Button class="p-1" onclick={() => addSubstance('sodium-citrate', 5)}>
-		<CirclePlusSolid size="sm" /><span class="mr-1">buffer</span>
-	</Button>
-
 	{#if componentId === null}
-		<Button class="p-1" onclick={addEmpty}>
+		<!-- <Button class="p-1" onclick={addEmpty}>
 			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
-		</Button>
+		</Button> -->
 
 		<Button class="p-1" onclick={openFilesDrawer}>
 			<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>

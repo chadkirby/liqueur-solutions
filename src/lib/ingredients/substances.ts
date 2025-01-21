@@ -245,64 +245,6 @@ export const Acids = [
 	},
 ] as const satisfies _Substance<string>[];
 
-export const Buffers = [
-	{
-		name: 'Sodium Citrate',
-		id: 'sodium-citrate',
-		molecule: new Molecule('C6H5Na3O7'),
-		pureDensity: 1.857,
-		solutionDensityMeasurements: [],
-		sweetness: 0,
-		kcal: 0,
-		pKa: [],
-	},
-	{
-		name: 'Sodium Phosphate',
-		id: 'sodium-phosphate',
-		molecule: new Molecule('Na3PO4'),
-		pureDensity: 2.536,
-		solutionDensityMeasurements: [],
-		sweetness: 0,
-		kcal: 0,
-		pKa: [],
-	},
-	{
-		name: 'Sodium Acetate',
-		id: 'sodium-acetate',
-		molecule: new Molecule('C2H3NaO2'),
-		pureDensity: 1.528,
-		solutionDensityMeasurements: [],
-		sweetness: 0,
-		kcal: 0,
-		pKa: [],
-	},
-	{
-		name: 'Sodium Malate',
-		id: 'sodium-malate',
-		molecule: new Molecule('C4H4Na2O5'),
-		pureDensity: 1.69,
-		solutionDensityMeasurements: [],
-		sweetness: 0,
-		kcal: 0,
-		pKa: [],
-	},
-] as const satisfies _Substance<string>[];
-
-export const bufferPairs = [
-	{ acid: 'citric-acid', base: 'sodium-citrate' },
-	{ acid: 'phosphoric-acid', base: 'sodium-phosphate' },
-	{ acid: 'malic-acid', base: 'sodium-malate' },
-	{ acid: 'lactic-acid', base: 'sodium-citrate' },
-	{ acid: 'acetic-acid', base: 'sodium-acetate' },
-	{ acid: 'tartaric-acid', base: 'sodium-citrate' },
-	{ acid: 'ascorbic-acid', base: 'sodium-citrate' },
-] as const satisfies Array<{ acid: SubstanceId; base: SubstanceId }>;
-
-export function getConjugateAcids(base: string): SubstanceId[] {
-	const pair = bufferPairs.filter((pair) => pair.base === base);
-	return pair.map((pair) => pair.acid);
-}
-
 export const Preservatives = [
 	{
 		name: 'Sodium Benzoate',
@@ -349,7 +291,7 @@ export const Solvents = [
 			[0.1, 0.9819],
 			[0.2, 0.9687],
 			[0.3, 0.9539],
-			[0.4, 0.9352], // Maximum contraction around
+			[0.4, 0.9352], // Maximum contraction
 			[0.5, 0.9139],
 			[0.6, 0.891],
 			[0.7, 0.8676],
@@ -467,13 +409,54 @@ export const Salts = [
 		kcal: 0,
 		pKa: [6.4, 10.3],
 	},
+
+	// Conjugate Bases
+	{
+		name: 'Sodium Citrate',
+		id: 'sodium-citrate',
+		molecule: new Molecule('C6H5Na3O7'),
+		pureDensity: 1.857,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
+	{
+		name: 'Sodium Phosphate',
+		id: 'sodium-phosphate',
+		molecule: new Molecule('Na3PO4'),
+		pureDensity: 2.536,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
+	{
+		name: 'Sodium Acetate',
+		id: 'sodium-acetate',
+		molecule: new Molecule('C2H3NaO2'),
+		pureDensity: 1.528,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
+	{
+		name: 'Sodium Malate',
+		id: 'sodium-malate',
+		molecule: new Molecule('C4H4Na2O5'),
+		pureDensity: 1.69,
+		solutionDensityMeasurements: [],
+		sweetness: 0,
+		kcal: 0,
+		pKa: [],
+	},
 ] as const satisfies _Substance<string>[];
 
 export const Substances = [
 	...Solvents,
 	...Sweeteners,
 	...Acids,
-	...Buffers,
 	...Preservatives,
 	...OtherSubstances,
 	...Salts,
@@ -485,6 +468,21 @@ export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
 
 export function isSubstanceIid(id: string): id is SubstanceId {
 	return SubstanceIds.includes(id as SubstanceId);
+}
+
+export const bufferPairs = [
+	{ acid: 'citric-acid', base: 'sodium-citrate' },
+	{ acid: 'phosphoric-acid', base: 'sodium-phosphate' },
+	{ acid: 'malic-acid', base: 'sodium-malate' },
+	{ acid: 'lactic-acid', base: 'sodium-citrate' },
+	{ acid: 'acetic-acid', base: 'sodium-acetate' },
+	{ acid: 'tartaric-acid', base: 'sodium-citrate' },
+	{ acid: 'ascorbic-acid', base: 'sodium-citrate' },
+] as const satisfies Array<{ acid: AcidType; base: SaltType }>;
+
+export function getConjugateAcids(base: string): SubstanceId[] {
+	const pair = bufferPairs.filter((pair) => pair.base === base);
+	return pair.map((pair) => pair.acid);
 }
 
 export const sweetenerIds = Sweeteners.map(({ id }) => id);
@@ -500,9 +498,14 @@ export type AcidType = (typeof acidIds)[number];
 export function isAcidId(id: string): id is AcidType {
 	return Acids.some((s) => s.id === id);
 }
-export function isBufferId(id: string): id is SubstanceId {
-	return Buffers.some((s) => s.id === id);
+
+export const saltIds = Salts.map(({ id }) => id);
+export type SaltType = (typeof saltIds)[number];
+
+export function isSaltId(id: string): id is SaltType {
+	return Salts.some((s) => s.id === id);
 }
+
 export function isPreservativeId(id: string): id is SubstanceId {
 	return Preservatives.some((s) => s.id === id);
 }

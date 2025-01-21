@@ -4,9 +4,16 @@
 	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { isSweetener } from '$lib/mixture.js';
+	import { isSubstance, isSweetener } from '$lib/mixture.js';
 
-	let { componentId, component, mixtureStore, readonly, class: classProp, mass }: DisplayProps = $props();
+	let {
+		componentId,
+		component,
+		mixtureStore,
+		readonly,
+		class: classProp,
+		mass,
+	}: DisplayProps = $props();
 
 	let grams = $derived(mass);
 </script>
@@ -16,6 +23,12 @@
 	{#if isSweetener(component) && !readonly}
 		<NumberSpinner {mixtureStore} value={grams} type="mass" {componentId} />
 		<Helper class="text-center">{format(grams / 28.3495, { unit: 'oz' })}</Helper>
+	{:else if isSubstance(component)}
+		<ReadOnlyValue
+			value={grams}
+			type="mass"
+			molecularMass={component.substance.molecule.molecularMass}
+		/>
 	{:else}
 		<ReadOnlyValue value={grams} type="mass" />
 	{/if}

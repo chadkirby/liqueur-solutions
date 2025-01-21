@@ -4,6 +4,7 @@ import { solveMassForVolume, solver } from './solver.js';
 import { brixToSyrupProportion, capitalize, format, round } from './utils.js';
 import {
 	isAcidId,
+	isSaltId,
 	isSweetenerId,
 	type SubstanceId,
 	sweetenerIds,
@@ -27,6 +28,7 @@ import {
 	type IngredientDbData,
 	type IngredientItem,
 	type IngredientItemComponent,
+	type IngredientSubstanceItem,
 	type IngredientToAdd,
 	type MixtureAnalysis,
 	type MixtureData,
@@ -868,6 +870,13 @@ export function isAcidSubstance(thing: IngredientItemComponent) {
 }
 export function isAcidicMixture(thing: IngredientItemComponent) {
 	return isMixture(thing) && thing.eachSubstance().some((x) => x.item.pKa.length > 0);
+}
+
+export function isSaltIngredient(thing: IngredientItem): thing is IngredientSubstanceItem {
+	return isSaltSubstance(thing.item);
+}
+export function isSaltSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
+	return isSubstance(thing) && isSaltId(thing.substanceId);
 }
 
 export function isCitrusMixture(mx: unknown): mx is Mixture & { id: PrefixedId } {

@@ -16,8 +16,10 @@ import { UndoRedo } from './undo-redo.svelte.js';
 import { decrement, increment, type MinMax } from './increment-decrement.js';
 import {
 	isAcidId,
+	isSaltId,
 	isSweetenerId,
 	type AcidType,
+	type SaltType,
 	type SweetenerType,
 } from './ingredients/substances.js';
 import type {
@@ -570,6 +572,27 @@ export class MixtureStore {
 			};
 		};
 		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalAcidType) });
+	}
+
+	updateSaltType(id: string, newType: SaltType, undoKey = `updateSaltType-${id}`): void {
+		const { ingredient } = this.findIngredient(id, this.mixture);
+		if (!ingredient) {
+			throw new Error(`Unable to find component ${id}`);
+		}
+		if (!isSubstance(ingredient.item)) {
+			throw new Error(`Unable to set acid type of mixture ${id}`);
+		}
+		const originalSaltType = ingredient.item.substanceId;
+		if (!isSaltId(originalSaltType)) {
+			throw new Error(`${originalSaltType} is not a salt`);
+		}
+		const makeUpdater = (targetType: SaltType) => {
+			return (data: MixtureStoreData) => {
+				data.mixture.replaceIngredientComponent(id, SubstanceComponent.new(targetType));
+				return data;
+			};
+		};
+		this.update({ undoKey, updater: makeUpdater(newType), undoer: makeUpdater(originalSaltType) });
 	}
 
 	updateCitrusType(
