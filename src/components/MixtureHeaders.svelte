@@ -1,4 +1,4 @@
-<script module lang="ts">
+<script lang="ts" module>
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 
 	import Cal from './displays/Cal.svelte';
