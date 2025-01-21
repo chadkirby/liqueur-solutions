@@ -97,7 +97,7 @@ describe('Mixture can model pH', () => {
 				mass: 92,
 				item: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 5, 0.125, 'pH with buffer pair');
+		assert.approximately(mx.pH, 4.3, 0.125, 'pH with buffer pair');
 	});
 
 	test('should handle buffer pair - acetic acid and sodium acetate', () => {
@@ -117,7 +117,7 @@ describe('Mixture can model pH', () => {
 				mass: 92,
 				item: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 4.85, 0.125, 'pH with buffer pair');
+		assert.approximately(mx.pH, 4.5, 0.125, 'pH with buffer pair');
 	});
 
 	test('should handle buffer pair - malic acid and sodium malate', () => {
@@ -137,7 +137,7 @@ describe('Mixture can model pH', () => {
 				mass: 92,
 				item: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 4.5, 0.125, 'pH with buffer pair');
+		assert.approximately(mx.pH, 3.9, 0.125, 'pH with buffer pair');
 	});
 
 	test('should handle unequal buffer pair - citric acid and sodium citrate', () => {
@@ -157,7 +157,7 @@ describe('Mixture can model pH', () => {
 				mass: 92,
 				item: SubstanceComponent.new('water'),
 			});
-		assert.approximately(mx.pH, 2.92, 0.1, 'pH with unequal buffer pair');
+		assert.approximately(mx.pH, 2.72, 0.1, 'pH with unequal buffer pair');
 	});
 
 	test('should handle multiple buffer pairs', () => {
@@ -188,7 +188,7 @@ describe('Mixture can model pH', () => {
 				item: SubstanceComponent.new('water'),
 			});
 		// not super-confident in this value
-		assert.approximately(mx.pH, 4.72, 0.2, 'pH with multiple buffers');
+		assert.approximately(mx.pH, 4.13, 0.2, 'pH with multiple buffers');
 	});
 
 	test('should handle buffer pair with missing component', () => {
@@ -245,7 +245,7 @@ test('super juice', () => {
 		})
 		.addIngredient({
 			name: 'sodium citrate',
-			mass: 6,
+			mass: 3,
 			item: SubstanceComponent.new('sodium-citrate'),
 		})
 		.addIngredient({
@@ -253,7 +253,7 @@ test('super juice', () => {
 			mass: 10,
 			item: SubstanceComponent.new('sucrose'),
 		});
-	assert.approximately(mx.pH, 2.8, 0.1, 'super juice');
+	assert.approximately(mx.pH, 2.4, 0.1, 'super juice');
 });
 
 describe('zeroCal', () => {

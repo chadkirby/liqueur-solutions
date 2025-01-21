@@ -53,6 +53,7 @@ export type DecoratedSubstance = Readonly<{
 	mass: number;
 	substanceId: SubstanceId;
 	ingredientId: string;
+	mixtureId: string;
 	item: SubstanceComponent;
 }>;
 
