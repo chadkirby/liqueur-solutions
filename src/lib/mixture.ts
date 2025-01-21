@@ -38,41 +38,6 @@ export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
 const ethanolPureDensity = SubstanceComponent.new('ethanol').pureDensity;
 
-function* eachSubstance(
-	this: Mixture,
-	ingredientIterator: Iterable<DecoratedIngredient>,
-	ids: SubstanceId[] = [],
-): Generator<DecoratedSubstance> {
-	for (const { ingredient, mass: ingredientMass } of ingredientIterator) {
-		const item = ingredient.item;
-		if (item instanceof SubstanceComponent) {
-			if (ids.length === 0 || ids.includes(item.substanceId)) {
-				yield {
-					substanceId: item.substanceId,
-					ingredientId: ingredient.id,
-					mixtureId: this.id,
-					item: item,
-					mass: ingredientMass,
-				};
-			}
-		} else if (item instanceof Mixture) {
-			const subMixture = item;
-			for (const subSubstance of eachSubstance.call(this, item.eachIngredient(), ids)) {
-				// the mass of the substance in this mixture is the proportion
-				// of the sub-substance in the sub-mixture times the mass of
-				// this ingredient
-				yield {
-					substanceId: subSubstance.substanceId,
-					item: subSubstance.item,
-					mass: (subSubstance.mass / subMixture.mass) * ingredientMass,
-					ingredientId: ingredient.id,
-					mixtureId: subMixture.id,
-				};
-			}
-		}
-	}
-}
-
 /**
  * @property mass - The mass of the substance in the mixture
  * @property component - The substance component
@@ -374,7 +339,38 @@ export class Mixture implements CommonComponent {
 	}
 
 	eachSubstance(...ids: SubstanceId[]) {
-		return new FancyIterator(eachSubstance.call(this, this.eachIngredient(), ids));
+		return new FancyIterator(this._eachSubstance(ids));
+	}
+
+	private *_eachSubstance(ids: SubstanceId[] = []): Generator<DecoratedSubstance> {
+		for (const { ingredient, mass: ingredientMass } of this.eachIngredient()) {
+			const item = ingredient.item;
+			if (item instanceof SubstanceComponent) {
+				if (ids.length === 0 || ids.includes(item.substanceId)) {
+					yield {
+						substanceId: item.substanceId,
+						ingredientId: ingredient.id,
+						mixtureId: this.id,
+						item: item,
+						mass: ingredientMass,
+					};
+				}
+			} else if (item instanceof Mixture) {
+				const subMixture = item;
+				for (const subSubstance of subMixture._eachSubstance(ids)) {
+					// the mass of the substance in this mixture is the proportion
+					// of the sub-substance in the sub-mixture times the mass of
+					// this ingredient
+					yield {
+						substanceId: subSubstance.substanceId,
+						item: subSubstance.item,
+						mass: (subSubstance.mass / subMixture.mass) * ingredientMass,
+						ingredientId: ingredient.id,
+						mixtureId: subMixture.id,
+					};
+				}
+			}
+		}
 	}
 
 	hasEverySubstances(substanceIds: SubstanceId[]): boolean {
@@ -759,7 +755,8 @@ export class Mixture implements CommonComponent {
 			| 'mass'
 			| 'abv'
 			| 'brix'
-			| 'volume',
+			| 'volume'
+			| 'pH',
 	): number {
 		const itemMass = this.getIngredientMass(id);
 		switch (what) {
@@ -777,6 +774,8 @@ export class Mixture implements CommonComponent {
 				return this.getIngredientBrix(id);
 			case 'volume':
 				return this.getIngredientVolume(id);
+			case 'pH':
+				return isMixture(item) ? item.getPH() : NaN;
 			default:
 				what satisfies never;
 				throw new Error('Invalid property');
