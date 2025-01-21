@@ -48,6 +48,7 @@ function* eachSubstance(
 				yield {
 					substanceId: item.substanceId,
 					ingredientId: ingredient.id,
+					mixtureId: this.id,
 					item: item,
 					mass: ingredientMass,
 				};
@@ -63,6 +64,7 @@ function* eachSubstance(
 					item: subSubstance.item,
 					mass: (subSubstance.mass / subMixture.mass) * ingredientMass,
 					ingredientId: ingredient.id,
+					mixtureId: subMixture.id,
 				};
 			}
 		}
@@ -521,7 +523,7 @@ export class Mixture implements CommonComponent {
 		return this.getPH();
 	}
 	getPH() {
-		return getMixturePh(this.volume, this.substances, getCitrusPrefix(this.id));
+		return getMixturePh(this.volume, this.substances).pH;
 	}
 
 	setPH(newPH: number) {
