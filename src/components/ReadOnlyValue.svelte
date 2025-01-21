@@ -3,8 +3,9 @@
 	interface Props {
 		value: number;
 		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal' | 'pH' | 'density';
+		molecularMass?: number;
 	}
-	let { value, type }: Props = $props();
+	let { value, type, molecularMass }: Props = $props();
 
 	interface Alternate {
 		fn: (val: number) => number;
@@ -18,6 +19,9 @@
 				{ options: { unit: 'oz' }, fn: (g: number) => g / 28.3495 },
 				{ options: { unit: 'lb' }, fn: (g: number) => g / 453.592 },
 				{ options: { unit: 'kg' }, fn: (g: number) => g / 1000 },
+				...(molecularMass
+					? [{ options: { unit: 'mol' }, fn: (g: number) => g / molecularMass }]
+					: []),
 			] as Alternate[],
 			volume: [
 				{ options: { unit: 'ml' }, fn: (v: number) => v },
@@ -50,7 +54,9 @@
 	}
 
 	let { fn, options } = $derived(alternates[altIndex]);
-	let formatted = $derived(format(fn(value), options));
+	let formatted = $derived(
+		isNaN(value) ? { value: 'n/a', suffix: '' } : format(fn(value), options),
+	);
 	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
@@ -60,7 +66,7 @@
 		class="
 		cursor-pointer
 		font-normal font-mono
-		text-right
+		text-center
 		w-full px-0.5 py-0.5
 		border
 		border-primary-200
@@ -70,8 +76,8 @@
 		dark:text-primary-400
   "
 	>
-		{formatted.value}
-	</button><span class="{suffixSize} ml-0.5">
-		{formatted.suffix}
-	</span>
+		{formatted.value}<span class="{suffixSize} ml-1">
+			{formatted.suffix}
+		</span>
+	</button>
 </output>
