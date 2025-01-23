@@ -228,42 +228,42 @@
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									volume={mixture.volume}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 								<ABVComponent
 									{mixtureStore}
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									mass={mixture.mass}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 								<BrixComponent
 									{mixtureStore}
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									mass={mixture.mass}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 								<Ph
 									{mixtureStore}
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									mass={mixture.mass}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 								<MassComponent
 									{mixtureStore}
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									mass={mixture.mass}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 								<CalComponent
 									{mixtureStore}
 									componentId={parentId === null ? 'totals' : parentId}
 									component={mixture}
 									mass={mixture.mass}
-									class="basis-1/5 min-w-20 grow-0"
+									class="basis-1/6 min-w-20 grow-0"
 								/>
 							</div>
 						</div>
@@ -274,31 +274,26 @@
 					class={['totals-substance-map', 'w-full', 'text-primary-600', 'dark:text-primary-400']}
 				>
 					<thead>
-						<tr class={['text-right', 'font-normal', 'text-sm']}>
-							<th>Substance</th>
-							<th>Mass</th>
-							<th>%Mass</th>
-							<th>Vol</th>
-							<th>%Vol</th>
+						<tr class={['text-right', 'text-xs', 'font-semibold']}>
+							<th class="text-left pl-2">Substance</th>
+							<th                       >Mass</th>
+							<th                       >Mass%</th>
+							<th                       >Vol</th>
+							<th class="pr-2"          >Vol%</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each mixture.makeSubstanceMap(true) as [substanceId, { mass, item }]}
 							{@const volume = item.getVolume(mass)}
-							<tr
-								class={[
-									'border-t-2',
-									'border-primary-200',
-									'dark:border-primary-800',
-									'font-mono',
-									'text-xs',
-								]}
-							>
-								<td>{substanceId}</td>
-								<td>{mass.toFixed(1)}<span>g</span></td>
-								<td>{((mass / mixture.mass) * 100).toFixed(1)}<span>%</span></td>
-								<td>{volume.toFixed(1)}<span>ml</span></td>
-								<td>{((volume / mixture.volume) * 100).toFixed(1)}<span>%</span></td>
+							{@const tdClass = ['pt-2', 'text-right', 'font-mono', 'text-xs']}
+							<tr class={['border-t-2', 'border-primary-200', 'dark:border-primary-800']}>
+								<td class={['!font-sans', '!text-left', 'pl-2', 'text-sm']}>{substanceId}</td>
+								<td class={tdClass}>{mass.toFixed(1)}<span>g</span></td>
+								<td class={tdClass}>{((mass / mixture.mass) * 100).toFixed(1)}<span>%</span></td>
+								<td class={tdClass}>{volume.toFixed(1)}<span>ml</span></td>
+								<td class={[tdClass, 'pr-2']}
+									>{((volume / mixture.volume) * 100).toFixed(1)}<span>%</span></td
+								>
 							</tr>
 						{/each}
 					</tbody>
@@ -323,43 +318,22 @@
 	}
 
 	table.totals-substance-map {
-		thead {
-			th {
-				font-weight: 500;
-			}
-		}
-		th:first-child,
-		td:first-child {
-			text-align: left;
-			padding-left: 0.5rem;
-		}
-
-		td {
-			padding-top: 0.25rem;
-
-			text-align: right;
-
-			> span:last-child {
-				/* style unit values */
-				margin-left: 0.0625rem;
-			}
-		}
-		th:last-child,
-		td:last-child {
-			padding-right: 0.5rem;
+		td > span:last-child {
+			/* style unit values */
+			margin-left: 0.1rem;
 		}
 	}
 
 	/* Style the accordion button container to make room for the arrow
 	   Using h2.group to match the exact structure from svelte-5-ui-lib */
-	:global(h2.group button) {
+	:global(h2.group > button) {
 		position: relative; /* Needed for absolute positioning of the arrow */
 		padding-right: 1.5rem !important; /* Reserve fixed space for the arrow */
 	}
 
 	/* Position and size the arrow SVG consistently across all accordion items
 	   The arrow is an SVG element directly inside the button */
-	:global(h2.group button > svg) {
+	:global(h2.group > button > svg) {
 		position: absolute; /* Take it out of normal flow */
 		right: 0.5rem; /* Fixed distance from right edge */
 		top: 50%; /* Center vertically... */
