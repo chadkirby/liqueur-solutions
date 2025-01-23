@@ -199,56 +199,98 @@
 				</AccordionItem>
 			{/each}
 
-			<!-- TOTALS -->
-			<h2 class="group">
-				<div class="items-center gap-x-2 gap-y-2">
-					<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
-					<div class="flex flex-row flex-wrap mb-1">
-						<VolumeComponent
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							volume={mixture.volume}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-						<ABVComponent
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							mass={mixture.mass}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-						<BrixComponent
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							mass={mixture.mass}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-						<Ph
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							mass={mixture.mass}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-						<MassComponent
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							mass={mixture.mass}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-						<CalComponent
-							{mixtureStore}
-							componentId={parentId === null ? 'totals' : parentId}
-							component={mixture}
-							mass={mixture.mass}
-							class="basis-1/5 min-w-20 grow-0"
-						/>
-					</div>
-				</div>
-			</h2>
+			<AccordionItem
+				class="py-2 pl-1 pr-2"
+				open={openStates.get('totals') ?? true}
+				onclick={() => setOpen('totals', !openStates.get('totals'))}
+			>
+				{#snippet header()}
+					<!-- TOTALS -->
+					<h2 class="group">
+						<div class="items-center gap-x-2 gap-y-2">
+							<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
+							<div class="flex flex-row flex-wrap mb-1">
+								<VolumeComponent
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									volume={mixture.volume}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+								<ABVComponent
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									mass={mixture.mass}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+								<BrixComponent
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									mass={mixture.mass}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+								<Ph
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									mass={mixture.mass}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+								<MassComponent
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									mass={mixture.mass}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+								<CalComponent
+									{mixtureStore}
+									componentId={parentId === null ? 'totals' : parentId}
+									component={mixture}
+									mass={mixture.mass}
+									class="basis-1/5 min-w-20 grow-0"
+								/>
+							</div>
+						</div>
+					</h2>
+				{/snippet}
+				<!-- Insert the substance map as a table -->
+				<table
+					class={['totals-substance-map', 'w-full', 'text-primary-600', 'dark:text-primary-400']}
+				>
+					<thead>
+						<tr class={['text-right', 'font-normal', 'text-sm']}>
+							<th>Substance</th>
+							<th>Mass</th>
+							<th>%Mass</th>
+							<th>Vol</th>
+							<th>%Vol</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each mixture.makeSubstanceMap(true) as [substanceId, { mass, item }]}
+							{@const volume = item.getVolume(mass)}
+							<tr
+								class={[
+									'border-t-2',
+									'border-primary-200',
+									'dark:border-primary-800',
+									'font-mono',
+									'text-xs',
+								]}
+							>
+								<td>{substanceId}</td>
+								<td>{mass.toFixed(1)}<span>g</span></td>
+								<td>{((mass / mixture.mass) * 100).toFixed(1)}<span>%</span></td>
+								<td>{volume.toFixed(1)}<span>ml</span></td>
+								<td>{((volume / mixture.volume) * 100).toFixed(1)}<span>%</span></td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</AccordionItem>
 		</Accordion>
 	{/if}
 	{#if parentId === null}
@@ -265,6 +307,34 @@
 		font-weight: 300;
 		font-size: 0.65rem;
 		line-height: 1rem;
+	}
+
+	table.totals-substance-map {
+		thead {
+			th {
+				font-weight: 500;
+			}
+		}
+		th:first-child,
+		td:first-child {
+			text-align: left;
+			padding-left: 0.5rem;
+		}
+
+		td {
+			padding-top: 0.25rem;
+
+			text-align: right;
+
+			> span:last-child {
+				/* style unit values */
+				margin-left: 0.0625rem;
+			}
+		}
+		th:last-child,
+		td:last-child {
+			padding-right: 0.5rem;
+		}
 	}
 
 	/* Style the accordion button container to make room for the arrow
