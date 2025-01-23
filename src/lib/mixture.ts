@@ -453,7 +453,7 @@ export class Mixture implements CommonComponent {
 	/**
 	 * Return a map of substances to their total mass in the mixture.
 	 */
-	makeSubstanceMap() {
+	makeSubstanceMap(sorted = false): Map<SubstanceId, MappedSubstance> {
 		const substanceMap = new Map<SubstanceId, MappedSubstance>();
 
 		for (const substance of this.eachSubstance()) {
@@ -470,7 +470,9 @@ export class Mixture implements CommonComponent {
 				});
 			}
 		}
-		return substanceMap;
+		return sorted
+			? new Map([...substanceMap.entries()].sort(([, a], [, b]) => b.mass - a.mass))
+			: substanceMap;
 	}
 
 	get abv() {
