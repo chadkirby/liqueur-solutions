@@ -230,8 +230,8 @@
 				dark:focus:border-primary-500
 				dark:focus:ring-primary-50
 				bg-primary-50
-				text-primary-900
 				dark:bg-primary-700
+				text-primary-900
 				dark:text-white
 				dark:placeholder-primary-400
 				rounded-md
