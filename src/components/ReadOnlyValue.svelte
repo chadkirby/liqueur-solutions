@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { brixToSyrupProportion, format, type FormatOptions } from '$lib/utils.js';
 	interface Props {
-		value: number;
+		value: number | number[];
 		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal' | 'pH' | 'density';
 		molecularMass?: number;
 	}
 	let { value, type, molecularMass }: Props = $props();
+
+	let arrayVal = $derived(Array.isArray(value) ? value : [value]);
 
 	interface Alternate {
 		fn: (val: number) => number;
@@ -54,13 +56,36 @@
 	}
 
 	let { fn, options } = $derived(alternates[altIndex]);
+
+	// because of how templates work, we can't precisely control the
+	// spacing between items values and suffixes without manually
+	// generating the HTML
 	let formatted = $derived(
-		isNaN(value) ? { value: 'n/a', suffix: '' } : format(fn(value), options),
+		arrayVal.map((val, i) => {
+			const formatted = format(fn(val), options);
+			const div = globalThis.document.createElement('div');
+			div.textContent = formatted.value;
+			if (formatted.suffix) {
+				const suffix = div.ownerDocument.createElement('span');
+				// Replace spaces with thin spaces
+				suffix.textContent = formatted.suffix.replace(/\s/g, '\u2009');
+				suffix.classList.add('ml-0.5', 'font-sans');
+				div.append(suffix);
+			}
+			if (i !== arrayVal.length - 1) {
+				const comma = div.ownerDocument.createElement('span');
+				comma.classList.add('font-sans');
+				comma.textContent = ', ';
+				div.append(comma);
+			}
+			return div.innerHTML;
+		}),
 	);
-	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
-<output class="flex items-center whitespace-nowrap font-mono leading-[18px] text-xs">
+<output
+	class={['flex', 'items-center', 'whitespace-nowrap', 'font-mono', 'leading-[18px]', 'text-xs']}
+>
 	<button
 		onclick={rotateAlternates}
 		class="
@@ -76,8 +101,8 @@
 		dark:text-primary-400
   "
 	>
-		{formatted.value}<span class="{suffixSize} ml-1">
-			{formatted.suffix}
-		</span>
+		{#each formatted as html}
+			{@html html}
+		{/each}
 	</button>
 </output>

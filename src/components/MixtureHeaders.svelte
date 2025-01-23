@@ -303,7 +303,7 @@
 	/>
 	<div class="mx-1 min-w-0 w-full basis-1/4">
 		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
+		<ReadOnlyValue value={substance.pKa ?? NaN} type="pH" />
 	</div>
 	<div class="mx-1 min-w-0 w-full basis-1/4">
 		<Helper class="tracking-tight">Density</Helper>
