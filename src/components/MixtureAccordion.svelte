@@ -153,7 +153,20 @@
 							{/if}
 						</div>
 					{/snippet}
-					<div class="flex flex-col items-stretch">
+					<div class="flex ml-4 relative">
+						<span
+							class={[
+								'absolute',
+								'w-4',
+								'h-9',
+								'-left-3',
+								'-top-2',
+								'border-l-2',
+								'border-b-2',
+								'border-solid',
+								'border-primary-400',
+							]}
+						></span>
 						{#if isSweetener(component)}
 							{@render sweetenerDetails(mixtureStore, ingredient, mass, volume)}
 						{:else if isWater(component)}

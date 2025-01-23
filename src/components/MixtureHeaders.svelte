@@ -215,26 +215,17 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
-	<div class="flex flex-row my-1">
-		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			{component}
-			{volume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<EquivalentSugar
-			{mixtureStore}
-			componentId={id}
-			{component}
-			{mass}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	</div>
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/4" />
+	<EquivalentSugar
+		{mixtureStore}
+		componentId={id}
+		{component}
+		{mass}
+		readonly={true}
+		class="basis-1/4"
+	/>
+	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
 {/snippet}
 
 {#snippet waterDetails(
@@ -245,17 +236,8 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
-	<div class="flex flex-row my-1">
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			{component}
-			{volume}
-			readonly={true}
-			class="basis-1/2"
-		/>
-		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/2" />
-	</div>
+	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/2" />
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/2" />
 {/snippet}
 
 {#snippet spiritDetails(
@@ -266,28 +248,26 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item as Mixture}
-	<div class="flex flex-row my-1">
-		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			header="Alcohol Volume"
-			{component}
-			volume={component.alcoholVolume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			header="Water Volume"
-			{component}
-			volume={component.waterVolume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	</div>
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
+	<Volume
+		{mixtureStore}
+		componentId={id}
+		header="Alcohol Volume"
+		{component}
+		volume={component.alcoholVolume}
+		readonly={true}
+		class="basis-1/4"
+	/>
+	<Volume
+		{mixtureStore}
+		componentId={id}
+		header="Water Volume"
+		{component}
+		volume={component.waterVolume}
+		readonly={true}
+		class="basis-1/4"
+	/>
+	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
 {/snippet}
 
 {#snippet syrupDetails(
@@ -298,19 +278,10 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
-	<div class="flex flex-row my-1">
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			{component}
-			{volume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-		<Brix {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	</div>
+	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/4" />
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	<Brix {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
 {/snippet}
 
 {#snippet acidDetails(
@@ -322,33 +293,31 @@
 	{@const id = ingredient.id}
 	{@const substance = ingredient.item}
 	{@const density = substance.pureDensity}
-	<div class="flex flex-row my-1">
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			component={substance}
-			{volume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<div class="mx-1 min-w-0 w-full basis-1/4">
-			<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-			<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
-		</div>
-		<div class="mx-1 min-w-0 w-full basis-1/4">
-			<Helper class="tracking-tight">Density</Helper>
-			<ReadOnlyValue value={density} type="density" />
-		</div>
-
-		<Cal
-			{mixtureStore}
-			componentId={id}
-			component={substance}
-			{mass}
-			readonly={true}
-			class="basis-1/4"
-		/>
+	<Volume
+		{mixtureStore}
+		componentId={id}
+		component={substance}
+		{volume}
+		readonly={true}
+		class="basis-1/4"
+	/>
+	<div class="mx-1 min-w-0 w-full basis-1/4">
+		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
+		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
 	</div>
+	<div class="mx-1 min-w-0 w-full basis-1/4">
+		<Helper class="tracking-tight">Density</Helper>
+		<ReadOnlyValue value={density} type="density" />
+	</div>
+
+	<Cal
+		{mixtureStore}
+		componentId={id}
+		component={substance}
+		{mass}
+		readonly={true}
+		class="basis-1/4"
+	/>
 {/snippet}
 
 {#snippet saltDetails(
@@ -360,33 +329,31 @@
 	{@const id = ingredient.id}
 	{@const substance = ingredient.item}
 	{@const density = substance.pureDensity}
-	<div class="flex flex-row my-1">
-		<Volume
-			{mixtureStore}
-			componentId={id}
-			component={substance}
-			{volume}
-			readonly={true}
-			class="basis-1/4"
-		/>
-		<div class="mx-1 min-w-0 w-full basis-1/4">
-			<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-			<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
-		</div>
-		<div class="mx-1 min-w-0 w-full basis-1/4">
-			<Helper class="tracking-tight">Density</Helper>
-			<ReadOnlyValue value={density} type="density" />
-		</div>
-
-		<Cal
-			{mixtureStore}
-			componentId={id}
-			component={substance}
-			{mass}
-			readonly={true}
-			class="basis-1/4"
-		/>
+	<Volume
+		{mixtureStore}
+		componentId={id}
+		component={substance}
+		{volume}
+		readonly={true}
+		class="basis-1/4"
+	/>
+	<div class="mx-1 min-w-0 w-full basis-1/4">
+		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
+		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
 	</div>
+	<div class="mx-1 min-w-0 w-full basis-1/4">
+		<Helper class="tracking-tight">Density</Helper>
+		<ReadOnlyValue value={density} type="density" />
+	</div>
+
+	<Cal
+		{mixtureStore}
+		componentId={id}
+		component={substance}
+		{mass}
+		readonly={true}
+		class="basis-1/4"
+	/>
 {/snippet}
 
 {#snippet citrusDetails(
@@ -397,16 +364,8 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
-	<div class="flex flex-row my-1">
-		<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-		<Ph {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
-		<Brix
-			{mixtureStore}
-			componentId={id}
-			{component}
-			{mass}
-			class="basis-1/4 min-w-20 grow-0"
-		/>
-		<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	</div>
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	<Ph {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
+	<Brix {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
+	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
 {/snippet}
