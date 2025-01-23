@@ -8,7 +8,7 @@ jobs:
     env:
       CORBADO_API_SECRET: ${{ secrets.CORBADO_API_SECRET }}
       PUBLIC_REPLICACHE_LICENSE_KEY: ${{ secrets.PUBLIC_REPLICACHE_LICENSE_KEY }}
-      PUBLIC_CORBADO_PROJECT_ID: ${{ vars.PUBLIC_CORBADO_PROJECT_ID }}
+      PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
     steps:
       - uses: actions/checkout@v4
