@@ -276,24 +276,33 @@
 					<thead>
 						<tr class={['text-right', 'text-xs', 'font-semibold']}>
 							<th class="text-left pl-2">Substance</th>
-							<th                       >Mass</th>
-							<th                       >Mass%</th>
-							<th                       >Vol</th>
-							<th class="pr-2"          >Vol%</th>
+							<th>Mass</th>
+							<th>Mass%</th>
+							<th>Vol</th>
+							<th class="pr-2">Vol%</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each mixture.makeSubstanceMap(true) as [substanceId, { mass, item }]}
 							{@const volume = item.getVolume(mass)}
+							{@const massPct = (mass / mixture.mass) * 100}
+							{@const volumePct = (volume / mixture.volume) * 100}
 							{@const tdClass = ['pt-2', 'text-right', 'font-mono', 'text-xs']}
 							<tr class={['border-t-2', 'border-primary-200', 'dark:border-primary-800']}>
 								<td class={['!font-sans', '!text-left', 'pl-2', 'text-sm']}>{substanceId}</td>
 								<td class={tdClass}>{mass.toFixed(1)}<span>g</span></td>
-								<td class={tdClass}>{((mass / mixture.mass) * 100).toFixed(1)}<span>%</span></td>
+								{#if massPct >= 0.1}
+									<td class={tdClass}>{massPct.toFixed(1)}<span>%</span></td>
+								{:else}
+									<td class={tdClass}>{(massPct * 10000).toFixed(0)}<span>ppm</span></td>
+								{/if}
 								<td class={tdClass}>{volume.toFixed(1)}<span>ml</span></td>
-								<td class={[tdClass, 'pr-2']}
-									>{((volume / mixture.volume) * 100).toFixed(1)}<span>%</span></td
-								>
+								{#if volumePct >= 0.1}
+									<td class={[tdClass, 'pr-2']}>{volumePct.toFixed(1)}<span>%</span></td>
+								{:else}
+									<td class={[tdClass, 'pr-2']}>{(volumePct * 10000).toFixed(0)}<span>ppm</span></td
+									>
+								{/if}
 							</tr>
 						{/each}
 					</tbody>

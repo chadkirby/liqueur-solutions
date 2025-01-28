@@ -254,8 +254,7 @@ export class MixtureStore {
 			case 'mass':
 				return this.setMass(id, newValue, actionDesc);
 			case 'pH':
-				// TODO: implement pH
-				throw new Error('pH not implemented');
+				return this.setPH(id, newValue, actionDesc);
 			default:
 				key satisfies never;
 		}
@@ -285,8 +284,7 @@ export class MixtureStore {
 			case 'mass':
 				return this.setMass(id, newValue, actionDesc);
 			case 'pH':
-				// TODO: implement pH
-				throw new Error('pH not implemented');
+				return this.setPH(id, newValue, actionDesc);
 			default:
 				key satisfies never;
 		}
@@ -689,30 +687,22 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 		throw new Error(`${key} is not editable`);
 	}
 
-	let working: Mixture | undefined;
+	let working = mixture.clone();
 	switch (key) {
 		case 'volume':
-			working = mixture.clone();
 			working.setVolume(targetValue);
 			break;
 		case 'abv':
-			working = solver(mixture, {
-				abv: targetValue,
-				brix: mixture.brix,
-				volume: mixture.volume,
-				pH: mixture.pH,
-			});
-			working.setVolume(mixture.volume);
+			working.setAbv(targetValue);
 			break;
 		case 'brix':
-			working = solver(mixture, {
-				abv: mixture.abv,
-				brix: targetValue,
-				volume: mixture.volume,
-				pH: mixture.pH,
-			});
-			working.setVolume(mixture.volume);
+			working.setBrix(targetValue);
 			break;
+		case 'pH':
+			working.setPH(targetValue);
+			break;
+		default:
+			key satisfies never;
 	}
 	if (!working) {
 		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
