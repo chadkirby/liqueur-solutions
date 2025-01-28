@@ -1,5 +1,5 @@
 import { getCitrusDissociationFactor, getCitrusPrefix } from './ingredients/citrus-ids.js';
-import { getConjugateAcids, type SaltType } from './ingredients/substances.js';
+import { getConjugateAcids, type SubstanceId } from './ingredients/substances.js';
 import type { DecoratedSubstance } from './mixture-types.js';
 import type { SubstanceItem } from './mixture.js';
 
@@ -58,24 +58,14 @@ export function getMixturePh(
 	return { pH: totalMolesH ? -Math.log10(totalMolesH) : 7, molesH: totalMolesH };
 }
 
+export type AcidGroups = Map<SubstanceId, { acid: SubstanceItem; conjugateBase?: SubstanceItem }>;
+
 /**
  * Group acids with their conjugate bases.
  */
-function getAcidGroups(substances: DecoratedSubstance[]): Map<
-	string,
-	{
-		acid: SubstanceItem;
-		conjugateBase?: SubstanceItem;
-	}
-> {
+export function getAcidGroups(substances: DecoratedSubstance[]): AcidGroups {
 	// Group acids with their conjugate bases
-	const acidGroups = new Map<
-		string,
-		{
-			acid: SubstanceItem;
-			conjugateBase?: SubstanceItem;
-		}
-	>();
+	const acidGroups: AcidGroups = new Map();
 
 	// First pass - find acids
 	for (const substance of substances) {
@@ -116,6 +106,8 @@ export type PhInput = {
 	// More validation needed for other conditions
 	activityCoefficient?: number;
 };
+
+export const MolesHTolerance = 1e-10;
 
 /**
  * Calculates pH of polyprotic acid solutions using numerical methods.
@@ -184,7 +176,7 @@ export function calculatePh({ acidMolarity, conjugateBaseMolarity = 0, pKa }: Ph
 	}
 
 	// Solve for [H⁺] between pH -14 and 14
-	const H_root = bisection(f, 1e-14, 1, 1e-9);
+	const H_root = bisection(f, 1e-14, 1, MolesHTolerance);
 	return { pH: -Math.log10(H_root), H: H_root };
 }
 

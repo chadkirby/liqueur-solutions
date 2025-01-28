@@ -1,50 +1,88 @@
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { AnnealingSolver } from 'abstract-sim-anneal';
-import { isAcidId, isSweetenerId } from './ingredients/substances.js';
+import { bufferPairs, isAcidId, isSweetenerId } from './ingredients/substances.js';
 import type { SolverTarget } from './mixture-types.js';
+import { getAcidGroups, type AcidGroups } from './ph-solver.js';
+import { FancyIterator } from './iterator.js';
 
-type IngredientClass = 'ethanol' | 'sweetener' | 'acid' | 'water';
+type IngredientClass = 'ethanol' | 'sweetener' | 'acid' | 'base' | 'water';
+
+interface WorkingTarget {
+	/** between 0-100 */
+	abv: number;
+	/** between 0-100 */
+	brix: number;
+	/** between 0-Infinity */
+	volume: number;
+	/** between 0-1 */
+	molesH: number;
+}
+
+export function targetToWorkingTarget(target: SolverTarget): WorkingTarget {
+	return {
+		abv: target.abv,
+		brix: target.brix,
+		volume: target.volume,
+		// convert pH to moles of H+ ions (which maps more linearly than pH
+		// to mass of acid)
+		molesH: 10 ** -target.pH,
+	};
+}
 
 interface MixtureState {
 	mixture: Mixture;
-	targets: SolverTarget;
-	actual: SolverTarget;
+	targets: WorkingTarget;
+	actual: WorkingTarget;
 	/** deviation from target values as a percentage of the target value
 	 * between -1, 1 */
-	deviations: SolverTarget;
+	deviations: WorkingTarget;
 	/** total deviation from target values */
 	error: number;
 }
 
-export function analyze(mixture: Mixture, targets: SolverTarget): MixtureState {
-	if (targets.pH === 0) {
-		throw new Error('Target pH must be between 0 and 7');
+/**
+ * Analyze a mixture and determine the deviation from the target values.
+ *
+ * Exported for testing purposes.
+ */
+export function analyze(mixture: Mixture, targets: WorkingTarget): MixtureState {
+	if (targets.molesH === 0) {
+		throw new Error('Target pH must be between 0 and 1');
 	}
 	if (targets.volume === 0) {
 		throw new Error('Target volume must be greater than 0');
 	}
 
-	const actual: SolverTarget = {
+	const actual: WorkingTarget = targetToWorkingTarget({
 		abv: mixture.abv,
 		brix: mixture.brix,
 		pH: mixture.pH,
 		volume: mixture.volume,
-	};
+	});
 	// determine the deviation from the target values as a percentage
-	const deviations = {
+	const deviations: WorkingTarget = {
 		abv: getDeviation(actual.abv, targets.abv),
 		brix: getDeviation(actual.brix, targets.brix),
-		pH: getDeviation(actual.pH, targets.pH),
+		molesH: getDeviation(actual.molesH, targets.molesH),
 		volume: getDeviation(actual.volume, targets.volume),
 	};
+
+	const error =
+		[
+			deviations.abv,
+			deviations.brix,
+			deviations.volume,
+			// compute the error in pH, not moles of H+ ions
+			getDeviation(-Math.log10(actual.molesH), -Math.log10(targets.molesH)),
+		].reduce((acc, v) => acc + v ** 2, 0) ** 0.5;
 
 	return {
 		mixture,
 		targets,
 		actual,
 		deviations,
-		error: totalDeviation(deviations),
+		error,
 	};
 }
 
@@ -60,25 +98,24 @@ function getDeviation(actual: number, target: number): number {
 	if (target === 0) {
 		return actual === 0 ? 0 : 1;
 	}
-	return (actual - target) / actual;
+	if (actual === 0) {
+		return 1;
+	}
+	return 1 - target / actual;
 }
 
-function totalDeviation(deviations: SolverTarget): number {
-	return Math.sqrt(
-		deviations.abv ** 2 + deviations.brix ** 2 + deviations.pH ** 2 + deviations.volume ** 2,
-	);
-}
 type Needs = Map<IngredientClass, number>;
 function newNeeds(initializer = 0): Needs {
 	return new Map([
 		['ethanol', initializer],
 		['sweetener', initializer],
 		['acid', initializer],
+		['base', initializer],
 		['water', initializer],
 	]);
 }
 
-function getNeeds(deviations: SolverTarget): Needs {
+function getNeeds(deviations: WorkingTarget, acidGroups: AcidGroups): Needs {
 	const scale = 0.5;
 	const needs = newNeeds(1);
 	const needMore = (key: IngredientClass, howmuchMore: number) => {
@@ -106,62 +143,96 @@ function getNeeds(deviations: SolverTarget): Needs {
 		needMore('sweetener', -deviations.brix);
 		needLess('water', -deviations.brix);
 	}
-	if (deviations.pH > 1) {
-		// if we have too high pH, we need more acid
-		needMore('acid', deviations.pH);
-	} else if (deviations.pH < 1) {
-		// if we have too low pH, we need less acid
-		needLess('acid', -deviations.pH);
+	const bufferPairs = Array.from(acidGroups.values()).filter((g) => g.conjugateBase);
+	if (bufferPairs.length > 0) {
+		const acidMass = bufferPairs.reduce((acc, g) => acc + g.acid.mass, 0);
+		const baseMass = bufferPairs.reduce((acc, g) => acc + g.conjugateBase!.mass, 0);
+		if (deviations.molesH > 1) {
+			// if we have too many H+ ions, we are too acidic
+			const delta = deviations.molesH * 0.5;
+			if (acidMass > baseMass) {
+				needMore('base', delta);
+			} else {
+				needLess('acid', delta);
+			}
+		} else if (deviations.molesH < 1) {
+			// if we have too few H+ ions, we are too basic
+			const delta = -deviations.molesH * 0.5;
+			if (baseMass > acidMass) {
+				needLess('base', delta);
+			} else {
+				needMore('acid', delta);
+			}
+		}
+	} else if (deviations.molesH > 1) {
+		const delta = deviations.molesH * 0.5;
+		// if we have too many H+ ions, we need less acid
+		needLess('acid', delta);
+	} else if (deviations.molesH < 1) {
+		const delta = -deviations.molesH * 0.5;
+		// if we have too few H+ ions, we need more acid
+		needMore('acid', delta);
 	}
-
 	return needs;
 }
 
 function getMixtureProvides(ingredient: Mixture): Needs {
 	const provides = newNeeds(0);
 	const substances = ingredient.makeSubstanceMap();
-	for (const { mass, item: component } of substances.values()) {
-		for (const [key, value] of getSubstanceProvides(component, mass)) {
+	for (const { mass, item: substance } of substances.values()) {
+		for (const [key, value] of getSubstanceProvides(
+			substance,
+			mass,
+			getAcidGroups(ingredient.substances),
+		)) {
 			provides.set(key, provides.get(key)! + value);
 		}
 	}
 
 	return provides;
 }
-function getSubstanceProvides(ingredient: SubstanceComponent, mass: number) {
+function getSubstanceProvides(substance: SubstanceComponent, mass: number, acidGroups: AcidGroups) {
 	const provides = newNeeds(0);
-	if (ingredient.substanceId === 'water') {
+	if (substance.substanceId === 'water') {
 		provides.set('water', mass);
-	} else if (ingredient.substanceId === 'ethanol') {
+	} else if (substance.substanceId === 'ethanol') {
 		provides.set('ethanol', mass);
-	} else if (isSweetenerId(ingredient.substanceId)) {
+	} else if (substance.substance.sweetness > 0) {
 		provides.set('sweetener', mass);
-	} else if (isAcidId(ingredient.substanceId)) {
+	} else if (acidGroups.has(substance.substanceId)) {
 		provides.set('acid', mass);
+	} else if (
+		new FancyIterator(acidGroups.values()).some(
+			(v) => v.conjugateBase?.substanceId === substance.substanceId,
+		)
+	) {
+		provides.set('base', mass);
 	}
 
 	return provides;
 }
 
-export function solver(mixture: Mixture, targets: SolverTarget) {
-	if (targets.abv !== null && (targets.abv < 0 || targets.abv > 100)) {
+export function solver(mixture: Mixture, otargets: SolverTarget) {
+	if (otargets.abv !== null && (otargets.abv < 0 || otargets.abv > 100)) {
 		throw new Error('Target ABV must be between 0 and 100');
 	}
-	if (targets.brix !== null && (targets.brix < 0 || targets.brix > 100)) {
+	if (otargets.brix !== null && (otargets.brix < 0 || otargets.brix > 100)) {
 		throw new Error('Target Brix must be between 0 and 100');
 	}
-	if (targets.pH !== null && (targets.pH < 0 || targets.pH > 7)) {
+	if (otargets.pH !== null && (otargets.pH < 0 || otargets.pH > 7)) {
 		throw new Error('Target pH must be between 0 and 7');
 	}
 
 	const tolerance = 0.0001;
+
+	const targets = targetToWorkingTarget(otargets);
 
 	let bestState = analyze(mixture.clone(), targets);
 
 	const ingredientIds = mixture.ingredientIds;
 
 	const solver: AnnealingSolver<MixtureState, Mixture> = new AnnealingSolver({
-		chooseMove: (state, count) => {
+		chooseMove: (state, _count) => {
 			// given a state, return a candidate move and the error it would cause
 			const { mixture } = state;
 			// Track best solution
@@ -172,16 +243,16 @@ export function solver(mixture: Mixture, targets: SolverTarget) {
 				}
 			}
 
-			const needs = getNeeds(state.deviations);
-
 			const provisionalMixture = mixture.clone();
+			const acidGroups = getAcidGroups(provisionalMixture.substances);
+			const needs = getNeeds(state.deviations, acidGroups);
 			for (const id of ingredientIds) {
 				const ingredient = provisionalMixture.ingredients.get(id)!;
 				const currentMass = provisionalMixture.getIngredientMass(id);
 				const provides =
 					ingredient.item instanceof Mixture
 						? getMixtureProvides(ingredient.item)
-						: getSubstanceProvides(ingredient.item, currentMass);
+						: getSubstanceProvides(ingredient.item, currentMass, acidGroups);
 				// determine if, on balance, we need more or less of this
 				// ingredient based on what we need and what it provides
 				let massDelta = 1;
@@ -189,14 +260,15 @@ export function solver(mixture: Mixture, targets: SolverTarget) {
 					const need = needs.get(key)!;
 					if (value > 0 && need > 0 && need !== 1) {
 						massDelta *= need;
+					} else if (value > 0 && need < 0) {
+						massDelta *= -1 / need;
 					}
 				}
 				// scale the mass of the ingredient
 				if (massDelta !== 1) {
 					// Scale moves with temperature
 					// Larger initial moves, decrease with temperature
-					const moveScale = 1 * solver.currentTemperature;
-					const scaled = 1 + (massDelta - 1) * moveScale;
+					const scaled = 1 + (massDelta - 1) * solver.currentTemperature;
 					provisionalMixture.scaleIngredientMass(id, scaled);
 				}
 			}
@@ -214,7 +286,7 @@ export function solver(mixture: Mixture, targets: SolverTarget) {
 
 	const finalState = bestState?.error < result.state.error ? bestState : result.state;
 
-	if (finalState.error > tolerance) {
+	if (finalState.error > tolerance * 10) {
 		throw new Error('Failed to converge');
 	}
 	return finalState.mixture;

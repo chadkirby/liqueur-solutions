@@ -21,6 +21,21 @@ function getPh(substanceId: SubstanceId, substanceMass: number, solutionVolume: 
 	return mx.pH;
 }
 
+test('calculatePh calculates different pH values', () => {
+	assert.notEqual(
+		calculatePh({
+			acidMolarity: 0.010000003,
+			conjugateBaseMolarity: 0,
+			pKa: [3.13],
+		}).pH,
+		calculatePh({
+			acidMolarity: 0.010000004,
+			conjugateBaseMolarity: 0,
+			pKa: [3.13],
+		}).pH,
+	);
+});
+
 describe('Simple aqueous acid solutions', () => {
 	// Citric acid is a weak triprotic acid
 	test('Citric Acid', () => {
