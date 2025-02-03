@@ -43,7 +43,7 @@
 	<title>{title}</title>
 </svelte:head>
 
-<div class="p-2 max-w-lg mx-auto font-sans">
+<div class="p-2 max-w-2xl mx-auto font-sans">
 	{#if storeId === loadingStoreId || mixtureStore === null}
 		<Spinner size="16" />
 	{:else}

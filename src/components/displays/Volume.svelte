@@ -25,7 +25,6 @@
 	} = $props();
 
 	let ml = $derived(volume);
-	$inspect({ ml });
 </script>
 
 <div class="mx-1 min-w-0 w-full {classProp}" data-testid={`volume-${componentId}`}>

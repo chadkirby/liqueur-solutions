@@ -20,7 +20,7 @@
 	}: {
 		value: string;
 		type?: 'text' | 'number';
-		class?: string;
+		class?: string | string[];
 		id?: string;
 		placeholder?: string;
 	} & Pick<HTMLProps, EventKeys> = $props();
@@ -32,30 +32,15 @@
 	{id}
 	{placeholder}
 	autocomplete="off"
-	class="
-    block
-    w-full
-    rtl:text-right
-    focus:outline-none
-    border
-    border-primary-300
-    dark:border-primary-600
-    dark:focus:border-primary-500
-    dark:focus:ring-primary-50
-    bg-primary-50
-    text-primary-900
-    dark:bg-primary-700
-    dark:text-white
-    dark:placeholder-primary-400
-    rounded-md
-    text-sm
-    px-1
-    py-0.5
-    focus:ring-2
-    focus:border-blue-200
-    focus:ring-blue-200
-    {classProp}
-  "
+	class={[
+    'block',
+		'ls-rounded-box',
+    'w-full',
+    'rtl:text-right',
+    'px-1',
+    'py-0.5',
+    classProp
+	]}
 	{...handlers}
 />
 

@@ -1,27 +1,13 @@
 <script lang="ts" module>
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
-
-	import Cal from './displays/Cal.svelte';
-	import Brix from './displays/Brix.svelte';
-
 	import NumberSpinner from './NumberSpinner.svelte';
-
 	import TextInput from './ui-primitives/TextInput.svelte';
-
-	import EquivalentSugar from './displays/EquivalentSugar.svelte';
-
 	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import CitrusDropdown from './displays/CitrusDropdown.svelte';
 	import AcidDropdown from './displays/AcidDropdown.svelte';
-	import Helper from './ui-primitives/Helper.svelte';
-	import ReadOnlyValue from './ReadOnlyValue.svelte';
 	import SaltDropdown from './displays/SaltDropdown.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Tooltip } from 'svelte-5-ui-lib';
-	import Mass from './displays/Mass.svelte';
-	import Volume from './displays/Volume.svelte';
-	import { Mixture } from '$lib/mixture.js';
-	import Ph from './displays/PH.svelte';
 
 	export {
 		defaultHeader,
@@ -31,30 +17,29 @@
 		citrusHeader,
 		acidHeader,
 		saltHeader,
-		saltDetails,
-		sweetenerDetails,
-		waterDetails,
-		spiritDetails,
-		syrupDetails,
-		acidDetails,
-		citrusDetails,
 	};
+	// For the numeric spinner (leftmost)
+	const numericBase = 'w-24 shrink-0'; // Fixed width for number + unit
+
+	// For secondary inputs (dropdowns, ABV, etc)
+	const secondaryInputBase = 'w-18 shrink-0'; // Fixed width for consistency
 </script>
 
-{#snippet nameInput(mixtureStore: MixtureStore, ingredient: IngredientItem, basis = 'basis-3/4')}
+{#snippet nameInput(mixtureStore: MixtureStore, ingredient: IngredientItem)}
 	<TextInput
 		type="text"
 		value={ingredient.name}
 		placeholder={ingredient.item.describe()}
-		class="
-			mr-2
-			{basis}
-			text-sm
-			leading-[18px]
-			focus:ring-2
-			focus:border-blue-200
-			focus:ring-blue-200
-			"
+		class={[
+			// allow the input to take remaining space while properly shrinking
+			'min-w-0',
+			'flex-1',
+			'mr-2',
+			'leading-[18px]',
+			'focus:ring-2',
+			'focus:border-blue-200',
+			'focus:ring-blue-200',
+		]}
 		onclick={(e) => e.stopPropagation()}
 		oninput={(e) => mixtureStore.updateComponentName(ingredient.id, e.currentTarget.value)}
 	/>
@@ -63,19 +48,19 @@
 {#snippet defaultHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/4"
+		class={numericBase}
 		value={volume}
 		type="volume"
 		componentId={ingredient.id}
 	/>
 
-	{@render nameInput(mixtureStore, ingredient, 'basis-3/4')}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet sweetenerHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, mass: number)}
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/5"
+		class={numericBase}
 		value={mass}
 		type="mass"
 		componentId={ingredient.id}
@@ -84,10 +69,10 @@
 		{mixtureStore}
 		componentId={ingredient.id}
 		component={ingredient.item}
-		basis="basis-1/3"
+		class={secondaryInputBase}
 		onclick={(e) => e.stopPropagation()}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-1/3')}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet simpleSyrupHeader(
@@ -101,7 +86,7 @@
 
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/6"
+		class={numericBase}
 		value={volume}
 		type="volume"
 		componentId={ingredient.id}
@@ -110,7 +95,7 @@
 	<NumberSpinner
 		{mixtureStore}
 		id={`edit-brix-${ingredient.id}`}
-		class="basis-1/6"
+		class={secondaryInputBase}
 		value={brix * 100}
 		type="brix"
 		componentId={ingredient.id}
@@ -123,7 +108,7 @@
 		basis="basis-1/3"
 		onclick={(e) => e.stopPropagation()}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-1/3')}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet spiritHeader(
@@ -136,7 +121,7 @@
 
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/5"
+		class={numericBase}
 		value={volume}
 		type="volume"
 		componentId={ingredient.id}
@@ -145,18 +130,18 @@
 	<NumberSpinner
 		{mixtureStore}
 		id={`edit-abv-${ingredient.id}`}
-		class="basis-1/5"
+		class={numericBase}
 		value={abv}
 		type="abv"
 		componentId={ingredient.id}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-3/5')}
+	{@render nameInput(mixtureStore, ingredient,)}
 {/snippet}
 
 {#snippet citrusHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/4"
+		class={numericBase}
 		value={volume}
 		type="volume"
 		componentId={ingredient.id}
@@ -165,16 +150,16 @@
 		{mixtureStore}
 		componentId={ingredient.id}
 		component={ingredient.item}
-		basis="basis-1/4"
+		class={secondaryInputBase}
 		onclick={(e) => e.stopPropagation()}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-1/2')}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet acidHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/4"
+		class={numericBase}
 		value={mass}
 		type="mass"
 		componentId={ingredient.id}
@@ -183,16 +168,16 @@
 		{mixtureStore}
 		componentId={ingredient.id}
 		component={ingredient.item}
-		basis="basis-1/4"
+		class={secondaryInputBase}
 		onclick={(e) => e.stopPropagation()}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-1/2')}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet saltHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
 	<NumberSpinner
 		{mixtureStore}
-		class="basis-1/4"
+		class={numericBase}
 		value={mass}
 		type="mass"
 		componentId={ingredient.id}
@@ -201,171 +186,8 @@
 		{mixtureStore}
 		componentId={ingredient.id}
 		component={ingredient.item}
-		basis="basis-1/2"
+		class={secondaryInputBase}
 		onclick={(e) => e.stopPropagation()}
 	/>
-	{@render nameInput(mixtureStore, ingredient, 'basis-1/2')}
-{/snippet}
-
-{#snippet sweetenerDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const component = ingredient.item}
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/4" />
-	<EquivalentSugar
-		{mixtureStore}
-		componentId={id}
-		{component}
-		{mass}
-		readonly={true}
-		class="basis-1/4"
-	/>
-	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-{/snippet}
-
-{#snippet waterDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const component = ingredient.item}
-	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/2" />
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/2" />
-{/snippet}
-
-{#snippet spiritDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-	_volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const component = ingredient.item as Mixture}
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
-	<Volume
-		{mixtureStore}
-		componentId={id}
-		header="Alcohol Volume"
-		{component}
-		volume={component.alcoholVolume}
-		readonly={true}
-		class="basis-1/4"
-	/>
-	<Volume
-		{mixtureStore}
-		componentId={id}
-		header="Water Volume"
-		{component}
-		volume={component.waterVolume}
-		readonly={true}
-		class="basis-1/4"
-	/>
-	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-{/snippet}
-
-{#snippet syrupDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const component = ingredient.item}
-	<Volume {mixtureStore} componentId={id} {component} {volume} readonly={true} class="basis-1/4" />
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	<Brix {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-{/snippet}
-
-{#snippet acidDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientSubstanceItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const substance = ingredient.item}
-	{@const density = substance.pureDensity}
-	<Volume
-		{mixtureStore}
-		componentId={id}
-		component={substance}
-		{volume}
-		readonly={true}
-		class="basis-1/4"
-	/>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
-		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-		<ReadOnlyValue value={substance.pKa ?? NaN} type="pH" />
-	</div>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
-		<Helper class="tracking-tight">Density</Helper>
-		<ReadOnlyValue value={density} type="density" />
-	</div>
-
-	<Cal
-		{mixtureStore}
-		componentId={id}
-		component={substance}
-		{mass}
-		readonly={true}
-		class="basis-1/4"
-	/>
-{/snippet}
-
-{#snippet saltDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientSubstanceItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const substance = ingredient.item}
-	{@const density = substance.pureDensity}
-	<Volume
-		{mixtureStore}
-		componentId={id}
-		component={substance}
-		{volume}
-		readonly={true}
-		class="basis-1/4"
-	/>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
-		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
-	</div>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
-		<Helper class="tracking-tight">Density</Helper>
-		<ReadOnlyValue value={density} type="density" />
-	</div>
-
-	<Cal
-		{mixtureStore}
-		componentId={id}
-		component={substance}
-		{mass}
-		readonly={true}
-		class="basis-1/4"
-	/>
-{/snippet}
-
-{#snippet citrusDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-	volume: number,
-)}
-	{@const id = ingredient.id}
-	{@const component = ingredient.item}
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
-	<Ph {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
-	<Brix {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
-	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
