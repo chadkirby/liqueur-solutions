@@ -32,6 +32,8 @@
 		citrusHeader,
 		acidHeader,
 		saltHeader,
+	} from './MixtureHeaders.svelte';
+	import {
 		saltDetails,
 		sweetenerDetails,
 		waterDetails,
@@ -39,7 +41,7 @@
 		syrupDetails,
 		acidDetails,
 		citrusDetails,
-	} from './MixtureHeaders.svelte';
+	} from './MixtureDetails.svelte';
 	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
 
 	let {
@@ -115,7 +117,7 @@
 					onclick={() => setOpen(id, !openStates.get(id))}
 				>
 					{#snippet header()}
-						<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
+						<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5 w-full">
 							<div class="absolute txt-xxs text-primary-500">{component.describe()}</div>
 							{#if editMode}
 								<RemoveButton
@@ -219,62 +221,60 @@
 			>
 				{#snippet header()}
 					<!-- TOTALS -->
-					<h2 class="group">
-						<div class="items-center gap-x-2 gap-y-2">
-							<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
-							<div class="flex flex-row flex-wrap mb-1">
-								<VolumeComponent
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									volume={mixture.volume}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-								<ABVComponent
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									mass={mixture.mass}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-								<BrixComponent
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									mass={mixture.mass}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-								<Ph
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									mass={mixture.mass}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-								<MassComponent
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									mass={mixture.mass}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-								<CalComponent
-									{mixtureStore}
-									componentId={parentId === null ? 'totals' : parentId}
-									component={mixture}
-									mass={mixture.mass}
-									class="basis-1/6 min-w-20 grow-0"
-								/>
-							</div>
+					<div class="items-center gap-x-2 gap-y-2 w-full">
+						<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
+						<div class="flex flex-row flex-wrap mb-1">
+							<VolumeComponent
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								volume={mixture.volume}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
+							<ABVComponent
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
+							<BrixComponent
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
+							<Ph
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
+							<MassComponent
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
+							<CalComponent
+								{mixtureStore}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class="basis-1/6 min-w-20 grow-0"
+							/>
 						</div>
-					</h2>
+					</div>
 				{/snippet}
 				<!-- Insert the substance map as a table -->
 				<table
 					class={['totals-substance-map', 'w-full', 'text-primary-600', 'dark:text-primary-400']}
 				>
 					<thead>
-						<tr class={['text-right', 'text-xs', 'font-semibold']}>
+						<tr class={['text-right', 'text-xs', 'sm:text-sm', 'font-semibold']}>
 							<th class="text-left pl-2">Substance</th>
 							<th>Mass</th>
 							<th>Mass%</th>
@@ -287,7 +287,7 @@
 							{@const volume = item.getVolume(mass)}
 							{@const massPct = (mass / mixture.mass) * 100}
 							{@const volumePct = (volume / mixture.volume) * 100}
-							{@const tdClass = ['pt-2', 'text-right', 'font-mono', 'text-xs']}
+							{@const tdClass = ['pt-2', 'text-right', 'font-mono', 'text-xs', 'sm:text-sm']}
 							<tr class={['border-t-2', 'border-primary-200', 'dark:border-primary-800']}>
 								<td class={['!font-sans', '!text-left', 'pl-2', 'text-sm']}>{substanceId}</td>
 								<td class={tdClass}>{mass.toFixed(1)}<span>g</span></td>

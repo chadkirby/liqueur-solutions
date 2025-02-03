@@ -222,25 +222,8 @@
 		class="
 				block
 				w-full
+				ls-rounded-box
 				{isKeyboardEditing ? 'text-center' : 'text-right'}
-				focus:outline-2
-				border
-				border-primary-300
-				dark:border-primary-600
-				dark:focus:border-primary-500
-				dark:focus:ring-primary-50
-				bg-primary-50
-				dark:bg-primary-700
-				text-primary-900
-				dark:text-white
-				dark:placeholder-primary-400
-				rounded-md
-				text-xs
-				px-0.5
-				py-0.5
-				focus:ring-2
-				focus:border-blue-200
-				focus:ring-blue-200
 			"
-	/><span class="ml-0.5 text-xs">{unit}</span>
+	/><span class="ml-0.5 text-xs w-5">{unit}</span>
 </div>

@@ -2,10 +2,7 @@
 	import UserButton from 'clerk-sveltekit/client/UserButton.svelte';
 	import SignedIn from 'clerk-sveltekit/client/SignedIn.svelte';
 	import SignedOut from 'clerk-sveltekit/client/SignedOut.svelte';
-	import {
-		UserOutline,
-		UserSolid,
-	} from 'flowbite-svelte-icons';
+	import { UserOutline, UserSolid } from 'flowbite-svelte-icons';
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
@@ -28,14 +25,12 @@
 
 	let storeId = $derived(mixtureStore.storeId);
 
-	$inspect(mixtureStore);
-
 	// hack to remove accordion focus ring
 	accordionitem.slots.active = accordionitem.slots.active.replace(/\S*focus:ring\S+/g, '');
 	// hack to adjust accordion item padding
 	accordionitem.variants.flush.false = {
 		button: 'p-2 border-s border-e group-first:border-t',
-		content: 'p-2 border-s border-e'
+		content: 'p-2 border-s border-e',
 	};
 
 	const handleTitleInput = () =>
@@ -88,22 +83,30 @@
 			<UserButton afterSignOutUrl={window.location.href}></UserButton>
 		</SignedIn>
 		<SignedOut>
-			<SignInButton class="rounded-full     text-center
-    border
-    border-primary-300
-    dark:border-primary-400
-    text-primary-900    font-medium
-    text-sm
-basis-1/4" mode="modal" />
-			<SignUpButton class="rounded-full     text-center
-    border
-    border-primary-300
-    dark:border-primary-400
-    bg-white    font-medium
-    text-sm
-basis-1/4" mode="modal" />
+			<SignInButton
+				class="rounded-full
+				text-center
+				border
+				border-primary-300
+				dark:border-primary-400
+				text-primary-900
+				font-medium
+				text-sm
+				basis-1/4"
+				mode="modal"
+			/>
+			<SignUpButton
+				class="rounded-full
+				text-center
+				border
+				border-primary-300
+				dark:border-primary-400
+				bg-white    font-medium
+				text-sm
+				basis-1/4"
+				mode="modal"
+			/>
 		</SignedOut>
-
 	</section>
 
 	<MixtureAccordion {mixtureStore} id={null} name={mixtureStore.name} />

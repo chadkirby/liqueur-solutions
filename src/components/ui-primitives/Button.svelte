@@ -17,43 +17,24 @@
 		id?: string;
 	} & Pick<HTMLProps, EventKeys>;
 	let { children, class: classProp, id, isActive, ...handlers }: Props = $props();
-	let activeClass = $derived(
-		isActive ? `!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600` : ''
-	);
 </script>
 
 <button
 	type="button"
 	{id}
 	{...handlers}
-	class="
-    text-center
-    font-medium
-    text-sm
-    items-center
-    justify-center
-    text-primary-900
-    bg-white
-    hover:bg-primary-100
-    dark:bg-primary-800
-    dark:text-white
-    dark:hover:bg-primary-700
-    dark:hover:border-primary-600
-    focus-within:ring-primary-200
-    dark:focus-within:ring-primary-700
-    focus-within:ring-4
-    focus-within:outline-none
-    border
-    border-primary-300
-    dark:border-primary-400
-    rounded-md
-    px-0.5
-    py-0.5
-    flex
-    flex-row
-    gap-1
-    {activeClass}
-    {classProp}"
+	class={[
+    'text-center',
+    'ls-rounded-box',
+    'font-medium',
+    'items-center',
+    'justify-center',
+    'flex',
+    'flex-row',
+    'gap-1',
+    isActive && '!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600',
+    classProp
+    ]}
 >
 	{@render children()}
 </button>
