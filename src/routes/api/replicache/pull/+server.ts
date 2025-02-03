@@ -24,23 +24,25 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 	try {
 		const items = [];
 
+		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_'); // Safe for use in key
+
 		// List user's files
-		const files = await bucket.list({ prefix: `files/${userId}/` });
+		const files = await bucket.list({ prefix: `files/${safeId}/` });
 		for (const obj of files.objects) {
 			const content = await bucket.get(obj.key);
 			if (content) {
 				items.push({
-					key: obj.key.replace(`files/${userId}/`, 'files/'), // Strip user ID from key
+					key: obj.key.replace(`files/${safeId}/`, 'files/'), // Strip user ID from key
 					value: await content.json(),
 				});
 			}
 		}
 
 		// List user's stars
-		const stars = await bucket.list({ prefix: `stars/${userId}/` });
+		const stars = await bucket.list({ prefix: `stars/${safeId}/` });
 		for (const obj of stars.objects) {
 			items.push({
-				key: obj.key.replace(`stars/${userId}/`, 'stars/'), // Strip user ID from key
+				key: obj.key.replace(`stars/${safeId}/`, 'stars/'), // Strip user ID from key
 				value: true,
 			});
 		}
