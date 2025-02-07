@@ -8,7 +8,7 @@
 	let value = $derived(isMixture(component) ? component.kcal : component.getKcal(mass));
 </script>
 
-<div class="mx-1 grow {classProp}" data-testid="cal-{componentId}">
+<div class={classProp} data-testid="cal-{componentId}">
 	<Helper class="tracking-tight">Calories</Helper>
 	<ReadOnlyValue type="kcal" {value} />
 </div>

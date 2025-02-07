@@ -116,11 +116,11 @@
 		readonly={true}
 		class="basis-1/4"
 	/>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
+	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
 		<ReadOnlyValue value={substance.pKa ?? NaN} type="pH" />
 	</div>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
+	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">Density</Helper>
 		<ReadOnlyValue value={density} type="density" />
 	</div>
@@ -152,11 +152,11 @@
 		readonly={true}
 		class="basis-1/4"
 	/>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
+	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
 		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
 	</div>
-	<div class="mx-1 min-w-0 w-full basis-1/4">
+	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">Density</Helper>
 		<ReadOnlyValue value={density} type="density" />
 	</div>

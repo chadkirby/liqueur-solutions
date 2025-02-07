@@ -12,7 +12,7 @@
 	let equivCal = $derived(esm * sucrose.kcal);
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class={classProp}>
 	<Helper>≈ Sugar</Helper>
 	<ReadOnlyValue value={esm} type="mass" />
 	<Helper class="text-center">{format(equivCal, { unit: 'kcal' })}</Helper>
