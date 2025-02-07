@@ -220,51 +220,52 @@
 				onclick={() => setOpen('totals', !openStates.get('totals'))}
 			>
 				{#snippet header()}
+					{@const width = 'w-24 shrink-0'}
 					<!-- TOTALS -->
-					<div class="items-center gap-x-2 gap-y-2 w-full">
-						<div class="text-xs p-1 pt-2 text-primary-600">Totals ({mixtureName})</div>
-						<div class="flex flex-row flex-wrap mb-1">
+					<div class="items-center w-full">
+						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
+						<div class="flex flex-row flex-wrap mb-1 gap-x-2 gap-y-2">
 							<VolumeComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								volume={mixture.volume}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 							<ABVComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								mass={mixture.mass}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 							<BrixComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								mass={mixture.mass}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 							<Ph
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								mass={mixture.mass}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 							<MassComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								mass={mixture.mass}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 							<CalComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
 								component={mixture}
 								mass={mixture.mass}
-								class="basis-1/6 min-w-20 grow-0"
+								class={width}
 							/>
 						</div>
 					</div>
