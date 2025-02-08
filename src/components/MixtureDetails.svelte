@@ -20,6 +20,30 @@
 		acidDetails,
 		citrusDetails,
 	};
+
+	/**
+	 * return the boiling temperature of a solution at a given ABV
+	 *
+	 * @param liquidAbv - The ABV of the solution
+	 *
+	 * @returns The boiling temperature of the solution in Fahrenheit
+	 */
+	function abvToBoilTemp(liquidAbv: number): number {
+		let abvPercent = liquidAbv / 100;
+		const degC = Number(
+			// return the ºC temperature at which a solution at ABV will boil
+			60.526 * abvPercent ** 4 -
+				163.16 * abvPercent ** 3 +
+				163.96 * abvPercent ** 2 -
+				83.438 * abvPercent +
+				100,
+		);
+		const degF = (degC * 9) / 5 + 32;
+		return degF;
+	}
+
+	const numericBase = 'w-20 shrink-0'; // Fixed width for number + unit
+
 </script>
 
 {#snippet sweetenerDetails(
@@ -63,26 +87,32 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item as Mixture}
-	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/5" />
+	{@const basis = 'basis-1/5'}
+	<Mass {mixtureStore} componentId={id} {component} {mass} readonly={true} class={basis} />
 	<Volume
 		{mixtureStore}
 		componentId={id}
-		header="Alcohol Volume"
+		header="Alcohol Vol."
 		{component}
 		volume={component.alcoholVolume}
 		readonly={true}
-		class="basis-1/4"
+		class={basis}
 	/>
 	<Volume
 		{mixtureStore}
 		componentId={id}
-		header="Water Volume"
+		header="Water Vol."
 		{component}
 		volume={component.waterVolume}
 		readonly={true}
-		class="basis-1/4"
+		class={basis}
 	/>
-	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+	<div class={basis} data-testid="boil-{id}">
+		<Helper class="tracking-tight">Boiling Pt.</Helper>
+		<ReadOnlyValue type="temp" value={abvToBoilTemp(component.abv)} />
+	</div>
+
+	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class={basis} />
 {/snippet}
 
 {#snippet syrupDetails(

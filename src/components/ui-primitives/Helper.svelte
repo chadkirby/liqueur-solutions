@@ -22,6 +22,18 @@
 	} & Pick<HTMLProps, EventKeys> = $props();
 </script>
 
-<p class="text-xs font-normal text-primary-500 dark:text-primary-400 {classProp}" {...handlers}>
+<p
+	class={[
+		'text-xs',
+		'font-normal',
+		'text-primary-500',
+		'dark:text-primary-400',
+		'whitespace-nowrap',
+		'overflow-hidden',
+		'text-ellipsis',
+		classProp,
+	]}
+	{...handlers}
+>
 	{@render children()}
 </p>
