@@ -1,4 +1,4 @@
-import type { IngredientDbData, MixtureData } from './mixture-types.js';
+import type { IngredientDbData } from './mixture-types.js';
 
 export const currentDataVersion = 1;
 
@@ -40,7 +40,7 @@ export type StoredFileDataV0 = {
 };
 
 export function isV0Data(data: unknown): data is StoredFileDataV0 {
-  if (!isObj(data)) return false;
+	if (!isObj(data)) return false;
 	if (!('mixture' in data)) return false;
 
 	const mixture = data.mixture;

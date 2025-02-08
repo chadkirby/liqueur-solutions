@@ -15,14 +15,15 @@ export function digitsForDisplay(value: number, maxVal = Infinity) {
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
 export type MassUnit = 'kg' | 'g' | 'mg' | 'lb' | 'oz';
 export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal' | 'pH' | 'g/ml';
+export type TempUnit = '°F' | '°C';
 
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
-	unit?: VolumeUnit | MassUnit | OtherUnit | '';
+	unit?: VolumeUnit | MassUnit | OtherUnit | TempUnit | '';
 };
 
 export const thinsp = '\u2009';
-function suffixForUnit(unit: VolumeUnit | MassUnit | OtherUnit) {
+function suffixForUnit(unit: FormatOptions['unit']) {
 	switch (unit) {
 		case 'fl_oz':
 			return `fl.${thinsp}oz`;
@@ -184,7 +185,7 @@ function yToX(y: number, x: number) {
  * @param relativePath - The relative path to resolve
  * @returns {string} The fully resolved absolute URL
  */
-export function resolveUrl(relativePath: string): string {
+export function resolveRelativeUrl(relativePath: string): string {
 	// Create an anchor element
 	const link = document.createElement('a');
 

@@ -33,5 +33,5 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 		const { filesDb } = await import('$lib/storage.svelte.js');
 		await filesDb.write(item);
 	}
-	throw redirect(303, `/file/${item.id}`);
+	throw redirect(303, `/edit/${item.id}`);
 }
