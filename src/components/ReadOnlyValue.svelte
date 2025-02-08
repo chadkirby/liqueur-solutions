@@ -2,7 +2,7 @@
 	import { brixToSyrupProportion, format, type FormatOptions } from '$lib/utils.js';
 	interface Props {
 		value: number | number[];
-		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal' | 'pH' | 'density';
+		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal' | 'pH' | 'density' | 'temp';
 		molecularMass?: number;
 	}
 	let { value, type, molecularMass }: Props = $props();
@@ -43,9 +43,13 @@
 					fn: (v: number) => (v < 100 && v >= 50 ? brixToSyrupProportion(v) : ''),
 				},
 			] as Alternate[],
-			kcal: [{ options: { unit: 'kcal' }, fn: (v: number) => v }] as Alternate[],
-			pH: [{ options: { unit: 'pH' }, fn: (v: number) => v }] as Alternate[],
-			density: [{ options: { unit: 'g/ml' }, fn: (v: number) => v }] as Alternate[],
+			kcal: [{ options: { unit: 'kcal' }, fn: (v: number) => v }] satisfies Alternate[],
+			pH: [{ options: { unit: 'pH' }, fn: (v: number) => v }] satisfies Alternate[],
+			density: [{ options: { unit: 'g/ml' }, fn: (v: number) => v }] satisfies Alternate[],
+			temp: [
+				{ options: { unit: '°F' }, fn: (v: number) => v },
+				{ options: { unit: '°C' }, fn: (v: number) => (v - 32) / 1.8 },
+			] satisfies Alternate[],
 		}[type],
 	);
 

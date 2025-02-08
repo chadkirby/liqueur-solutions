@@ -155,13 +155,13 @@
 							{/if}
 						</div>
 					{/snippet}
-					<div class="flex ml-4 relative">
+					<div class="flex ml-4 relative gap-1 sm:gap-2">
 						<span
 							class={[
 								'absolute',
 								'w-4',
 								'h-9',
-								'-left-3',
+								'-left-4',
 								'-top-2',
 								'border-l-2',
 								'border-b-2',
@@ -224,7 +224,7 @@
 					<!-- TOTALS -->
 					<div class="items-center w-full">
 						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
-						<div class="flex flex-row flex-wrap mb-1 gap-x-2 gap-y-2">
+						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
 							<VolumeComponent
 								{mixtureStore}
 								componentId={parentId === null ? 'totals' : parentId}
