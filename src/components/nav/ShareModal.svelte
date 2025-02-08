@@ -2,7 +2,6 @@
 	import { Button, Modal, Toast } from 'svelte-5-ui-lib';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
-	import { resolveUrl } from '$lib/utils.js';
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 	import { serializeToUrl } from '$lib/url-serialization.js';
@@ -17,13 +16,16 @@
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(
-			resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture))
-		);
-		toastStatus = true;
-		setTimeout(() => {
-			toastStatus = false;
-		}, 2000);
+		const url = serializeToUrl(mixtureStore.name, mixtureStore.mixture);
+		try {
+			await navigator.clipboard.writeText(url);
+			toastStatus = true;
+			setTimeout(() => {
+				toastStatus = false;
+			}, 2000);
+		} catch (error) {
+			console.error('Failed to copy URL to clipboard', error);
+		}
 	};
 
 	// close the modal on escape
@@ -101,7 +103,7 @@
 	>
 		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
-				data={resolveUrl(serializeToUrl(mixtureStore.name, mixtureStore.mixture))}
+				data={serializeToUrl(mixtureStore.name, mixtureStore.mixture)}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl

@@ -23,10 +23,9 @@
 	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
-	import { deserializeFromUrl } from '$lib/deserialize-from-url.js';
+	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId } from '$lib/mixture.js';
-	import { resolveUrl } from '$lib/utils.js';
-
+	import { resolveRelativeUrl } from '$lib/utils.js';
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
@@ -151,7 +150,7 @@
 				const data = JSON.parse(reader.result as string);
 				for (const item of data) {
 					if ('href' in item && 'name' in item) {
-						const url = new URL(resolveUrl(item.href));
+						const url = new URL(resolveRelativeUrl(item.href));
 						const { mixture } = deserializeFromUrl(url.searchParams);
 						const v1Data: StoredFileDataV1 = {
 							id: componentId(),
