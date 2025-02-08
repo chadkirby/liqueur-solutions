@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SignUp from 'clerk-sveltekit/client/SignUp.svelte'
+	import { SignUp } from 'svelte-clerk';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function
@@ -7,7 +7,6 @@
 	}
 
 	let { data }: Props = $props();
-
 </script>
 
 <div>

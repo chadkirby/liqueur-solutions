@@ -1,6 +1,6 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
-/// <reference types="clerk-sveltekit/env" />
+/// <reference types="svelte-clerk/env" />
 
 
 import type { R2Bucket } from '@cloudflare/workers-types';
