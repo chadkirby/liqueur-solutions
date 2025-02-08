@@ -1,4 +1,4 @@
-import type { useClerkContext } from 'clerk-sveltekit/client';
+import type { useClerkContext } from 'svelte-clerk';
 
 import { Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
@@ -87,7 +87,7 @@ class FilesDb {
 	private async initializeSync() {
 		if (browser) {
 			try {
-				const { useClerkContext } = await import('clerk-sveltekit/client');
+				const { useClerkContext } = await import('svelte-clerk');
 				const context = useClerkContext();
 				user = context.user ?? null;
 				// Enable sync when user is logged in

@@ -1,5 +1,5 @@
 import type { HandleServerError } from '@sveltejs/kit';
-import { withClerkHandler } from 'clerk-sveltekit/server';
+import { withClerkHandler } from 'svelte-clerk/server';
 
 export const handle = withClerkHandler();
 
