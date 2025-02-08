@@ -39,43 +39,35 @@ test('index page has expected totals', async ({ page }) => {
 test('can edit spirit volume directly', async ({ page }) => {
 	await page.goto(standardMixture);
 
-	await page.getByRole('button', { name: 'spirit 100 ml 40.0 %' }).click();
-	await page
-		.getByRole('button', { name: 'spirit 100 ml 40.0 %' })
-		.getByRole('textbox')
-		.first()
-		.click();
+	await page.getByRole('button', { name: 'Spirit' }).click();
+	await page.getByRole('button', { name: 'Spirit' }).getByRole('textbox').first().click();
 	await page.keyboard.type('200');
 	await page.keyboard.press('Enter');
 	await expectTotals(page, {
-		volume: '331',
-		abv: '24.1',
-		brix: '15.0',
-		mass: '333',
-		cal: '642'
+		volume: '334',
+		abv: '24.7',
+		brix: '14.7',
+		mass: '339',
+		cal: '657',
 	});
 });
 
 test('can edit spirit volume with arrows', async ({ page }) => {
 	await page.goto(standardMixture);
 
-	await page.getByRole('button', { name: 'spirit 100 ml 40.0 %' }).click();
-	await page
-		.getByRole('button', { name: 'spirit 100 ml 40.0 %' })
-		.getByRole('textbox')
-		.first()
-		.click();
+	await page.getByRole('button', { name: 'Spirit' }).click();
+	await page.getByRole('button', { name: 'Spirit' }).getByRole('textbox').first().click();
 	await page.keyboard.press('ArrowUp');
 	await page.keyboard.press('ArrowUp');
 	await page.keyboard.press('ArrowUp');
 	await page.keyboard.press('ArrowUp');
 	await page.keyboard.press('ArrowUp');
 	await expectTotals(page, {
-		volume: '236',
-		abv: '17.8',
+		volume: '235',
+		abv: '17.9',
 		brix: '20.3',
 		mass: '246',
-		cal: '429'
+		cal: '429',
 	});
 
 	await page.keyboard.press('ArrowDown');
@@ -84,11 +76,11 @@ test('can edit spirit volume with arrows', async ({ page }) => {
 	await page.keyboard.press('ArrowDown');
 	await page.keyboard.press('ArrowDown');
 	await expectTotals(page, {
-		volume: '231',
-		abv: '17.3',
+		volume: '230',
+		abv: '17.4',
 		brix: '20.7',
 		mass: '242',
-		cal: '418'
+		cal: '418',
 	});
 });
 

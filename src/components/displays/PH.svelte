@@ -14,7 +14,7 @@
 	let pH = $derived(component.pH);
 </script>
 
-<div class={classProp} data-testid="abv-{componentId}">
+<div class={classProp} data-testid="ph-{componentId}">
 	<Helper class="tracking-tight">𝗉𝖧</Helper>
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner {mixtureStore} value={pH} type="pH" {componentId} max={100} />
