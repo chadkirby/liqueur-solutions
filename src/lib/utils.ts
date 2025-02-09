@@ -14,8 +14,8 @@ export function digitsForDisplay(value: number, maxVal = Infinity) {
 
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
 export type MassUnit = 'kg' | 'g' | 'mg' | 'lb' | 'oz';
-export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal' | 'pH' | 'g/ml';
-export type TempUnit = '°F' | '°C';
+export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal' | 'pH' | 'g/ml' | 'mol';
+export type TempUnit = '°F' | '°C' | 'F' | 'C';
 
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';

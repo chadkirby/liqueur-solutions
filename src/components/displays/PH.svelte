@@ -2,8 +2,8 @@
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { isMixture, Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 	import type { DisplayProps } from './display-props.js';
+	import ReadOnlyValue from '../ReadOnlyValue.svelte';
 
 	let { component, componentId, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
 
@@ -19,6 +19,6 @@
 	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
 		<NumberSpinner {mixtureStore} value={pH} type="pH" {componentId} max={100} />
 	{:else}
-		<ReadOnlyValue value={pH} type="pH" />
+		<ReadOnlyValue values={[pH]} formatOptions={[{ unit: 'pH' }]} />
 	{/if}
 </div>

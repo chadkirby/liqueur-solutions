@@ -3,7 +3,7 @@
 	import { Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { brixToSyrupProportion, format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 
 	let { componentId, component, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
@@ -22,6 +22,6 @@
 		<NumberSpinner {mixtureStore} value={brix} type="brix" {componentId} />
 		<Helper class="text-center">{parts}</Helper>
 	{:else}
-		<ReadOnlyValue value={brix} type="brix" />
+		<AltUnitValue value={brix} type="brix" />
 	{/if}
 </div>

@@ -10,5 +10,5 @@
 
 <div class={classProp} data-testid="cal-{componentId}">
 	<Helper class="tracking-tight">Calories</Helper>
-	<ReadOnlyValue type="kcal" {value} />
+	<ReadOnlyValue values={[value]} formatOptions={[{ unit: 'kcal' }]} />
 </div>

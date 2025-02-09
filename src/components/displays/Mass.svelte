@@ -1,7 +1,7 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
 	import { format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { isSubstance, isSweetener } from '$lib/mixture.js';
@@ -24,12 +24,12 @@
 		<NumberSpinner {mixtureStore} value={grams} type="mass" {componentId} />
 		<Helper class="text-center">{format(grams / 28.3495, { unit: 'oz' })}</Helper>
 	{:else if isSubstance(component)}
-		<ReadOnlyValue
+		<AltUnitValue
 			value={grams}
 			type="mass"
 			molecularMass={component.substance.molecule.molecularMass}
 		/>
 	{:else}
-		<ReadOnlyValue value={grams} type="mass" />
+		<AltUnitValue value={grams} type="mass" />
 	{/if}
 </div>

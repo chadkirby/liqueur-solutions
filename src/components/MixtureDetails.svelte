@@ -4,12 +4,12 @@
 	import EquivalentSugar from './displays/EquivalentSugar.svelte';
 	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import Helper from './ui-primitives/Helper.svelte';
-	import ReadOnlyValue from './ReadOnlyValue.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Mass from './displays/Mass.svelte';
 	import Volume from './displays/Volume.svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import Ph from './displays/PH.svelte';
+	import ReadOnlyValue from './ReadOnlyValue.svelte';
 
 	export {
 		saltDetails,
@@ -28,7 +28,7 @@
 	 *
 	 * @returns The boiling temperature of the solution in Fahrenheit
 	 */
-	function abvToBoilTemp(liquidAbv: number): number {
+	function abvToBoilTemp(liquidAbv: number): number[] {
 		let abvPercent = liquidAbv / 100;
 		const degC = Number(
 			// return the ºC temperature at which a solution at ABV will boil
@@ -39,11 +39,8 @@
 				100,
 		);
 		const degF = (degC * 9) / 5 + 32;
-		return degF;
+		return [degF, degC];
 	}
-
-	const numericBase = 'w-20 shrink-0'; // Fixed width for number + unit
-
 </script>
 
 {#snippet sweetenerDetails(
@@ -109,7 +106,11 @@
 	/>
 	<div class={basis} data-testid="boil-{id}">
 		<Helper class="tracking-tight">Boiling Pt.</Helper>
-		<ReadOnlyValue type="temp" value={abvToBoilTemp(component.abv)} />
+		<ReadOnlyValue
+			values={abvToBoilTemp(component.abv)}
+			formatOptions={[{ unit: 'F' }, { unit: 'C' }]}
+			connector="&thinsp;/&thinsp;"
+		/>
 	</div>
 
 	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class={basis} />
@@ -148,11 +149,11 @@
 	/>
 	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-		<ReadOnlyValue value={substance.pKa ?? NaN} type="pH" />
+		<ReadOnlyValue values={substance.pKa ?? [NaN]} formatOptions={[{ unit: 'pH' }]} />
 	</div>
 	<div class="mx-1 basis-1/4">
 		<Helper class="tracking-tight">Density</Helper>
-		<ReadOnlyValue value={density} type="density" />
+		<ReadOnlyValue values={[density]} formatOptions={[{ unit: 'g/ml' }]} />
 	</div>
 
 	<Cal
@@ -174,21 +175,24 @@
 	{@const id = ingredient.id}
 	{@const substance = ingredient.item}
 	{@const density = substance.pureDensity}
+	{@const basis = substance.pKa.length ? 'basis-1/4' : 'basis-1/3'}
 	<Volume
 		{mixtureStore}
 		componentId={id}
 		component={substance}
 		{volume}
 		readonly={true}
-		class="basis-1/4"
+		class={basis}
 	/>
-	<div class="mx-1 basis-1/4">
-		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
-		<ReadOnlyValue value={substance.pKa.at(0) ?? NaN} type="pH" />
-	</div>
-	<div class="mx-1 basis-1/4">
+	{#if substance.pKa.length}
+		<div class="mx-1 {basis}">
+			<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
+			<ReadOnlyValue values={substance.pKa} formatOptions={[{ unit: 'pH' }]} />
+		</div>
+	{/if}
+	<div class="mx-1 {basis}">
 		<Helper class="tracking-tight">Density</Helper>
-		<ReadOnlyValue value={density} type="density" />
+		<ReadOnlyValue values={[density]} formatOptions={[{ unit: 'g/ml' }]} />
 	</div>
 
 	<Cal
@@ -197,7 +201,7 @@
 		component={substance}
 		{mass}
 		readonly={true}
-		class="basis-1/4"
+		class={basis}
 	/>
 {/snippet}
 

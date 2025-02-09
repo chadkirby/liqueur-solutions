@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
 	import { isSweetenerId } from '$lib/ingredients/substances.js';
@@ -31,7 +31,7 @@
 	<Helper class="tracking-tight">{header}</Helper>
 
 	{#if isSweetenerId(componentId) || readonly}
-		<ReadOnlyValue value={ml} type="volume" />
+		<AltUnitValue value={ml} type="volume" />
 	{:else}
 		<NumberSpinner {mixtureStore} value={ml} type="volume" {componentId} />
 		<Helper class="text-center">{format(ml * 0.033814, { unit: 'fl_oz' })}</Helper>
