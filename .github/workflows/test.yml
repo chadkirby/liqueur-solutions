@@ -5,30 +5,64 @@ on: [push, pull_request] # Run on all pushes and PRs
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment: Preview
+    # Environment variables available to all steps in this job
     env:
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
       PUBLIC_REPLICACHE_LICENSE_KEY: ${{ secrets.PUBLIC_REPLICACHE_LICENSE_KEY }}
       PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.PUBLIC_CLERK_PUBLISHABLE_KEY }}
-
     steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/checkout@v4
 
       - name: Install Volta
         uses: volta-cli/action@v4
 
+      # Cache Strategy:
+      # 1. Try exact match using yarn.lock hash
+      # 2. If no match, fall back to any previous cache for this OS
+      # 3. If still no match, create new cache
+      - name: Cache yarn dependencies
+        uses: actions/cache@v3
+        with:
+          # Define what paths should be cached
+          path: |
+            **/node_modules
+            .yarn/cache
+          # Primary cache key - unique per yarn.lock change
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          # Fallback key - matches any previous cache for this OS/yarn combo
+          # Useful when dependencies partially change
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      # Similar cache strategy for Playwright browsers
+      # Avoids re-downloading browsers on every run
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      # Install dependencies if cache miss or partial hit
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Run type checking
       - name: Run Svelte Check
         run: yarn svelte-check
 
+      # Run unit tests
       - name: Run Unit Tests
         run: yarn test:unit
 
-      - name: Run Playwright Tests
+      # Install Playwright if not in cache
+      - name: Install Playwright
         run: |
           yarn playwright install
           yarn playwright install-deps
-          yarn test
+
+      # Run E2E tests
+      - name: Run Playwright Tests
+        run: yarn test
