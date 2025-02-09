@@ -95,7 +95,7 @@ export class MixtureStore {
 		for (const { ingredient } of mixture.eachIngredient()) {
 			if (ingredient.item instanceof Mixture) {
 				const found = this.findIngredient(id, ingredient.item);
-				if (found) return found;
+				if (found.ingredient) return found;
 			}
 		}
 		return { ingredient: null, parentId: null };
