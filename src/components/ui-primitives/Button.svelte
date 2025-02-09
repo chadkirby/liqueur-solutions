@@ -3,19 +3,10 @@
 	import type { SvelteHTMLElements } from 'svelte/elements';
 
 	type HTMLProps = SvelteHTMLElements['button'];
-	type PropKeys = keyof HTMLProps;
-	type EventKeys =
-		Extract<PropKeys, `on${string}`> extends infer K
-			? K extends `on:${string}`
-				? never
-				: K
-			: never;
 	type Props = {
 		children: Snippet;
 		isActive?: boolean;
-		class?: string;
-		id?: string;
-	} & Pick<HTMLProps, EventKeys>;
+	} & HTMLProps;
 	let { children, class: classProp, id, isActive, ...handlers }: Props = $props();
 </script>
 

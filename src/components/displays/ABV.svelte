@@ -3,7 +3,7 @@
 	import { Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 
 	let { component, componentId, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
@@ -18,6 +18,6 @@
 		<NumberSpinner {mixtureStore} value={abv} type="abv" {componentId} max={100} />
 		<Helper class="text-center">{format(proof, { unit: 'proof' })}</Helper>
 	{:else}
-		<ReadOnlyValue value={abv} type="abv" />
+		<AltUnitValue value={abv} type="abv" />
 	{/if}
 </div>

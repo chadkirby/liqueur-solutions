@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { Sweeteners } from '$lib/ingredients/substances.js';
@@ -14,6 +14,6 @@
 
 <div class={classProp}>
 	<Helper>≈ Sugar</Helper>
-	<ReadOnlyValue value={esm} type="mass" />
+	<AltUnitValue value={esm} type="mass" />
 	<Helper class="text-center">{format(equivCal, { unit: 'kcal' })}</Helper>
 </div>
