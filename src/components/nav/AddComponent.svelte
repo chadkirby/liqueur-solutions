@@ -78,31 +78,31 @@
 </script>
 
 <div class="flex flex-row flex-wrap gap-1">
-	<Button class="p-1" onclick={addSpirit}>
+	<Button class="p-1" onclick={addSpirit} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">spirit</span>
 	</Button>
 
-	<Button class="p-1" onclick={addSugar}>
+	<Button class="p-1" onclick={addSugar} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">sweetener</span>
 	</Button>
 
-	<Button class="p-1" onclick={addSyrup}>
+	<Button class="p-1" onclick={addSyrup} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">syrup</span>
 	</Button>
 
-	<Button class="p-1" onclick={addWater}>
+	<Button class="p-1" onclick={addWater} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">water</span>
 	</Button>
 
-	<Button class="p-1" onclick={addCitrus}>
+	<Button class="p-1" onclick={addCitrus} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">citrus juice</span>
 	</Button>
 
-	<Button class="p-1" onclick={() => addSubstance('sodium-citrate', 1)}>
+	<Button class="p-1" onclick={() => addSubstance('sodium-citrate', 1)} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">salt</span>
 	</Button>
 
-	<Button class="p-1" onclick={() => addSubstance('citric-acid', 10)}>
+	<Button class="p-1" onclick={() => addSubstance('citric-acid', 10)} data-testid="add-button">
 		<CirclePlusSolid size="sm" /><span class="mr-1">acid</span>
 	</Button>
 
@@ -111,7 +111,7 @@
 			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
 		</Button> -->
 
-		<Button class="p-1" onclick={openFilesDrawer}>
+		<Button class="p-1" onclick={openFilesDrawer} data-testid="add-button-saved">
 			<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>
 		</Button>
 	{/if}

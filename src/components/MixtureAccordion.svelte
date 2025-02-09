@@ -72,8 +72,6 @@
 	function toggleEditMode() {
 		editMode = !editMode;
 	}
-
-	const btnClass = 'py-1 px-1.5 border-1 !justify-start gap-1';
 </script>
 
 <div>
@@ -107,7 +105,7 @@
 
 	{#if mixture}
 		<Accordion flush={false} isSingle={false} class="mt-1">
-			{#each mixture.eachIngredient() || [] as { ingredient, mass } (ingredient.id)}
+			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id)}
 				{@const id = ingredient.id}
 				{@const component = ingredient.item}
 				{@const volume = mixture.getIngredientVolume(id)}
@@ -117,7 +115,10 @@
 					onclick={() => setOpen(id, !openStates.get(id))}
 				>
 					{#snippet header()}
-						<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5 w-full">
+						<div
+							class="relative pt-2.5 flex flex-row items-center gap-x-1.5 w-full"
+							data-testid="mixture-ingredient-accordion-header"
+						>
 							<div class="absolute txt-xxs text-primary-500">{component.describe()}</div>
 							{#if editMode}
 								<RemoveButton
@@ -155,7 +156,10 @@
 							{/if}
 						</div>
 					{/snippet}
-					<div class="flex ml-4 relative gap-1 sm:gap-2">
+					<div
+						class="flex ml-4 relative gap-1 sm:gap-2"
+						data-testid="mixture-ingredient-accordion-details"
+					>
 						<span
 							class={[
 								'absolute',

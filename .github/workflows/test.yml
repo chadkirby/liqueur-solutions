@@ -6,9 +6,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      CORBADO_API_SECRET: ${{ secrets.CORBADO_API_SECRET }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
       PUBLIC_REPLICACHE_LICENSE_KEY: ${{ secrets.PUBLIC_REPLICACHE_LICENSE_KEY }}
-      PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,4 +30,5 @@ jobs:
       - name: Run Playwright Tests
         run: |
           yarn playwright install
+          yarn playwright install-deps
           yarn test
