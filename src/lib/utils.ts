@@ -1,34 +1,8 @@
-import type { Component } from './components/index.js';
-import type { Target } from './solver.js';
+import type { Mixture } from './mixture.js';
 
 export function round(value: number, precision: number) {
 	const factor = 10 ** precision;
 	return Math.round(value * factor) / factor;
-}
-
-export type Analysis = Target & {
-	mass: number;
-	kcal: number;
-	proof: number;
-	equivalentSugarMass: number;
-};
-
-export function analyze(
-	item: Pick<
-		Component,
-		'volume' | 'mass' | 'abv' | 'brix' | 'alcoholMass' | 'equivalentSugarMass' | 'kcal'
-	>,
-	precision = 0
-): Analysis {
-	return {
-		volume: round(item.volume, precision),
-		mass: round(item.mass, precision),
-		abv: round(item.abv, precision),
-		brix: round(item.brix, precision),
-		kcal: round(item.kcal, precision),
-		proof: round(item.abv * 2, precision),
-		equivalentSugarMass: round(item.equivalentSugarMass, precision)
-	};
 }
 
 export function digitsForDisplay(value: number, maxVal = Infinity) {
@@ -40,20 +14,23 @@ export function digitsForDisplay(value: number, maxVal = Infinity) {
 
 export type VolumeUnit = 'l' | 'ml' | 'fl_oz' | 'tsp' | 'tbsp' | 'cups';
 export type MassUnit = 'kg' | 'g' | 'mg' | 'lb' | 'oz';
-export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal';
+export type OtherUnit = '%' | 'proof' | 'brix' | 'kcal' | 'pH' | 'g/ml' | 'mol';
+export type TempUnit = '°F' | '°C' | 'F' | 'C';
 
 export type FormatOptions = {
 	decimal?: 'fraction' | 'decimal';
-	unit?: VolumeUnit | MassUnit | OtherUnit | '';
+	unit?: VolumeUnit | MassUnit | OtherUnit | TempUnit | '';
 };
 
 export const thinsp = '\u2009';
-function suffixForUnit(unit: VolumeUnit | MassUnit | OtherUnit) {
+function suffixForUnit(unit: FormatOptions['unit']) {
 	switch (unit) {
 		case 'fl_oz':
 			return `fl.${thinsp}oz`;
 		case 'brix':
 			return 'ºBx';
+		case 'pH':
+			return '';
 		default:
 			return unit;
 	}
@@ -77,7 +54,8 @@ export function format(value: number | string, options: FormatOptions = {}) {
 		return Object.assign(new String(value), { value, suffix: '' });
 	}
 	const unit = options.unit;
-	const maxVal = unit === 'proof' || unit === '%' || unit === 'brix' ? 100 : Infinity;
+	const maxVal =
+		unit === 'proof' || unit === '%' || unit === 'brix' ? 100 : unit === 'pH' ? 14 : Infinity;
 	const digits = digitsForDisplay(value, maxVal);
 	const formatted =
 		options.decimal === 'fraction' ? convertToFraction(value) : value.toFixed(digits);
@@ -85,7 +63,7 @@ export function format(value: number | string, options: FormatOptions = {}) {
 	const str = `${formatted}${suffix ? thinsp + suffix : suffix}`;
 	return Object.assign(new String(str), {
 		value: formatted,
-		suffix
+		suffix,
 	});
 }
 
@@ -143,7 +121,7 @@ function getUnicodeFraction(numerator: number, denominator: number) {
 		// 		⅞
 		// VULGAR FRACTION SEVEN EIGHTHS
 		// Unicode: U+215E, UTF-8: E2 85 9E
-		'7/8': '\u215E'
+		'7/8': '\u215E',
 	};
 
 	return fractions[`${numerator}/${denominator}`] ?? `${numerator}⁄${denominator}`;
@@ -180,7 +158,7 @@ const candidates = [
 	yToX(7, 1),
 	yToX(8, 1),
 	yToX(9, 1),
-	yToX(10, 1)
+	yToX(10, 1),
 ].sort((a, b) => a.decimal - b.decimal);
 export function brixToSyrupProportion(brix: number) {
 	const diffs = candidates.map((x) => Math.abs(brix / 100 - x.decimal));
@@ -199,4 +177,48 @@ function xToY(x: number, y: number) {
 
 function yToX(y: number, x: number) {
 	return { ratio: `${x}:${y}`, decimal: x / (x + y) };
+}
+
+/**
+ * Resolves a relative path against the current window location
+ * without actually navigating to it.
+ * @param relativePath - The relative path to resolve
+ * @returns {string} The fully resolved absolute URL
+ */
+export function resolveRelativeUrl(relativePath: string): string {
+	// Create an anchor element
+	const link = document.createElement('a');
+
+	// Setting href on an anchor element will automatically resolve the URL
+	// relative to the current page location
+	link.href = relativePath;
+
+	// The resolved URL is available in the href property
+	// This gives us the fully qualified URL
+	return link.href;
+}
+
+/**
+ * Returns the totals for a mixture.
+ * @param mixture - The mixture to analyze
+ * @returns The totals for the mixture
+ */
+export function getTotals(mixture: Mixture) {
+	if (!mixture.isValid) {
+		throw new Error('Invalid mixture');
+	}
+	return mixture.analyze(1);
+}
+
+export function abvToAbw(abv: number) {
+	if (abv < 0 || abv > 100) {
+		throw new Error('ABV must be between 0 and 100');
+	}
+	// estimate target alcohol by weight:
+	// ABW = 0.1893*ABV*ABV + 0.7918*ABV + 0.0002 => 0.3472
+	return 0.1893 * abv ** 2 + 0.7918 * abv + 0.0002;
+}
+
+export function capitalize(str: string) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
 }

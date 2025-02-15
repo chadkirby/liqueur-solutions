@@ -1,14 +1,9 @@
 <script lang="ts">
-	import { isSimpleSpirit, isSimpleSyrup, Mixture, Sweetener, Water } from '$lib/index.svelte';
 	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
-	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
-	import WaterDisplayGroup from './displays/WaterDisplayGroup.svelte';
-	import SweetenerDisplayGroup from './displays/SweetenerDisplayGroup.svelte';
-	import SpiritDisplayGroup from './displays/SpiritDisplayGroup.svelte';
-	import SyrupDisplayGroup from './displays/SyrupDisplayGroup.svelte';
+	import Mass from './displays/Mass.svelte';
+	import Volume from './displays/Volume.svelte';
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import NumberSpinner from './NumberSpinner.svelte';
 	import AddComponent from './nav/AddComponent.svelte';
 	import VolumeComponent from './displays/Volume.svelte';
 	import ABVComponent from './displays/ABV.svelte';
@@ -16,13 +11,43 @@
 	import CalComponent from './displays/Cal.svelte';
 	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
-	import TextInput from './ui-primitives/TextInput.svelte';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import { serializeToUrl } from '$lib/url-serialization.js';
+	import {
+		isMixture,
+		isSimpleSpirit,
+		isSimpleSyrup,
+		isSweetener,
+		isWater,
+		isCitrusMixture,
+		isAcidSubstance,
+		isSaltIngredient,
+	} from '$lib/mixture.js';
+	import Ph from './displays/PH.svelte';
+	import {
+		defaultHeader,
+		sweetenerHeader,
+		simpleSyrupHeader,
+		spiritHeader,
+		citrusHeader,
+		acidHeader,
+		saltHeader,
+	} from './MixtureHeaders.svelte';
+	import {
+		saltDetails,
+		sweetenerDetails,
+		waterDetails,
+		spiritDetails,
+		syrupDetails,
+		acidDetails,
+		citrusDetails,
+	} from './MixtureDetails.svelte';
+	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
 
 	let {
 		mixtureStore,
 		id: parentId,
-		name
+		name: mixtureName,
 	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
@@ -47,24 +72,19 @@
 	function toggleEditMode() {
 		editMode = !editMode;
 	}
-
-	const btnClass = 'py-1 px-1.5 border-1 !justify-start gap-1';
-
 </script>
 
 <div>
 	<div class="flex flex-row justify-start items-center gap-3 mb-1.5 no-print">
-		<Button
-		isActive={editMode}
-		class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}
-		>
+		<Button isActive={editMode} class="py-1 px-4 border-1 !justify-start" onclick={toggleEditMode}>
 			<span class="text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
-				>Add/Remove</span>
+				>Add/Remove</span
+			>
 		</Button>
 		{#if parentId !== null}
 			<Button
 				class="py-1 px-1.5 border-1 !justify-start gap-1"
-				onclick={() => mixture && (window.location.href = urlEncode(name, mixture))}
+				onclick={() => mixture && (window.location.href = serializeToUrl(mixtureName, mixture))}
 			>
 				<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 					>Open a copy</span
@@ -75,156 +95,226 @@
 
 	{#if editMode}
 		<div class="flex flex-col items-stretch mt-1">
-			<AddComponent {mixtureStore} componentId={parentId} callback={() => setOpen('add-component', false)} />
+			<AddComponent
+				{mixtureStore}
+				componentId={parentId}
+				callback={() => setOpen('add-component', false)}
+			/>
 		</div>
 	{/if}
 
-	<Accordion flush={false} isSingle={false} class="mt-1">
-		{#each mixture?.components || [] as { name, id, component: entry } (id)}
+	{#if mixture}
+		<Accordion flush={false} isSingle={false} class="mt-1">
+			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id)}
+				{@const id = ingredient.id}
+				{@const component = ingredient.item}
+				{@const volume = mixture.getIngredientVolume(id)}
+				<AccordionItem
+					class="py-2 pl-1 pr-2"
+					open={openStates.get(id) ?? false}
+					onclick={() => setOpen(id, !openStates.get(id))}
+				>
+					{#snippet header()}
+						<div
+							class="relative pt-2.5 flex flex-row items-center gap-x-1.5 w-full"
+							data-testid="mixture-ingredient-accordion-header"
+						>
+							<div class="absolute txt-xxs text-primary-500">{component.describe()}</div>
+							{#if editMode}
+								<RemoveButton
+									{mixtureStore}
+									componentId={id}
+									name={ingredient.name}
+									onRemove={() => openStates.delete(id)}
+								/>
+							{/if}
+
+							{#if isSweetener(component)}
+								{@render sweetenerHeader(mixtureStore, ingredient, mass)}
+							{:else if isSimpleSpirit(component)}
+								{@render spiritHeader(
+									mixtureStore,
+									ingredient,
+									volume,
+									mixture.getIngredientAbv(id),
+								)}
+							{:else if isSimpleSyrup(component)}
+								{@render simpleSyrupHeader(
+									mixtureStore,
+									ingredient,
+									volume,
+									mixture.getIngredientBrix(id),
+								)}
+							{:else if isCitrusMixture(component)}
+								{@render citrusHeader(mixtureStore, ingredient, volume)}
+							{:else if isAcidSubstance(component)}
+								{@render acidHeader(mixtureStore, ingredient as IngredientSubstanceItem, mass)}
+							{:else if isSaltIngredient(ingredient)}
+								{@render saltHeader(mixtureStore, ingredient, mass)}
+							{:else}
+								{@render defaultHeader(mixtureStore, ingredient, volume)}
+							{/if}
+						</div>
+					{/snippet}
+					<div
+						class="flex ml-4 relative gap-1 sm:gap-2"
+						data-testid="mixture-ingredient-accordion-details"
+					>
+						<span
+							class={[
+								'absolute',
+								'w-4',
+								'h-9',
+								'-left-4',
+								'-top-2',
+								'border-l-2',
+								'border-b-2',
+								'border-solid',
+								'border-primary-400',
+							]}
+						></span>
+						{#if isSweetener(component)}
+							{@render sweetenerDetails(mixtureStore, ingredient, mass, volume)}
+						{:else if isWater(component)}
+							{@render waterDetails(mixtureStore, ingredient, mass, volume)}
+						{:else if isSimpleSpirit(component)}
+							{@render spiritDetails(mixtureStore, ingredient, mass, volume)}
+						{:else if isSimpleSyrup(component)}
+							{@render syrupDetails(mixtureStore, ingredient, mass, volume)}
+						{:else if isCitrusMixture(component)}
+							{@render citrusDetails(mixtureStore, ingredient, mass, volume)}
+						{:else if isMixture(component)}
+							<MixtureAccordion {mixtureStore} {id} name={ingredient.name} />
+						{:else if isAcidSubstance(component)}
+							{@render acidDetails(
+								mixtureStore,
+								ingredient as IngredientSubstanceItem,
+								mass,
+								volume,
+							)}
+						{:else if isSaltIngredient(ingredient)}
+							{@render saltDetails(mixtureStore, ingredient, mass, volume)}
+						{:else}
+							<div class="flex flex-row my-1">
+								<Volume
+									{mixtureStore}
+									componentId={id}
+									{component}
+									{volume}
+									readonly={true}
+									class="basis-1/2"
+								/>
+								<Mass
+									{mixtureStore}
+									componentId={id}
+									{component}
+									{mass}
+									readonly={true}
+									class="basis-1/2"
+								/>
+							</div>
+						{/if}
+					</div>
+				</AccordionItem>
+			{/each}
+
 			<AccordionItem
 				class="py-2 pl-1 pr-2"
-				open={openStates.get(id) ?? false}
-				onclick={() => setOpen(id, !openStates.get(id))}
+				open={openStates.get('totals') ?? true}
+				onclick={() => setOpen('totals', !openStates.get('totals'))}
 			>
 				{#snippet header()}
-					<div class="relative pt-2.5 flex flex-row items-center gap-x-1.5">
-						<div class="absolute txt-xxs text-primary-500">{entry.describe()}</div>
-						{#if editMode}
-							<RemoveButton
+					{@const width = 'w-24 shrink-0'}
+					<!-- TOTALS -->
+					<div class="items-center w-full">
+						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
+						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
+							<VolumeComponent
 								{mixtureStore}
-								componentId={id}
-								{name}
-								onRemove={() => openStates.delete(id)}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								volume={mixture.volume}
+								class={width}
 							/>
-						{/if}
-
-						{#if entry instanceof Sweetener}
-							<NumberSpinner
+							<ABVComponent
 								{mixtureStore}
-								class="basis-1/5"
-								value={entry.mass}
-								type="mass"
-								componentId={id}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class={width}
 							/>
-						{:else}
-							<NumberSpinner
+							<BrixComponent
 								{mixtureStore}
-								class="basis-1/5"
-								value={entry.volume}
-								type="volume"
-								componentId={id}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class={width}
 							/>
-						{/if}
-
-						{#if isSimpleSpirit(entry)}
-							<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${id}`}>ABV</Tooltip>
-							<NumberSpinner
+							<Ph
 								{mixtureStore}
-								id={`edit-abv-${id}`}
-								class="basis-1/6"
-								value={entry.abv}
-								type="abv"
-								componentId={id}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class={width}
 							/>
-						{/if}
-						{#if isSimpleSyrup(entry)}
-							<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${id}`}>
-								Sweetness
-							</Tooltip>
-							<NumberSpinner
+							<MassComponent
 								{mixtureStore}
-								id={`edit-brix-${id}`}
-								class="basis-1/6"
-								value={entry.brix}
-								type="brix"
-								componentId={id}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class={width}
 							/>
-						{/if}
-
-						{#if entry instanceof Sweetener || isSimpleSyrup(entry)}
-							<SweetenerDropdown
+							<CalComponent
 								{mixtureStore}
-								componentId={id}
-								component={entry}
-								basis="basis-1/3"
-								onclick={(e) => e.stopPropagation()}
+								componentId={parentId === null ? 'totals' : parentId}
+								component={mixture}
+								mass={mixture.mass}
+								class={width}
 							/>
-						{/if}
-						<TextInput
-							type="text"
-							value={name}
-							placeholder={entry.describe()}
-							class="
-								mr-2
-								{entry instanceof Sweetener || isSimpleSyrup(entry)
-								? 'basis-1/3'
-								: isSimpleSpirit(entry)
-									? 'basis-1/2'
-									: 'basis-3/4'}
-								text-sm
-								leading-[18px]
-								focus:ring-2
-								focus:border-blue-200
-								focus:ring-blue-200
-								"
-							onclick={(e) => e.stopPropagation()}
-							oninput={(e) => mixtureStore.updateComponentName(id, e.currentTarget.value)}
-						/>
+						</div>
 					</div>
 				{/snippet}
-				<div class="flex flex-col items-stretch">
-					{#if entry instanceof Sweetener}
-						<SweetenerDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Water}
-						<WaterDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSpirit(entry)}
-						<SpiritDisplayGroup componentId={id} component={entry} />
-					{:else if isSimpleSyrup(entry)}
-						<SyrupDisplayGroup componentId={id} component={entry} />
-					{:else if entry instanceof Mixture}
-						<MixtureAccordion {mixtureStore} {id} {name} />
-					{/if}
-				</div>
+				<!-- Insert the substance map as a table -->
+				<table
+					class={['totals-substance-map', 'w-full', 'text-primary-600', 'dark:text-primary-400']}
+				>
+					<thead>
+						<tr class={['text-right', 'text-xs', 'sm:text-sm', 'font-semibold']}>
+							<th class="text-left pl-2">Substance</th>
+							<th>Mass</th>
+							<th>Mass%</th>
+							<th>Vol</th>
+							<th class="pr-2">Vol%</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each mixture.makeSubstanceMap(true) as [substanceId, { mass, item }]}
+							{@const volume = item.getVolume(mass)}
+							{@const massPct = (mass / mixture.mass) * 100}
+							{@const volumePct = (volume / mixture.volume) * 100}
+							{@const tdClass = ['pt-2', 'text-right', 'font-mono', 'text-xs', 'sm:text-sm']}
+							<tr class={['border-t-2', 'border-primary-200', 'dark:border-primary-800']}>
+								<td class={['!font-sans', '!text-left', 'pl-2', 'text-sm']}>{substanceId}</td>
+								<td class={tdClass}>{mass.toFixed(1)}<span>g</span></td>
+								{#if massPct >= 0.1}
+									<td class={tdClass}>{massPct.toFixed(1)}<span>%</span></td>
+								{:else}
+									<td class={tdClass}>{(massPct * 10000).toFixed(0)}<span>ppm</span></td>
+								{/if}
+								<td class={tdClass}>{volume.toFixed(1)}<span>ml</span></td>
+								{#if volumePct >= 0.1}
+									<td class={[tdClass, 'pr-2']}>{volumePct.toFixed(1)}<span>%</span></td>
+								{:else}
+									<td class={[tdClass, 'pr-2']}>{(volumePct * 10000).toFixed(0)}<span>ppm</span></td
+									>
+								{/if}
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</AccordionItem>
-		{/each}
-		<h2 class="group">
-			<div class="items-center gap-x-2 gap-y-2">
-				<div class="text-xs p-1 pt-2 text-primary-600">Totals ({name})</div>
-				<div class="flex flex-row flex-wrap mb-1">
-					<VolumeComponent
-						{mixtureStore}
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/6 min-w-20 grow-0"
-					/>
-					<ABVComponent
-						{mixtureStore}
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/6 min-w-20 grow-0"
-					/>
-					<BrixComponent
-						{mixtureStore}
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/6 min-w-20 grow-0"
-					/>
-					<MassComponent
-						{mixtureStore}
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/6 min-w-20 grow-0"
-					/>
-					<CalComponent
-						{mixtureStore}
-						componentId={parentId === null ? 'totals' : parentId}
-						component={mixture}
-						class="basis-1/6 min-w-20 grow-0"
-					/>
-				</div>
-			</div>
-		</h2>
-	</Accordion>
+		</Accordion>
+	{/if}
 	{#if parentId === null}
 		<!-- spacer to totals will scroll above the bottom nav -->
 		<div class="mt-20"></div>
@@ -241,16 +331,23 @@
 		line-height: 1rem;
 	}
 
+	table.totals-substance-map {
+		td > span:last-child {
+			/* style unit values */
+			margin-left: 0.1rem;
+		}
+	}
+
 	/* Style the accordion button container to make room for the arrow
 	   Using h2.group to match the exact structure from svelte-5-ui-lib */
-	:global(h2.group button) {
+	:global(h2.group > button) {
 		position: relative; /* Needed for absolute positioning of the arrow */
 		padding-right: 1.5rem !important; /* Reserve fixed space for the arrow */
 	}
 
 	/* Position and size the arrow SVG consistently across all accordion items
 	   The arrow is an SVG element directly inside the button */
-	:global(h2.group button > svg) {
+	:global(h2.group > button > svg) {
 		position: absolute; /* Take it out of normal flow */
 		right: 0.5rem; /* Fixed distance from right edge */
 		top: 50%; /* Center vertically... */

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import NumberSpinner from '../NumberSpinner.svelte';
-	import { Mixture } from '$lib/index.svelte';
+	import { Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { brixToSyrupProportion, format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 
 	let { componentId, component, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
@@ -15,18 +15,13 @@
 	let parts = $derived(brix < 100 && brix >= 50 ? brixToSyrupProportion(brix) : '');
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}" data-testid="brix-{componentId}">
+<div class={classProp} data-testid="brix-{componentId}">
 	<Helper class="tracking-tight">Sweetness</Helper>
 
-	{#if !readonly && component instanceof Mixture && component.canEdit('equivalentSugarMass')}
-		<NumberSpinner
-			{mixtureStore}
-			value={brix}
-			type="brix"
-			componentId={componentId}
-		/>
+	{#if !readonly && component instanceof Mixture && component.canEdit('brix')}
+		<NumberSpinner {mixtureStore} value={brix} type="brix" {componentId} />
 		<Helper class="text-center">{parts}</Helper>
-		{:else}
-		<ReadOnlyValue value={brix} type="brix" />
+	{:else}
+		<AltUnitValue value={brix} type="brix" />
 	{/if}
 </div>

@@ -8,12 +8,13 @@
 		ArrowUpFromBracketOutline,
 		FileCopyOutline,
 		UndoOutline,
-		RedoOutline
+		RedoOutline,
 	} from 'flowbite-svelte-icons';
 	import { goto } from '$app/navigation';
 	import { shareModal } from '$lib/share-modal-store.svelte';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
-	import { loadNewMixture } from '$lib/new-mixture.js';
+	import { MixtureStore } from '$lib/mixture-store.svelte.js';
+	import { openFile } from '$lib/open-file.js';
+	import { serializeToUrl } from '$lib/url-serialization.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -88,7 +89,7 @@
 				class={btnClass}
 				onclick={() => mixtureStore.undo()}
 			>
-				<UndoOutline class={disableUndo ? "text-primary-500" : "text-primary-100"} />
+				<UndoOutline class={disableUndo ? 'text-primary-500' : 'text-primary-100'} />
 			</button>
 
 			<button
@@ -98,16 +99,11 @@
 				class={btnClass}
 				onclick={() => mixtureStore.redo()}
 			>
-				<RedoOutline class={disableRedo ? "text-primary-500" : "text-primary-100"} />
+				<RedoOutline class={disableRedo ? 'text-primary-500' : 'text-primary-100'} />
 			</button>
 		</section>
 		<section class="flex flex-row gap-4">
-			<button
-				id="new-button"
-				aria-label="New File"
-				class={btnClass}
-				onclick={loadNewMixture}
-			>
+			<button id="new-button" aria-label="New File" class={btnClass} onclick={() => openFile(null)}>
 				<FileOutline class="text-primary-100" />
 			</button>
 
@@ -116,8 +112,8 @@
 				aria-label="Open a copy"
 				class={btnClass}
 				onclick={() =>
-					goto(urlEncode(mixtureStore.name, mixtureStore.mixture), {
-						invalidateAll: true
+					goto(serializeToUrl(mixtureStore.name, mixtureStore.mixture), {
+						invalidateAll: true,
 					})}
 			>
 				<FileCopyOutline class="text-primary-100" />
@@ -141,3 +137,5 @@
 	Show saved mixture files
 </Tooltip>
 <Tooltip color="default" offset={6} triggeredBy="#share-button">Share this mixture</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#user-profile-button">Show User Profile</Tooltip>
+<Tooltip color="default" offset={6} triggeredBy="#user-login-button">Login</Tooltip>

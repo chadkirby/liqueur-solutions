@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from 'svelte-clerk';
+	import { UserOutline, UserSolid } from 'flowbite-svelte-icons';
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
@@ -7,7 +9,7 @@
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { starredIds, toggleStar } from '$lib/stars.svelte.js';
+	import { filesDb, starredIds } from '$lib/storage.svelte.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
@@ -16,6 +18,7 @@
 	}
 
 	let { mixtureStore }: Props = $props();
+
 	let storeId = $derived(mixtureStore.storeId);
 
 	// hack to remove accordion focus ring
@@ -23,7 +26,7 @@
 	// hack to adjust accordion item padding
 	accordionitem.variants.flush.false = {
 		button: 'p-2 border-s border-e group-first:border-t',
-		content: 'p-2 border-s border-e'
+		content: 'p-2 border-s border-e',
 	};
 
 	const handleTitleInput = () =>
@@ -36,7 +39,7 @@
 
 	function handleToggleStar(event?: Event) {
 		event?.preventDefault();
-		toggleStar(storeId);
+		filesDb.toggleStar(storeId);
 	}
 </script>
 
@@ -71,6 +74,42 @@
 				class="text-l font-bold leading-normal"
 			/>
 		</div>
+
+		<SignedIn>
+			<UserButton afterSignOutUrl={window.location.href}></UserButton>
+		</SignedIn>
+		<SignedOut>
+			<SignInButton mode="modal">
+				<button
+					class="rounded-full
+					w-16 p-0.5
+					text-center
+					border
+					border-primary-300
+					dark:border-primary-400
+					text-primary-900
+					font-medium
+					text-sm"
+				>
+					Sign in
+				</button>
+			</SignInButton>
+
+			<SignUpButton mode="modal">
+				<button
+				class="rounded-full
+				w-16 p-0.5
+				text-center
+				border
+				border-primary-300
+				dark:border-primary-400
+				bg-white    font-medium
+				text-sm"
+				>
+					Sign up
+				</button>
+			</SignUpButton>
+		</SignedOut>
 	</section>
 
 	<MixtureAccordion {mixtureStore} id={null} name={mixtureStore.name} />
