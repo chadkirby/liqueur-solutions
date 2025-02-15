@@ -1,3 +1,5 @@
+import type { R2Bucket } from '@cloudflare/workers-types';
+
 /**
  * Cloudflare R2 bucket configuration and access.
  *
@@ -36,8 +38,8 @@ const R2_BINDING = 'MIXTURE_BUCKET';
  */
 export function getR2Bucket(platform: App.Platform) {
 	const bucket = platform?.env?.[R2_BINDING];
-	if (!bucket) {
-		throw new Error(`R2 bucket binding ${R2_BINDING} not found in platform.env`);
+	if (!bucket || typeof bucket === 'string' || !('put' in bucket)) {
+		throw new Error(`Invalid R2 bucket binding for ${R2_BINDING}`);
 	}
-	return bucket;
+	return bucket as R2Bucket;
 }
