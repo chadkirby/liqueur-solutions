@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { type Sweetener } from '$lib/index.svelte';
 	import { format } from '$lib/utils.js';
-	import ReadOnlyValue from '../ReadOnlyValue.svelte';
-	import { SweetenerEquivData } from '$lib/components/sweetener.js';
+	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
+	import { Sweeteners } from '$lib/ingredients/substances.js';
 
-	let { component, class: classProp }: DisplayProps & {component: Sweetener} = $props();
+	let { component, class: classProp, mass }: DisplayProps = $props();
 
-	let esm = $derived(component.equivalentSugarMass);
-	let equivCal = $derived(esm * SweetenerEquivData.sucrose.kcalPerGram);
+	let esm = $derived(component.getEquivalentSugarMass(mass));
+	const sucrose = Sweeteners.find(s => s.id === 'sucrose')!;
+	let equivCal = $derived(esm * sucrose.kcal);
 </script>
 
-<div class="mx-1 min-w-0 w-full {classProp}">
+<div class={classProp}>
 	<Helper>≈ Sugar</Helper>
-	<ReadOnlyValue value={esm} type="mass" />
+	<AltUnitValue value={esm} type="mass" />
 	<Helper class="text-center">{format(equivCal, { unit: 'kcal' })}</Helper>
 </div>

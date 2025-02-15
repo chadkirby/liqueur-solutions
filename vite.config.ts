@@ -8,6 +8,7 @@ import { svelteTesting } from '@testing-library/svelte/vite';
  * @see https://vitest.dev/config
  */
 export default defineConfig({
+	// @ts-expect-error plugin types are messed up
 	plugins: [sveltekit(), svelteTesting()],
 	build: {
 		// Required: tells Vite to create source maps

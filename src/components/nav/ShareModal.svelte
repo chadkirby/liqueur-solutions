@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button, Modal, Toast, uiHelpers } from 'svelte-5-ui-lib';
+	import { Button, Modal, Toast } from 'svelte-5-ui-lib';
 	import Portal from 'svelte-portal';
 	import QRCode from '@castlenine/svelte-qrcode';
-	import { resolveUrl } from '$lib/local-storage.svelte';
-	import { MixtureStore, urlEncode } from '$lib/mixture-store.svelte.js';
+	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
+	import { serializeToUrl } from '$lib/url-serialization.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -12,16 +12,20 @@
 
 	let { mixtureStore }: Props = $props();
 
-
 	let downloadUrl = $state('');
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		await navigator.clipboard.writeText(resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture)));
-		toastStatus = true;
-		setTimeout(() => {
-			toastStatus = false;
-		}, 2000);
+		const url = serializeToUrl(mixtureStore.name, mixtureStore.mixture);
+		try {
+			await navigator.clipboard.writeText(url);
+			toastStatus = true;
+			setTimeout(() => {
+				toastStatus = false;
+			}, 2000);
+		} catch (error) {
+			console.error('Failed to copy URL to clipboard', error);
+		}
 	};
 
 	// close the modal on escape
@@ -91,28 +95,29 @@
 </script>
 
 <Portal target="body">
-	<Modal size="sm" modalStatus={shareModal.isOpen} closeModal={shareModal.close} data-testid="share-modal">
-		<div
-			id="qr-code"
-			class="flex flex-col content-center items-center gap-2"
-		>
+	<Modal
+		size="sm"
+		modalStatus={shareModal.isOpen}
+		closeModal={shareModal.close}
+		data-testid="share-modal"
+	>
+		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
-				data={resolveUrl(urlEncode(mixtureStore.name, mixtureStore.mixture))}
+				data={serializeToUrl(mixtureStore.name, mixtureStore.mixture)}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl
 				on:downloadUrlGenerated={(event) => handleDownloadUrlGenerated(event.detail.url)}
 			/>
-			<Toast
-          bind:toastStatus={toastStatus}
-          position="top-left"
-        >Copied to clipboard</Toast>
+			<Toast bind:toastStatus position="top-left">Copied to clipboard</Toast>
 
 			<div class="flex flex-row justify-center gap-2">
 				<Button outline color="light" class="p-1" onclick={copyUrlToClipboard}>Copy URL</Button>
 				<Button outline color="light" class="p-1" onclick={copyImage}>Copy QR Code</Button>
 				{#if downloadUrl}
-					<Button outline color="light"
+					<Button
+						outline
+						color="light"
 						class="p-1"
 						href={downloadUrl}
 						download={(mixtureStore.name || 'my-mixture') + '.png'}>Download QR Code</Button

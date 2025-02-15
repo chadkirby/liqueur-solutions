@@ -1,44 +1,28 @@
-import { componentId, deserialize, newSpirit, Sweetener } from '$lib/index.svelte';
-import type { LoadDataFromUrl } from '$lib/load-data.js';
+import { browser } from '$app/environment';
+import { redirect } from '@sveltejs/kit';
+import { deserializeFromUrl } from '$lib/url-serialization.js';
+import { generateStorageId } from '$lib/storage-id.js';
+import { filesDb } from '$lib/storage.svelte.js';
+import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
 
-export const ssr = false;
-
-export function load(args: { url: URL; params: { liqueur: string } }): LoadDataFromUrl {
+export async function load(args: { url: URL; params: { liqueur: string } }): Promise<never> {
 	const { url, params } = args;
-	// if (url.pathname.startsWith('/favicon')) return;
-	try {
-		const mixture = deserialize(url.searchParams);
-		// decode params.liqueur
-		const liqueur = decodeURIComponent(params.liqueur) ?? 'mixture';
-		if (!mixture.isValid) throw new Error('Invalid mixture');
+	const { mixture } = deserializeFromUrl(url.searchParams);
+	if (!mixture.isValid) throw new Error("Can't load invalid mixture");
 
-		return {
-			storeId: null,
-			liqueur,
-			components: mixture.data.components
-		};
-	} catch (err) {
-		console.error(err);
-		return {
-			storeId: null,
-			liqueur: '',
-			components: [
-				{
-					name: '',
-					id: componentId(),
-					data: newSpirit(100, 40).data
-				},
-				{
-					name: '',
-					id: componentId(),
-					data: { volume: 100, type: 'water' }
-				},
-				{
-					name: '',
-					id: componentId(),
-					data: new Sweetener('sucrose', 50).data
-				}
-			]
-		};
+	const item: StoredFileDataV1 = {
+		version: currentDataVersion,
+		id: generateStorageId(),
+		accessTime: Date.now(),
+		name: decodeURIComponent(params.liqueur) || '',
+		desc: mixture.describe(),
+		rootMixtureId: mixture.id,
+		ingredientDb: mixture.serialize(),
+	};
+
+	if (browser) {
+		await filesDb.write(item);
 	}
+	// throws { status: 303, redirect: `/edit/${item.id}` }
+	throw redirect(303, `/edit/${item.id}`);
 }

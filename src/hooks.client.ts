@@ -8,6 +8,6 @@ export const handleError: HandleClientError = ({ error, event }) => {
 	});
 
 	return {
-		message: 'Something went wrong!'
+		message: (error as Error).message
 	};
 };

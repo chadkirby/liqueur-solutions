@@ -1,4 +1,7 @@
 import type { HandleServerError } from '@sveltejs/kit';
+import { withClerkHandler } from 'svelte-clerk/server';
+
+export const handle = withClerkHandler();
 
 export const handleError: HandleServerError = ({ error, event }) => {
 	const e = error as Error;
@@ -7,10 +10,10 @@ export const handleError: HandleServerError = ({ error, event }) => {
 		message: e.message,
 		stack: e.stack,
 		url: event.url.pathname,
-		method: event.request.method
+		method: event.request.method,
 	});
 
 	return {
-		message: 'Something went wrong!'
+		message: (error as Error).stack ?? (error as Error).message,
 	};
 };

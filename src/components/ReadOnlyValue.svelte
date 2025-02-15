@@ -1,64 +1,48 @@
 <script lang="ts">
-	import { brixToSyrupProportion, format, type FormatOptions } from '$lib/utils.js';
+	import { format, type FormatOptions } from '$lib/utils.js';
 	interface Props {
-		value: number;
-		type: 'mass' | 'volume' | 'brix' | 'abv' | 'kcal';
+		values: Array<number | string>;
+		formatOptions: FormatOptions[];
+		connector?: string;
+		onclick?: () => void;
 	}
-	let { value, type }: Props = $props();
+	let { values, onclick, formatOptions, connector = ', ' }: Props = $props();
 
-	interface Alternate {
-		fn: (val: number) => number;
-		options?: FormatOptions;
-	}
-
-	const alternates: Alternate[] = $state(
-		{
-			mass: [
-				{ options: { unit: 'g' }, fn: (g: number) => g },
-				{ options: { unit: 'oz' }, fn: (g: number) => g / 28.3495 },
-				{ options: { unit: 'lb' }, fn: (g: number) => g / 453.592 },
-				{ options: { unit: 'kg' }, fn: (g: number) => g / 1000 }
-			] as Alternate[],
-			volume: [
-				{ options: { unit: 'ml' }, fn: (v: number) => v },
-				{ options: { unit: `fl_oz` }, fn: (v: number) => v * 0.033814 },
-				{ options: { unit: 'tsp', decimal: 'decimal' }, fn: (v: number) => v * 0.202884 },
-				{ options: { unit: 'tbsp', decimal: 'decimal' }, fn: (v: number) => v * 0.0676288 },
-				{ options: { unit: 'cups', decimal: 'fraction' }, fn: (v: number) => v * 0.00422675 }
-			] as Alternate[],
-			abv: [
-				{ options: { unit: '%' }, fn: (v: number) => v },
-				{ options: { unit: 'proof' }, fn: (v: number) => v * 2 }
-			] as Alternate[],
-			brix: [
-				{ options: { unit: '%' }, fn: (v: number) => v },
-				{
-					options: { unit: '' },
-					fn: (v: number) => (v < 100 && v >= 50 ? brixToSyrupProportion(v) : '')
-				}
-			] as Alternate[],
-			kcal: [{ options: { unit: 'kcal' }, fn: (v: number) => v }] as Alternate[]
-		}[type]
+	// because of how templates work, we can't precisely control the
+	// spacing between items values and suffixes without manually
+	// generating the HTML
+	let formatted = $derived(
+		values.map((val, i) => {
+			const formatted = format(val, formatOptions[i]);
+			const div = globalThis.document.createElement('div');
+			div.textContent = formatted.value;
+			if (formatted.suffix) {
+				const suffix = div.ownerDocument.createElement('span');
+				// Replace spaces with thin spaces
+				suffix.textContent = formatted.suffix.replace(/\s/g, '\u2009');
+				suffix.classList.add('ml-0.5', 'font-sans');
+				div.append(suffix);
+			}
+			if (i !== values.length - 1) {
+				const comma = div.ownerDocument.createElement('span');
+				comma.classList.add('font-sans');
+				comma.textContent = connector;
+				div.append(comma);
+			}
+			return div.innerHTML;
+		}),
 	);
-
-	let altIndex = $state(0);
-
-	function rotateAlternates() {
-		altIndex = (altIndex + 1) % alternates.length;
-	}
-
-	let { fn, options } = $derived(alternates[altIndex]);
-	let formatted = $derived(format(fn(value), options));
-	let suffixSize = $derived(formatted.suffix.length > 2 ? 'text-[11px]' : '');
 </script>
 
-<output class="flex items-center whitespace-nowrap font-mono leading-[18px] text-xs ">
+<output
+	class={['flex', 'items-center', 'whitespace-nowrap', 'font-mono', 'leading-[18px]', 'text-xs']}
+>
 	<button
-		onclick={rotateAlternates}
+		{onclick}
 		class="
 		cursor-pointer
 		font-normal font-mono
-		text-right
+		text-center
 		w-full px-0.5 py-0.5
 		border
 		border-primary-200
@@ -68,8 +52,8 @@
 		dark:text-primary-400
   "
 	>
-			{formatted.value}
-	</button><span class="{suffixSize} ml-0.5">
-		{formatted.suffix}
-	</span>
+		{#each formatted as html}
+			{@html html}
+		{/each}
+	</button>
 </output>

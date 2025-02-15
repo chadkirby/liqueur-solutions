@@ -9,23 +9,40 @@
 		mixtureStore: MixtureStore;
 		id?: string;
 		componentId: string;
-		type: 'brix' | 'abv' | 'volume' | 'mass';
+		type: 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 		min?: number;
 		max?: number;
 		class?: string;
 	}
 
-	let { value, mixtureStore, type, id, componentId, min = 0, max = Infinity, class: classProp }: Props = $props();
+	let {
+		value,
+		mixtureStore,
+		type,
+		id,
+		componentId,
+		min = 0,
+		max = Infinity,
+		class: classProp
+	}: Props = $props();
+
+	if (value === undefined) {
+		throw new Error('Value is required');
+	}
 
 	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
 
-	const unit = type === 'volume' ? 'ml' : type === 'mass' ? 'g' : '%';
+	const unit =
+		type === 'volume' ? 'ml'
+		: type === 'mass' ? 'g'
+		: type === 'brix' || type === 'abv' ? '%'
+		: '';
 
 	// Internal state
 	let touchStartY = $state(0);
 	let isKeyboardEditing = $state(false);
 	let touchStartTime = $state(0);
-	let rawInputValue = $state('');
+	let rawInputValue = $state(format(value, { unit }).value);
 	let input: HTMLInputElement | null = $state(null);
 
 	// Handle keyboard input
@@ -146,11 +163,11 @@
 	}
 	// Value manipulation functions
 	function incrementValue() {
-		mixtureStore.increment(type, componentId, {min, max});
+		mixtureStore.increment(type, componentId, { min, max });
 	}
 
 	function decrementValue() {
-		mixtureStore.decrement(type, componentId, {min, max});
+		mixtureStore.decrement(type, componentId, { min, max });
 	}
 
 	function setValue(newValue: number) {
@@ -205,25 +222,8 @@
 		class="
 				block
 				w-full
+				ls-rounded-box
 				{isKeyboardEditing ? 'text-center' : 'text-right'}
-				focus:outline-2
-				border
-				border-primary-300
-				dark:border-primary-600
-				dark:focus:border-primary-500
-				dark:focus:ring-primary-50
-				bg-primary-50
-				text-primary-900
-				dark:bg-primary-700
-				dark:text-white
-				dark:placeholder-primary-400
-				rounded-md
-				text-xs
-				px-0.5
-				py-0.5
-				focus:ring-2
-				focus:border-blue-200
-				focus:ring-blue-200
 			"
-	/><span class="ml-0.5 text-xs">{unit}</span>
+	/><span class="ml-0.5 text-xs w-5">{unit}</span>
 </div>
