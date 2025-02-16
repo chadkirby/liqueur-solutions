@@ -220,7 +220,7 @@
 
 			<AccordionItem
 				class="py-2 pl-1 pr-2"
-				open={openStates.get('totals') ?? true}
+				open={openStates.get('totals') ?? false}
 				onclick={() => setOpen('totals', !openStates.get('totals'))}
 			>
 				{#snippet header()}

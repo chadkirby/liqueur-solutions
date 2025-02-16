@@ -32,23 +32,24 @@
 
 	let { mixtureStore }: Props = $props();
 
-	type ListedFile = StoredFileDataV1 & {
-		isStarred: boolean;
-	};
-
 	let onlyStars = $state(true);
-	let items = $state(new Map<StorageId, ListedFile>());
-	let files = $derived(Array.from(items.values()).filter((f) => !onlyStars || f.isStarred));
+	let items = $state(new Map<StorageId, StoredFileDataV1>());
+		let starredIds = $state([] as StorageId[]);
+	let files = $derived(Array.from(items.values()).filter((f) => !onlyStars || starredIds.includes(f.id)));
 
 	// Subscribe to file changes
 	const unsubscribe = filesDb.subscribe((_items) => {
 		items = _items;
+	});
+	const unsubscribeStars = filesDb.subscribeToStars((_stars) => {
+		starredIds = _stars;
 	});
 
 	// Clean up subscription
 	if (import.meta.hot) {
 		import.meta.hot.dispose(() => {
 			if (unsubscribe) unsubscribe();
+			if (unsubscribeStars) unsubscribeStars();
 		});
 	}
 
@@ -115,7 +116,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files.filter((f) => f.isStarred);
+		const data = files.filter((f) => starredIds.includes(f.id));
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -201,7 +202,7 @@
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 mt-2">
-			{#each files as { name, id, isStarred, desc }}
+			{#each files as { name, id, desc } (id)}
 				<div
 					class="
 					flex flex-col
@@ -221,11 +222,13 @@
 						"
 					>
 						<div class="flex flex-row items-center gap-2">
-							{#if isStarred}
-								<StarSolid size="xs" />
-							{:else}
-								<StarOutline size="xs" />
-							{/if}
+							<Button onclick={() => filesDb.toggleStar(id)}>
+								{#if starredIds.includes(id)}
+									<StarSolid size="xs" />
+								{:else}
+									<StarOutline size="xs" />
+								{/if}
+							</Button>
 							<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
 						</div>
 						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
