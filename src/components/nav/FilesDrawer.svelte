@@ -6,10 +6,10 @@
 		ArrowRightOutline,
 		ArrowUpRightFromSquareOutline,
 		StarSolid,
-		StarOutline
+		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { filesDb, starredIds, deserializeFromStorage } from '$lib/storage.svelte';
+	import { filesDb, deserializeFromStorage } from '$lib/storage.svelte';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
@@ -19,7 +19,7 @@
 		currentDataVersion,
 		isV0Data,
 		isV1Data,
-		type StoredFileDataV1
+		type StoredFileDataV1,
 	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
@@ -35,29 +35,14 @@
 	type ListedFile = StoredFileDataV1 & {
 		isStarred: boolean;
 	};
-	let files = $state([] as ListedFile[]);
-	let drawerStatus = $state(filesDrawer.isOpen);
-	const closeDrawer = () => filesDrawer.close();
 
 	let onlyStars = $state(true);
-
-	function processFiles<T extends Record<string, unknown> = Record<string, never>>(
-		items: Map<StorageId, StoredFileDataV1>,
-		extra: T = {} as T
-	) {
-		const out: Array<ListedFile & T> = [];
-		for (const [id, item] of items) {
-			const isStarred = starredIds.includes(id);
-			if (!onlyStars || isStarred) {
-				out.push({ key: id, ...item, isStarred, ...extra });
-			}
-		}
-		return out;
-	}
+	let items = $state(new Map<StorageId, ListedFile>());
+	let files = $derived(Array.from(items.values()).filter((f) => !onlyStars || f.isStarred));
 
 	// Subscribe to file changes
-	const unsubscribe = filesDb.subscribe((items) => {
-		files = processFiles(items);
+	const unsubscribe = filesDb.subscribe((_items) => {
+		items = _items;
 	});
 
 	// Clean up subscription
@@ -67,9 +52,8 @@
 		});
 	}
 
-	$effect(() => {
-		drawerStatus = filesDrawer.isOpen;
-	});
+	let drawerStatus = $derived(filesDrawer.isOpen);
+	const closeDrawer = () => filesDrawer.close();
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
@@ -123,7 +107,7 @@
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
 					item: mixture,
-					mass: mixture.mass
+					mass: mixture.mass,
 				});
 			}
 		};
@@ -159,7 +143,7 @@
 							version: currentDataVersion,
 							desc: item.desc || mixture.describe(),
 							rootMixtureId: mixture.id,
-							ingredientDb: mixture.serialize()
+							ingredientDb: mixture.serialize(),
 						};
 						filesDb.write(v1Data);
 						filesDb.toggleStar(v1Data.id);
