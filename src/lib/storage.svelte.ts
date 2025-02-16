@@ -186,7 +186,7 @@ class FilesDb {
 		return new Map(sortedEntries);
 	}
 
-	private subscribeToStars(callback: (stars: StorageId[]) => void) {
+	subscribeToStars(callback: (stars: StorageId[]) => void) {
 		return this.rep?.subscribe(
 			async (tx) => {
 				const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
@@ -198,19 +198,19 @@ class FilesDb {
 		);
 	}
 
-	subscribe(callback: (items: Map<StorageId, StoredFileDataV1 & { isStarred: boolean }>) => void) {
+	subscribe(callback: (items: Map<StorageId, StoredFileDataV1>) => void) {
 		// Subscribe to changes in the files space
 		return this.rep?.subscribe(
 			// Body function that computes the value
 			async (tx) => {
-				const items = new Map<StorageId, StoredFileDataV1 & { isStarred: boolean }>();
+				const items = new Map<StorageId, StoredFileDataV1>();
 				const starred = new Set(starredIds);
 
 				// First get starred items
 				for (const id of starred) {
 					if (isStorageId(id)) {
 						const item = await tx.get(`${SPACE_FILES}/${id}`);
-						if (item) items.set(id, { ...(item as StoredFileDataV1), isStarred: true });
+						if (item) items.set(id, item as StoredFileDataV1);
 					}
 				}
 
@@ -219,7 +219,7 @@ class FilesDb {
 				for (const [key, item] of allItems) {
 					const id = key.split('/')[1] as StorageId;
 					if (!starred.has(id)) {
-						items.set(id, { ...(item as StoredFileDataV1), isStarred: false });
+						items.set(id, item as StoredFileDataV1);
 					}
 				}
 
