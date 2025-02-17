@@ -95,8 +95,8 @@
 	<NumberSpinner
 		{mixtureStore}
 		id={`edit-brix-${ingredient.id}`}
-		class={secondaryInputBase}
-		value={brix * 100}
+		class={numericBase}
+		value={brix}
 		type="brix"
 		componentId={ingredient.id}
 	/>
@@ -105,7 +105,7 @@
 		{mixtureStore}
 		componentId={ingredient.id}
 		component={ingredient.item}
-		basis="basis-1/3"
+		class={secondaryInputBase}
 		onclick={(e) => e.stopPropagation()}
 	/>
 	{@render nameInput(mixtureStore, ingredient)}
