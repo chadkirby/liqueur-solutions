@@ -108,7 +108,7 @@
 			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id)}
 				{@const id = ingredient.id}
 				{@const component = ingredient.item}
-				{@const volume = mixture.getIngredientVolume(id)}
+				{@const ingredientVolume = mixture.getIngredientVolume(id)}
 				<AccordionItem
 					class="py-2 pl-1 pr-2"
 					open={openStates.get(id) ?? false}
@@ -135,24 +135,24 @@
 								{@render spiritHeader(
 									mixtureStore,
 									ingredient,
-									volume,
+									ingredientVolume,
 									mixture.getIngredientAbv(id),
 								)}
 							{:else if isSimpleSyrup(component)}
 								{@render simpleSyrupHeader(
 									mixtureStore,
 									ingredient,
-									volume,
+									ingredientVolume,
 									mixture.getIngredientBrix(id),
 								)}
 							{:else if isCitrusMixture(component)}
-								{@render citrusHeader(mixtureStore, ingredient, volume)}
+								{@render citrusHeader(mixtureStore, ingredient, ingredientVolume)}
 							{:else if isAcidSubstance(component)}
 								{@render acidHeader(mixtureStore, ingredient as IngredientSubstanceItem, mass)}
 							{:else if isSaltIngredient(ingredient)}
 								{@render saltHeader(mixtureStore, ingredient, mass)}
 							{:else}
-								{@render defaultHeader(mixtureStore, ingredient, volume)}
+								{@render defaultHeader(mixtureStore, ingredient, ingredientVolume)}
 							{/if}
 						</div>
 					{/snippet}
@@ -174,15 +174,15 @@
 							]}
 						></span>
 						{#if isSweetener(component)}
-							{@render sweetenerDetails(mixtureStore, ingredient, mass, volume)}
+							{@render sweetenerDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isWater(component)}
-							{@render waterDetails(mixtureStore, ingredient, mass, volume)}
+							{@render waterDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSpirit(component)}
-							{@render spiritDetails(mixtureStore, ingredient, mass, volume)}
+							{@render spiritDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSyrup(component)}
-							{@render syrupDetails(mixtureStore, ingredient, mass, volume)}
+							{@render syrupDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isCitrusMixture(component)}
-							{@render citrusDetails(mixtureStore, ingredient, mass, volume)}
+							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isMixture(component)}
 							<MixtureAccordion {mixtureStore} {id} name={ingredient.name} />
 						{:else if isAcidSubstance(component)}
@@ -190,17 +190,17 @@
 								mixtureStore,
 								ingredient as IngredientSubstanceItem,
 								mass,
-								volume,
+								ingredientVolume,
 							)}
 						{:else if isSaltIngredient(ingredient)}
-							{@render saltDetails(mixtureStore, ingredient, mass, volume)}
+							{@render saltDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else}
 							<div class="flex flex-row my-1">
 								<Volume
 									{mixtureStore}
 									componentId={id}
 									{component}
-									{volume}
+									volume={ingredientVolume}
 									readonly={true}
 									class="basis-1/2"
 								/>

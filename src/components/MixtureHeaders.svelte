@@ -96,7 +96,7 @@
 		{mixtureStore}
 		id={`edit-brix-${ingredient.id}`}
 		class={numericBase}
-		value={brix * 100}
+		value={brix}
 		type="brix"
 		componentId={ingredient.id}
 	/>

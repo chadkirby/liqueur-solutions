@@ -691,9 +691,12 @@ export class Mixture implements CommonComponent {
 
 	getIngredientBrix(ingredientId: string): number | -1 {
 		const ingredient = this.getIngredient(ingredientId);
+		if (isMixture(ingredient?.item)) {
+			return ingredient.item.brix;
+		}
 		if (ingredient) {
 			const mass = this.getIngredientMass(ingredientId);
-			return ingredient.item.getEquivalentSugarMass(mass) / mass;
+			return (100 * ingredient.item.getEquivalentSugarMass(mass)) / mass;
 		}
 		return -1;
 	}
