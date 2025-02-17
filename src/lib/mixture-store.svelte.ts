@@ -418,14 +418,13 @@ export class MixtureStore {
 				if (!ingredient) {
 					throw new Error(`Unable to find component ${componentId}`);
 				}
-				const mixture = ingredient.item;
-				if (mixture instanceof Mixture) {
-					const syrup = mixture.clone();
-					syrup.setBrix(targetBrix);
-					if (!roundEq(syrup.brix, targetBrix)) {
+				if (ingredient.item instanceof Mixture) {
+					const workingSyrup = ingredient.item.clone();
+					workingSyrup.setBrix(targetBrix);
+					if (!roundEq(workingSyrup.brix, targetBrix)) {
 						throw new Error(`Unable to set requested brix of mixture ${componentId}`);
 					}
-					mixture.updateFrom(syrup);
+					ingredient.item.updateFrom(workingSyrup);
 				} else {
 					throw new Error(`Unable to set brix of component ${componentId}`);
 				}

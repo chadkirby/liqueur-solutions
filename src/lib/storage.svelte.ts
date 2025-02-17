@@ -41,7 +41,7 @@ const mutators = {
 
 	async deleteFile(tx: WriteTransaction, id: StorageId) {
 		await tx.del(`${SPACE_FILES}/${id}`);
-		await this.deleteStar(tx, id);
+		await mutators.deleteStar(tx, id);
 	},
 
 	async addStar(tx: WriteTransaction, id: StorageId) {
