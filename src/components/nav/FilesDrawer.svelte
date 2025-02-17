@@ -32,7 +32,7 @@
 
 	let { mixtureStore }: Props = $props();
 
-	let onlyStars = $state(true);
+	let onlyStars = $state(false);
 	let items = $state(new Map<StorageId, StoredFileDataV1>());
 		let starredIds = $state([] as StorageId[]);
 	let files = $derived(Array.from(items.values()).filter((f) => !onlyStars || starredIds.includes(f.id)));
@@ -146,8 +146,7 @@
 							rootMixtureId: mixture.id,
 							ingredientDb: mixture.serialize(),
 						};
-						filesDb.write(v1Data);
-						filesDb.toggleStar(v1Data.id);
+						filesDb.write(v1Data).then(() => filesDb.toggleStar(v1Data.id));
 						continue;
 					}
 					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
@@ -155,6 +154,7 @@
 				}
 			};
 			reader.readAsText(importFiles[0]);
+			onlyStars = false;
 		}
 	});
 </script>
