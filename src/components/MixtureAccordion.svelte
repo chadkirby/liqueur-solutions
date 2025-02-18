@@ -1,14 +1,9 @@
 <script lang="ts">
-	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
-	import Mass from './displays/Mass.svelte';
-	import Volume from './displays/Volume.svelte';
+	import { Accordion, AccordionItem } from 'svelte-5-ui-lib';
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import AddComponent from './nav/AddComponent.svelte';
 	import VolumeComponent from './displays/Volume.svelte';
-	import ABVComponent from './displays/ABV.svelte';
-	import BrixComponent from './displays/Brix.svelte';
-	import CalComponent from './displays/Cal.svelte';
 	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
@@ -23,7 +18,6 @@
 		isAcidSubstance,
 		isSaltIngredient,
 	} from '$lib/mixture.js';
-	import Ph from './displays/PH.svelte';
 	import {
 		defaultHeader,
 		sweetenerHeader,
@@ -41,6 +35,7 @@
 		syrupDetails,
 		acidDetails,
 		citrusDetails,
+		totals,
 	} from './MixtureDetails.svelte';
 	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
 
@@ -72,6 +67,9 @@
 	function toggleEditMode() {
 		editMode = !editMode;
 	}
+
+	let editMixtureDialog: HTMLDialogElement | null = $state(null);
+	let editedSubmixture = $state({ id: '', name: '' });
 </script>
 
 <div>
@@ -184,7 +182,18 @@
 						{:else if isCitrusMixture(component)}
 							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isMixture(component)}
-							<MixtureAccordion {mixtureStore} {id} name={ingredient.name} />
+							{@render totals(mixtureStore, id, component, 'w-1/4')}
+							<div class="w-1/4 flex items-center">
+								<Button
+									onclick={() => {
+										editedSubmixture = { id, name: ingredient.name };
+										editMixtureDialog?.showModal();
+									}}
+									class="w-full"
+								>
+									<span class="text-primary-500 dark:text-primary-400">Edit</span>
+								</Button>
+							</div>
 						{:else if isAcidSubstance(component)}
 							{@render acidDetails(
 								mixtureStore,
@@ -196,7 +205,7 @@
 							{@render saltDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else}
 							<div class="flex flex-row my-1">
-								<Volume
+								<VolumeComponent
 									{mixtureStore}
 									componentId={id}
 									{component}
@@ -204,7 +213,7 @@
 									readonly={true}
 									class="basis-1/2"
 								/>
-								<Mass
+								<MassComponent
 									{mixtureStore}
 									componentId={id}
 									{component}
@@ -224,53 +233,10 @@
 				onclick={() => setOpen('totals', !openStates.get('totals'))}
 			>
 				{#snippet header()}
-					{@const width = 'w-24 shrink-0'}
-					<!-- TOTALS -->
 					<div class="items-center w-full">
 						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
 						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
-							<VolumeComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								volume={mixture.volume}
-								class={width}
-							/>
-							<ABVComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<BrixComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<Ph
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<MassComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<CalComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
+							{@render totals(mixtureStore, parentId, mixture)}
 						</div>
 					</div>
 				{/snippet}
@@ -321,6 +287,19 @@
 	{/if}
 </div>
 
+<dialog bind:this={editMixtureDialog}>
+	{#if editedSubmixture.id && editedSubmixture.name}
+			<div class="h-[90vh] w-[90vw] relative overflow-hidden">
+					<div class="sticky top-0 left-0 right-0 bg-white z-10 flex gap-2 justify-between items-center p-2 border-b border-primary-100">
+							<span class="text-sm font-semibold text-primary-600">Editing {editedSubmixture.name}</span>
+							<Button onclick={() => editMixtureDialog?.close()}>Done</Button>
+					</div>
+					<div class="p-2 h-full overflow-y-auto">
+							<MixtureAccordion {mixtureStore} id={editedSubmixture.id} name={editedSubmixture.name} />
+					</div>
+			</div>
+	{/if}
+</dialog>
 <style>
 	/* Small label that appears above each accordion item */
 	.txt-xxs {

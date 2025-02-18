@@ -34,26 +34,21 @@
 	);
 </script>
 
-<output
-	class={['flex', 'items-center', 'whitespace-nowrap', 'font-mono', 'leading-[18px]', 'text-xs']}
+<button
+	{onclick}
+	class={[
+		'flex',
+		'ls-rounded-box',
+		'cursor-pointer',
+		'w-full',
+		'bg-primary-50',
+		'dark:bg-primary-700',
+		'opacity-75',
+	]}
 >
-	<button
-		{onclick}
-		class="
-		cursor-pointer
-		font-normal font-mono
-		text-center
-		w-full px-0.5 py-0.5
-		border
-		border-primary-200
-		dark:border-primary-800
-		rounded-md
-		text-primary-600
-		dark:text-primary-400
-  "
-	>
+	<span class={['text-center', 'w-full', 'font-normal', 'font-mono', 'whitespace-nowrap']}>
 		{#each formatted as html}
 			{@html html}
 		{/each}
-	</button>
-</output>
+	</span>
+</button>

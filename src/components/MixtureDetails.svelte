@@ -10,6 +10,8 @@
 	import { Mixture } from '$lib/mixture.js';
 	import Ph from './displays/PH.svelte';
 	import ReadOnlyValue from './ReadOnlyValue.svelte';
+	import ABV from './displays/ABV.svelte';
+	import { isAcidId, isSweetenerId } from '$lib/ingredients/substances.js';
 
 	export {
 		saltDetails,
@@ -19,6 +21,7 @@
 		syrupDetails,
 		acidDetails,
 		citrusDetails,
+		totals,
 	};
 
 	/**
@@ -195,14 +198,7 @@
 		<ReadOnlyValue values={[density]} formatOptions={[{ unit: 'g/ml' }]} />
 	</div>
 
-	<Cal
-		{mixtureStore}
-		componentId={id}
-		component={substance}
-		{mass}
-		readonly={true}
-		class={basis}
-	/>
+	<Cal {mixtureStore} componentId={id} component={substance} {mass} readonly={true} class={basis} />
 {/snippet}
 
 {#snippet citrusDetails(
@@ -217,4 +213,53 @@
 	<Ph {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
 	<Brix {mixtureStore} componentId={id} {component} {mass} class="basis-1/4 min-w-20 grow-0" />
 	<Cal {mixtureStore} componentId={id} {component} {mass} readonly={true} class="basis-1/4" />
+{/snippet}
+
+{#snippet totals(
+	mixtureStore: MixtureStore,
+	parentId: null | string,
+	mixture: Mixture,
+	className = 'w-24 shrink-0',
+)}
+	{@const isIngredient = parentId !== null}
+	{@const id = isIngredient ? parentId : 'totals'}
+	{@const mass = mixtureStore.getMass(id)}
+	<!-- TOTALS -->
+	<Volume
+		{mixtureStore}
+		componentId={id}
+		component={mixture}
+		volume={mixtureStore.getVolume(id)}
+		class={className}
+		readonly={isIngredient}
+	/>
+	{#if mixture.eachSubstance().some(({ substanceId }) => substanceId === 'ethanol')}
+		<ABV {mixtureStore} componentId={id} component={mixture} {mass} class={className} />
+	{/if}
+	{#if mixture.eachSubstance().some(({ substanceId }) => isSweetenerId(substanceId))}
+		<Brix {mixtureStore} componentId={id} component={mixture} {mass} class={className} />
+	{/if}
+	{#if mixture.eachSubstance().some(({ substanceId }) => isAcidId(substanceId))}
+		<Ph
+			{mixtureStore}
+			componentId={parentId === null ? 'totals' : parentId}
+			component={mixture}
+			{mass}
+			class={className}
+		/>
+	{/if}
+	<Mass
+		{mixtureStore}
+		componentId={parentId === null ? 'totals' : parentId}
+		component={mixture}
+		{mass}
+		class={className}
+	/>
+	<Cal
+		{mixtureStore}
+		componentId={parentId === null ? 'totals' : parentId}
+		component={mixture}
+		{mass}
+		class={className}
+	/>
 {/snippet}

@@ -553,9 +553,8 @@ export class Mixture implements CommonComponent {
 		return this.getVolume();
 	}
 	getVolume() {
-		const mass = this.mass;
 		const density = this.getDensity();
-		const volume = density !== 0 ? mass / density : 0;
+		const volume = density !== 0 ? this.mass / density : 0;
 		return volume;
 	}
 
