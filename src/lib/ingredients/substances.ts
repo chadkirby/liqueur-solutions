@@ -88,7 +88,7 @@ export const Sweeteners = [
 		// in pharmaceutical industries. This value is equivalent to 1.5823
 		// g/ml.
 		solutionDensityMeasurements: [
-			[0.0, 0.98],
+			[0.0, 1],
 			[0.231, 1.081],
 			[0.376, 1.151],
 			[0.444, 1.185],
