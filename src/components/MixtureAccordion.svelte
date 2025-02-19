@@ -155,7 +155,7 @@
 						</div>
 					{/snippet}
 					<div
-						class="flex ml-4 relative gap-1 sm:gap-2"
+						class="flex flex-wrap relative ml-4 gap-1 sm:gap-2"
 						data-testid="mixture-ingredient-accordion-details"
 					>
 						<span
@@ -182,8 +182,8 @@
 						{:else if isCitrusMixture(component)}
 							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isMixture(component)}
-							{@render totals(mixtureStore, id, component, 'w-1/4')}
-							<div class="w-1/4 flex items-center">
+							{@render totals(mixtureStore, id, component, 'min-w-2xs max-w-sm')}
+							<div class="min-w-2xs max-w-sm flex items-center">
 								<Button
 									onclick={() => {
 										editedSubmixture = { id, name: ingredient.name };
@@ -289,7 +289,7 @@
 
 <dialog bind:this={editMixtureDialog}>
 	{#if editedSubmixture.id && editedSubmixture.name}
-			<div class="h-[90vh] w-[90vw] relative overflow-hidden">
+			<div class="h-[90vh] w-[90vw] max-w-2xl relative overflow-hidden">
 					<div class="sticky top-0 left-0 right-0 bg-white z-10 flex gap-2 justify-between items-center p-2 border-b border-primary-100">
 							<span class="text-sm font-semibold text-primary-600">Editing {editedSubmixture.name}</span>
 							<Button onclick={() => editMixtureDialog?.close()}>Done</Button>
