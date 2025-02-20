@@ -223,15 +223,23 @@
 )}
 	{@const isIngredient = parentId !== null}
 	{@const id = isIngredient ? parentId : 'totals'}
-	{@const mass = mixtureStore.getMass(id)}
+	{@const mass = isIngredient ? mixture.mass : mixtureStore.getMass(id)}
+	{@const volume = isIngredient ? mixture.volume : mixtureStore.getVolume(id)}
 	<!-- TOTALS -->
 	<Volume
 		{mixtureStore}
 		componentId={id}
 		component={mixture}
-		volume={mixtureStore.getVolume(id)}
+		volume={volume}
 		class={className}
 		readonly={isIngredient}
+	/>
+	<Mass
+		{mixtureStore}
+		componentId={parentId === null ? 'totals' : parentId}
+		component={mixture}
+		{mass}
+		class={className}
 	/>
 	{#if mixture.eachSubstance().some(({ substanceId }) => substanceId === 'ethanol')}
 		<ABV {mixtureStore} componentId={id} component={mixture} {mass} class={className} />
@@ -248,13 +256,6 @@
 			class={className}
 		/>
 	{/if}
-	<Mass
-		{mixtureStore}
-		componentId={parentId === null ? 'totals' : parentId}
-		component={mixture}
-		{mass}
-		class={className}
-	/>
 	<Cal
 		{mixtureStore}
 		componentId={parentId === null ? 'totals' : parentId}

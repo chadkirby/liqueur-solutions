@@ -38,6 +38,7 @@
 		totals,
 	} from './MixtureDetails.svelte';
 	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
+	import Helper from './ui-primitives/Helper.svelte';
 
 	let {
 		mixtureStore,
@@ -155,7 +156,7 @@
 						</div>
 					{/snippet}
 					<div
-						class="flex flex-wrap relative ml-4 gap-1 sm:gap-2"
+						class="flex flex-wrap relative ml-4 gap-1.5 sm:gap-2"
 						data-testid="mixture-ingredient-accordion-details"
 					>
 						<span
@@ -182,8 +183,10 @@
 						{:else if isCitrusMixture(component)}
 							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isMixture(component)}
-							{@render totals(mixtureStore, id, component, 'min-w-2xs max-w-sm')}
-							<div class="min-w-2xs max-w-sm flex items-center">
+							{@render totals(mixtureStore, id, component, 'min-w-16 max-w-24')}
+							<div class="min-w-16 max-w-24">
+								<!-- need a dummy helper to align the button with other items in totals -->
+								<Helper>{'\u00A0'}</Helper>
 								<Button
 									onclick={() => {
 										editedSubmixture = { id, name: ingredient.name };
