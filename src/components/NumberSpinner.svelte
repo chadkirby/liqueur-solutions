@@ -1,48 +1,47 @@
 <!-- NumberSpinner.svelte -->
 <script lang="ts">
-	import { clamp } from '$lib/increment-decrement.js';
-	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import { digitsForDisplay, format } from '$lib/utils.js';
+	import { digitsForDisplay } from '$lib/utils.js';
 
 	interface Props {
 		value: number;
-		mixtureStore: MixtureStore;
-		id?: string;
-		componentId: string;
-		type: 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
-		min?: number;
-		max?: number;
+		set: (n: number) => number;
+		increment: () => number;
+		decrement: () => number;
+		format: (n: number) => string;
+		minMax?: { min: number; max: number };
+		divId?: string;
+		unitSuffix?: string;
 		class?: string;
 	}
 
 	let {
 		value,
-		mixtureStore,
-		type,
-		id,
-		componentId,
-		min = 0,
-		max = Infinity,
-		class: classProp
+		set,
+		increment,
+		decrement,
+		format,
+		minMax = { min: 0, max: Infinity },
+		unitSuffix = '',
+		divId,
+		class: classProp,
 	}: Props = $props();
 
 	if (value === undefined) {
 		throw new Error('Value is required');
 	}
 
-	const maxVal = type === 'abv' || type === 'brix' ? 100 : Infinity;
-
-	const unit =
-		type === 'volume' ? 'ml'
-		: type === 'mass' ? 'g'
-		: type === 'brix' || type === 'abv' ? '%'
-		: '';
-
+	function clamp(value: number) {
+		return Math.min(minMax.max, Math.max(minMax.min, value));
+	}
 	// Internal state
 	let touchStartY = $state(0);
 	let isKeyboardEditing = $state(false);
 	let touchStartTime = $state(0);
-	let rawInputValue = $state(format(value, { unit }).value);
+	let formattedValue = $derived(
+		isKeyboardEditing
+			? value.toFixed(digitsForDisplay(value, minMax.max))
+			: format(value),
+	);
 	let input: HTMLInputElement | null = $state(null);
 
 	// Handle keyboard input
@@ -63,11 +62,11 @@
 		} else if (key === 'ArrowUp') {
 			if (isKeyboardEditing) finishEditing();
 			e.preventDefault();
-			incrementValue();
+			value = increment();
 		} else if (key === 'ArrowDown') {
 			if (isKeyboardEditing) finishEditing();
 			e.preventDefault();
-			decrementValue();
+			value = decrement();
 		} else if (!metaKey && /^[^\d.]$/.test(key)) {
 			// ignore non-numeric keys
 			e.preventDefault();
@@ -82,7 +81,6 @@
 		e.preventDefault();
 		e.stopPropagation();
 		isKeyboardEditing = true;
-		rawInputValue = value.toFixed(digitsForDisplay(value, maxVal));
 		// Select the entire input value
 		setTimeout(() => input?.select(), 1);
 	}
@@ -94,7 +92,6 @@
 
 	function finishEditing() {
 		isKeyboardEditing = false;
-		rawInputValue = '';
 	}
 
 	// Handle direct input
@@ -102,9 +99,6 @@
 		const target = event.target as HTMLInputElement;
 		if (!/\d/.test(target.value)) return;
 
-		if (isKeyboardEditing) {
-			rawInputValue = target.value;
-		}
 		const newValue = Number(target.value);
 		if (!isNaN(newValue)) {
 			// Update the value but keep editing
@@ -130,9 +124,9 @@
 
 			if (Math.abs(diff) > 10) {
 				if (diff > 0) {
-					incrementValue();
+					value = increment();
 				} else {
-					decrementValue();
+					value = decrement();
 				}
 				touchStartY = touchY;
 			}
@@ -145,7 +139,6 @@
 
 			if (touchDuration < 200 && touchMovement < 10) {
 				isKeyboardEditing = true;
-				rawInputValue = value.toString();
 				input?.focus();
 			}
 		}
@@ -158,21 +151,13 @@
 				node.removeEventListener('touchstart', start);
 				node.removeEventListener('touchmove', move);
 				node.removeEventListener('touchend', end);
-			}
+			},
 		};
-	}
-	// Value manipulation functions
-	function incrementValue() {
-		mixtureStore.increment(type, componentId, { min, max });
-	}
-
-	function decrementValue() {
-		mixtureStore.decrement(type, componentId, { min, max });
 	}
 
 	function setValue(newValue: number) {
 		// Clamp the value between min and max
-		const clampedValue = clamp(newValue, min, max);
+		const clampedValue = clamp(newValue);
 		if (clampedValue !== value) {
 			const newVal = changeValue(clampedValue);
 			value = newVal;
@@ -182,37 +167,23 @@
 	}
 
 	function changeValue(v: number): number {
-		const getKey =
-			`get${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
-		getKey satisfies keyof typeof mixtureStore;
-
-		const setKey =
-			`set${type.replace(/^\w/, (c) => c.toUpperCase()) as Capitalize<typeof type>}` as const;
-		setKey satisfies keyof typeof mixtureStore;
-
 		try {
-			mixtureStore[setKey](componentId, v);
+			value = set(v);
 		} catch (e) {
 			// can't always set the requested value
 		}
-		return mixtureStore[getKey](componentId);
+		return value;
 	}
 
-	// Display either the formatted value or raw input value based on editing state
-	$effect(() => {
-		if (input && !isKeyboardEditing) {
-			input.value = format(value, { unit }).value;
-		}
-	});
 </script>
 
-<div {id} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
+<div id={divId} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
 	<input
 		bind:this={input}
 		use:touchHandler
 		inputmode="decimal"
 		pattern="[0-9]*[.]?[0-9]*"
-		value={rawInputValue}
+		value={formattedValue}
 		onchange={handleChange}
 		onkeydown={handleKeyDown}
 		onfocus={handleFocus}
@@ -225,5 +196,5 @@
 				ls-rounded-box
 				{isKeyboardEditing ? 'text-center' : 'text-right'}
 			"
-	/><span class="ml-0.5 text-xs w-5">{unit}</span>
+	/><span class="ml-0.5 text-xs w-5">{unitSuffix}</span>
 </div>

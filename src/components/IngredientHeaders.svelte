@@ -1,6 +1,5 @@
 <script lang="ts" module>
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
-	import NumberSpinner from './NumberSpinner.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import CitrusDropdown from './displays/CitrusDropdown.svelte';
@@ -8,6 +7,10 @@
 	import SaltDropdown from './displays/SaltDropdown.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Tooltip } from 'svelte-5-ui-lib';
+	import VolumeSpinner from './displays/VolumeSpinner.svelte';
+	import AbvSpinner from './displays/AbvSpinner.svelte';
+	import MassSpinner from './displays/MassSpinner.svelte';
+	import BrixSpinner from './displays/BrixSpinner.svelte';
 
 	export {
 		defaultHeader,
@@ -46,25 +49,13 @@
 {/snippet}
 
 {#snippet defaultHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={volume}
-		type="volume"
-		componentId={ingredient.id}
-	/>
+	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 
 	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet sweetenerHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, mass: number)}
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={mass}
-		type="mass"
-		componentId={ingredient.id}
-	/>
+	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<SweetenerDropdown
 		{mixtureStore}
 		componentId={ingredient.id}
@@ -84,21 +75,14 @@
 	<Tooltip color="default" offset={6} triggeredBy={`#edit-brix-${ingredient.id}`}>Sweetness</Tooltip
 	>
 
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={volume}
-		type="volume"
-		componentId={ingredient.id}
-	/>
+	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 
-	<NumberSpinner
+	<BrixSpinner
 		{mixtureStore}
-		id={`edit-brix-${ingredient.id}`}
+		divId={`edit-brix-${ingredient.id}`}
 		class={numericBase}
-		value={brix}
-		type="brix"
-		componentId={ingredient.id}
+		{brix}
+		ingredientId={ingredient.id}
 	/>
 
 	<SweetenerDropdown
@@ -119,33 +103,20 @@
 )}
 	<Tooltip color="default" offset={6} triggeredBy={`#edit-abv-${ingredient.id}`}>ABV</Tooltip>
 
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={volume}
-		type="volume"
-		componentId={ingredient.id}
-	/>
+	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 
-	<NumberSpinner
+	<AbvSpinner
 		{mixtureStore}
-		id={`edit-abv-${ingredient.id}`}
+		divId={`edit-abv-${ingredient.id}`}
 		class={numericBase}
-		value={abv}
-		type="abv"
-		componentId={ingredient.id}
+		{abv}
+		ingredientId={ingredient.id}
 	/>
-	{@render nameInput(mixtureStore, ingredient,)}
+	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
 {#snippet citrusHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={volume}
-		type="volume"
-		componentId={ingredient.id}
-	/>
+	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 	<CitrusDropdown
 		{mixtureStore}
 		componentId={ingredient.id}
@@ -157,13 +128,7 @@
 {/snippet}
 
 {#snippet acidHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={mass}
-		type="mass"
-		componentId={ingredient.id}
-	/>
+	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<AcidDropdown
 		{mixtureStore}
 		componentId={ingredient.id}
@@ -175,13 +140,7 @@
 {/snippet}
 
 {#snippet saltHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
-	<NumberSpinner
-		{mixtureStore}
-		class={numericBase}
-		value={mass}
-		type="mass"
-		componentId={ingredient.id}
-	/>
+	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<SaltDropdown
 		{mixtureStore}
 		componentId={ingredient.id}

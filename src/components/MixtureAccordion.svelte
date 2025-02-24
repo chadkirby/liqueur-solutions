@@ -3,8 +3,8 @@
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import AddComponent from './nav/AddComponent.svelte';
-	import VolumeComponent from './displays/Volume.svelte';
-	import MassComponent from './displays/Mass.svelte';
+	import VolumeDetails from './displays/VolumeDetails.svelte';
+	import MassComponent from './displays/MassDetails.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { serializeToUrl } from '$lib/url-serialization.js';
@@ -26,27 +26,28 @@
 		citrusHeader,
 		acidHeader,
 		saltHeader,
-	} from './MixtureHeaders.svelte';
+	} from './IngredientHeaders.svelte';
 	import {
 		saltDetails,
 		sweetenerDetails,
-		waterDetails,
+		defaultDetails,
 		spiritDetails,
 		syrupDetails,
 		acidDetails,
 		citrusDetails,
-		totals,
-	} from './MixtureDetails.svelte';
+	} from './IngredientDetails.svelte';
 	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import Helper from './ui-primitives/Helper.svelte';
+	import { ingredientTotals, mixtureTotals } from './MixtureTotals.svelte';
 
 	let {
 		mixtureStore,
 		id: parentId,
 		name: mixtureName,
-	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
+	}: { mixtureStore: MixtureStore; id: string; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
+	$inspect(name, mixture?.id);
 
 	// We need to manage open states externally and use the component's ID
 	// as the key in the #each block to prevent Svelte from reusing
@@ -163,7 +164,7 @@
 							class={[
 								'absolute',
 								'w-4',
-								'h-9',
+								'h-10',
 								'-left-4',
 								'-top-2',
 								'border-l-2',
@@ -175,15 +176,28 @@
 						{#if isSweetener(component)}
 							{@render sweetenerDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isWater(component)}
-							{@render waterDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSpirit(component)}
 							{@render spiritDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSyrup(component)}
 							{@render syrupDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isCitrusMixture(component)}
-							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+							{@render citrusDetails(mixtureStore, ingredient, mass)}
 						{:else if isMixture(component)}
-							{@render totals(mixtureStore, id, component, 'min-w-16 max-w-24')}
+							{@render ingredientTotals(mixtureStore, component, parentId, 'min-w-16 max-w-24')}
+						{:else if isAcidSubstance(component)}
+							{@render acidDetails(
+								mixtureStore,
+								ingredient as IngredientSubstanceItem,
+								mass,
+								ingredientVolume,
+							)}
+						{:else if isSaltIngredient(ingredient)}
+							{@render saltDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+						{:else}
+							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+						{/if}
+						{#if isMixture(component)}
 							<div class="min-w-16 max-w-24">
 								<!-- need a dummy helper to align the button with other items in totals -->
 								<Helper>{'\u00A0'}</Helper>
@@ -196,34 +210,6 @@
 								>
 									<span class="text-primary-500 dark:text-primary-400">Edit</span>
 								</Button>
-							</div>
-						{:else if isAcidSubstance(component)}
-							{@render acidDetails(
-								mixtureStore,
-								ingredient as IngredientSubstanceItem,
-								mass,
-								ingredientVolume,
-							)}
-						{:else if isSaltIngredient(ingredient)}
-							{@render saltDetails(mixtureStore, ingredient, mass, ingredientVolume)}
-						{:else}
-							<div class="flex flex-row my-1">
-								<VolumeComponent
-									{mixtureStore}
-									componentId={id}
-									{component}
-									volume={ingredientVolume}
-									readonly={true}
-									class="basis-1/2"
-								/>
-								<MassComponent
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/2"
-								/>
 							</div>
 						{/if}
 					</div>
@@ -239,7 +225,7 @@
 					<div class="items-center w-full">
 						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
 						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
-							{@render totals(mixtureStore, parentId, mixture)}
+							{@render mixtureTotals(mixtureStore, mixture)}
 						</div>
 					</div>
 				{/snippet}
@@ -290,19 +276,29 @@
 	{/if}
 </div>
 
-<dialog bind:this={editMixtureDialog}>
-	{#if editedSubmixture.id && editedSubmixture.name}
-			<div class="h-[90vh] w-[90vw] max-w-2xl relative overflow-hidden">
-					<div class="sticky top-0 left-0 right-0 bg-white z-10 flex gap-2 justify-between items-center p-2 border-b border-primary-100">
-							<span class="text-sm font-semibold text-primary-600">Editing {editedSubmixture.name}</span>
-							<Button onclick={() => editMixtureDialog?.close()}>Done</Button>
-					</div>
-					<div class="p-2 h-full overflow-y-auto">
-							<MixtureAccordion {mixtureStore} id={editedSubmixture.id} name={editedSubmixture.name} />
-					</div>
+<dialog
+	bind:this={editMixtureDialog}
+	onclose={() => {
+		editedSubmixture = { id: '', name: '' };
+		// Force the parent component to re-evaluate its mixture
+		mixtureStore = mixtureStore;
+	}}
+>
+	<div class="h-[90vh] w-[90vw] max-w-2xl relative overflow-hidden">
+		<div
+			class="sticky top-0 left-0 right-0 bg-white z-10 flex gap-2 justify-between items-center p-2 border-b border-primary-100"
+		>
+			<span class="text-sm font-semibold text-primary-600">Editing {editedSubmixture.name}</span>
+			<Button onclick={() => editMixtureDialog?.close()}>Done</Button>
+		</div>
+		{#if editedSubmixture.id}
+			<div class="p-2 h-full overflow-y-auto">
+				<MixtureAccordion {mixtureStore} id={editedSubmixture.id} name={editedSubmixture.name} />
 			</div>
-	{/if}
+		{/if}
+	</div>
 </dialog>
+
 <style>
 	/* Small label that appears above each accordion item */
 	.txt-xxs {

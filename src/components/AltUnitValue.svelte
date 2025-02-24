@@ -41,7 +41,7 @@
 				{ options: { unit: '%' }, fn: (v: number) => v },
 				{
 					options: { unit: '' },
-					fn: (v: number) => (v < 100 && v >= 50 ? brixToSyrupProportion(v) : ''),
+					fn: (v: number) => brixToSyrupProportion(v),
 				},
 			] satisfies Alternate[],
 		}[type],
@@ -49,7 +49,7 @@
 
 	let altIndex = $state(0);
 
-	function rotateAlternates() {
+	function rotateAlternates(count = 0) {
 		altIndex = (altIndex + 1) % alternates.length;
 	}
 
@@ -57,7 +57,6 @@
 
 	let values = $derived(arrayVal.map(fn));
 	let formatOptions = $derived(arrayVal.map(() => options));
-
 </script>
 
 <ReadOnlyValue {values} {formatOptions} onclick={rotateAlternates} />

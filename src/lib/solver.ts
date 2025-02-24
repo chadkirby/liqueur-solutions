@@ -308,11 +308,11 @@ export function solveMassForVolume(mixture: Mixture, targetVolume: number, itera
 	// Try simple mass scaling first, but make sure we have a mass to
 	// scale
 	if (isClose(working.mass, 0, 1e-6)) {
-		working.setMass(1);
+		working.setIngredientMass(1);
 	}
 
 	const factor = targetVolume / working.volume;
-	working.setMass(working.mass * factor);
+	working.setIngredientMass(working.mass * factor);
 
 	// If we hit the target, we're done
 	if (isClose(working.volume, targetVolume, 0.001)) return working.mass;

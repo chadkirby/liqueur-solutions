@@ -147,7 +147,7 @@ describe('setVolume', () => {
 		expect(mixture.volume).toBeCloseTo(100, 3);
 		expect(mixture.abv).toBeCloseTo(40, 3);
 
-		mixture.setMass(solveMassForVolume(mixture, 50));
+		mixture.setIngredientMass(solveMassForVolume(mixture, 50));
 
 		// Volume should be exactly 50
 		expect(mixture.volume).toBeCloseTo(50, 3);
@@ -158,7 +158,7 @@ describe('setVolume', () => {
 	it('should handle scaling up', () => {
 		const mixture = newSpirit(50, 40);
 
-		mixture.setMass(solveMassForVolume(mixture, 100));
+		mixture.setIngredientMass(solveMassForVolume(mixture, 100));
 		expect(mixture.volume).toBeCloseTo(100, 3);
 	});
 
@@ -166,7 +166,7 @@ describe('setVolume', () => {
 		let setMassCallCount = 0;
 		const mixture = newSpirit(100, 40);
 
-		mixture.setMass(solveMassForVolume(mixture, 50));
+		mixture.setIngredientMass(solveMassForVolume(mixture, 50));
 		expect(setMassCallCount).toBeLessThanOrEqual(10);
 		expect(mixture.volume).toBeCloseTo(50, 3);
 	});
@@ -174,7 +174,7 @@ describe('setVolume', () => {
 	it('should handle tiny volume changes', () => {
 		const mixture = newSpirit(100, 40);
 
-		mixture.setMass(solveMassForVolume(mixture, 99.9));
+		mixture.setIngredientMass(solveMassForVolume(mixture, 99.9));
 		expect(mixture.volume).toBeCloseTo(99.9, 3);
 	});
 });

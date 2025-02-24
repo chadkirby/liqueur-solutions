@@ -88,11 +88,11 @@ describe('Mixture Store', () => {
 		const waterId = ingredientList(state)[0].id;
 
 		// Get initial volume
-		expect(store.getVolume(waterId)).toBe(100);
+		expect(store.get('volume', waterId)).toBe(100);
 
 		// Set valid volume
 		store.setVolume(waterId, 200);
-		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.get('volume', waterId)).toBe(200);
 
 		try {
 			// Set invalid volume (negative)
@@ -100,7 +100,7 @@ describe('Mixture Store', () => {
 		} catch (error) {
 			expect(error).toBeDefined();
 		}
-		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.get('volume', waterId)).toBe(200);
 	});
 
 	it('should handle ABV changes', () => {
@@ -125,7 +125,7 @@ describe('Mixture Store', () => {
 		} catch (error) {
 			expect(error).toBeDefined();
 		}
-		expect(store.getAbv()).toBeCloseTo(30, 0.01); // should be clamped to 100
+		expect(store.get('abv')).toBeCloseTo(30, 0.01); // should be clamped to 100
 	});
 
 	it('should handle ingredient ABV changes', () => {
@@ -144,7 +144,7 @@ describe('Mixture Store', () => {
 		} catch (error) {
 			expect(error).toBeDefined();
 		}
-		expect(store.getAbv()).toBeCloseTo(30, 0.01); // should be clamped to 100
+		expect(store.get('abv')).toBeCloseTo(30, 0.01); // should be clamped to 100
 	});
 
 	it('should handle name changes', () => {
@@ -183,19 +183,19 @@ describe('Mixture Store', () => {
 		store.setVolume(waterId, 200);
 		// @ts-expect-error undoRedo is private
 		store.undoRedo._forceCommit();
-		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.get('volume', waterId)).toBe(200);
 		expect(store.undoCount).toBe(2);
 		expect(store.redoCount).toBe(0);
 
 		// Undo volume change
 		store.undo();
-		expect(store.getVolume(waterId)).toBe(100);
+		expect(store.get('volume', waterId)).toBe(100);
 		expect(store.undoCount).toBe(1);
 		expect(store.redoCount).toBe(1);
 
 		// Redo volume change
 		store.redo();
-		expect(store.getVolume(waterId)).toBe(200);
+		expect(store.get('volume', waterId)).toBe(200);
 		expect(store.undoCount).toBe(2);
 		expect(store.redoCount).toBe(0);
 
@@ -225,7 +225,7 @@ describe('Mixture Store', () => {
 
 		// Undo volume change
 		store.undo();
-		expect(store.getVolume(waterId)).toBe(100);
+		expect(store.get('volume', waterId)).toBe(100);
 		expect(store.redoCount).toBe(1);
 
 		// Make a new change
@@ -235,7 +235,7 @@ describe('Mixture Store', () => {
 
 		// Redo stack should be cleared
 		expect(store.redoCount).toBe(0);
-		expect(store.getVolume(waterId)).toBe(300);
+		expect(store.get('volume', waterId)).toBe(300);
 	});
 
 	it('should update sweetener type only for target ingredient', () => {
@@ -333,9 +333,9 @@ describe('Mixture store solver', () => {
 		store.solveTotal('volume', 200);
 
 		// Assert
-		expect(store.getVolume('totals')).toBeCloseTo(200, 0);
-		expect(store.getAbv('totals')).toBeCloseTo(initialAnalysis.abv, 1);
-		expect(store.getBrix('totals')).toBeCloseTo(initialAnalysis.brix, 1);
+		expect(store.get('volume')).toBeCloseTo(200, 0);
+		expect(store.get('abv')).toBeCloseTo(initialAnalysis.abv, 1);
+		expect(store.get('brix')).toBeCloseTo(initialAnalysis.brix, 1);
 	});
 
 	it('should solve for abv', () => {
@@ -343,9 +343,9 @@ describe('Mixture store solver', () => {
 		store.solveTotal('abv', 50);
 
 		// Assert
-		expect(store.getVolume('totals')).toBeCloseTo(initialAnalysis.volume, 1);
-		expect(store.getAbv('totals')).toBeCloseTo(50, 1);
-		expect(store.getBrix('totals')).toBeCloseTo(initialAnalysis.brix, 1);
+		expect(store.get('volume')).toBeCloseTo(initialAnalysis.volume, 1);
+		expect(store.get('abv')).toBeCloseTo(50, 1);
+		expect(store.get('brix')).toBeCloseTo(initialAnalysis.brix, 1);
 	});
 
 	it('should solve for brix', () => {
@@ -353,9 +353,9 @@ describe('Mixture store solver', () => {
 		store.solveTotal('brix', 25);
 
 		// Assert
-		expect(store.getVolume('totals')).toBeCloseTo(initialAnalysis.volume, 1);
-		expect(store.getAbv('totals')).toBeCloseTo(initialAnalysis.abv, 1);
-		expect(store.getBrix('totals')).toBeCloseTo(25, 1);
+		expect(store.get('volume')).toBeCloseTo(initialAnalysis.volume, 1);
+		expect(store.get('abv')).toBeCloseTo(initialAnalysis.abv, 1);
+		expect(store.get('brix')).toBeCloseTo(25, 1);
 	});
 
 	it('should throw an error for unable to solve', () => {

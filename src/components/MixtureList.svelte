@@ -112,7 +112,7 @@
 		</SignedOut>
 	</section>
 
-	<MixtureAccordion {mixtureStore} id={null} name={mixtureStore.name} />
+	<MixtureAccordion {mixtureStore} id={mixtureStore.mixture.id} name={mixtureStore.name} />
 </main>
 
 <style>

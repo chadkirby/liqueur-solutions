@@ -33,7 +33,9 @@ describe('newSyrup', () => {
 			'masses',
 		).toStrictEqual(['60.65', '60.65']);
 		expect(
-			[...syrup.ingredients].map((i) => syrup.getIngredientValue(i[1], 'waterVolume').toFixed(2)),
+			[...syrup.ingredients].map(([, { id, item }]) =>
+				item.getWaterVolume(syrup.getIngredientMass(id)).toFixed(2),
+			),
 			'waterVolumes',
 		).toStrictEqual(['0.00', '60.65']);
 	});

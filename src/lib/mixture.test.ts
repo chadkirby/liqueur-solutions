@@ -111,17 +111,17 @@ describe('mixture works', () => {
 				item: SubstanceComponent.new('water'),
 			});
 
-		mx.setMass(1000);
+		mx.setIngredientMass(1000);
 		assert.equal(mx.mass, 1000, 'mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 500, 'ingredient 1 mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 500, 'ingredient 2 mass');
 
-		mx.setMass(0);
+		mx.setIngredientMass(0);
 		assert.equal(mx.mass, 0, 'mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 0, 'ingredient 1 mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 0, 'ingredient 2 mass');
 
-		mx.setMass(100);
+		mx.setIngredientMass(100);
 		assert.equal(mx.mass, 100, 'mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 50, 'ingredient 1 mass');
 		assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 50, 'ingredient 2 mass');
@@ -170,7 +170,7 @@ test('can set ingredient mass', () => {
 			item: SubstanceComponent.new('water'),
 		});
 
-	mx.setIngredientMass(mx.ingredientIds[0], 500);
+	mx.setIngredientMass(500, mx.ingredientIds[0]);
 	assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 500, 'ingredient 1 mass');
 	assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 100, 'ingredient 2 mass');
 	assert.equal(mx.mass, 600, 'mass');

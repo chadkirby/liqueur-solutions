@@ -38,7 +38,7 @@
     'w-full',
     'rtl:text-right',
     'px-1',
-    'py-0.5',
+    'py-1',
     classProp
 	]}
 	{...handlers}
