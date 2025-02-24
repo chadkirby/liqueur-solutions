@@ -1,21 +1,27 @@
 <script lang="ts">
-	import NumberSpinner from '../NumberSpinner.svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { format } from '$lib/utils.js';
 	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
+	import AbvSpinner from './AbvSpinner.svelte';
+	import { format } from '$lib/utils.js';
 
-	let { component, componentId, mixtureStore, readonly, class: classProp }: DisplayProps = $props();
+	let {
+		ingredientItem,
+		ingredientId,
+		mixtureStore,
+		readonly,
+		class: classProp,
+	}: DisplayProps = $props();
 
-	let abv = $derived(component.abv);
+	let abv = $derived(ingredientItem.abv);
 	let proof = $derived(abv * 2);
 </script>
 
-<div class={classProp} data-testid="abv-{componentId}">
+<div class={classProp} data-testid="abv-{ingredientId}">
 	<Helper class="tracking-tight">ABV</Helper>
-	{#if !readonly && component instanceof Mixture && component.canEdit('abv')}
-		<NumberSpinner {mixtureStore} value={abv} type="abv" {componentId} max={100} />
+	{#if !readonly && ingredientItem instanceof Mixture && ingredientItem.canEdit('abv')}
+		<AbvSpinner {ingredientId} {abv} {mixtureStore} />
 		<Helper class="text-center">{format(proof, { unit: 'proof' })}</Helper>
 	{:else}
 		<AltUnitValue value={abv} type="abv" />

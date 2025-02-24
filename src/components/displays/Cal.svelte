@@ -4,8 +4,13 @@
 	import Helper from '../ui-primitives/Helper.svelte';
 	import type { DisplayProps } from './display-props.js';
 
-	let { component, componentId, mass, class: classProp }: DisplayProps = $props();
-	let value = $derived(isMixture(component) ? component.kcal : component.getKcal(mass));
+	let {
+		ingredientItem: component,
+		ingredientId: componentId,
+		mass,
+		class: classProp,
+	}: DisplayProps = $props();
+	let value = $derived(component.getKcal(mass));
 </script>
 
 <div class={classProp} data-testid="cal-{componentId}">

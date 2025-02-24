@@ -58,12 +58,12 @@
 
 	function addCitrus() {
 		if (callback) callback();
-		const juice = citrusFactory.lemon(100);
+		const juice = citrusFactory.lemon(1000);
 		mixtureStore.addIngredientTo(componentId, {
 			name: 'lemon juice',
 			id: makeCitrusId('lemon'),
 			item: juice,
-			mass: juice.mass,
+			mass: 100,
 		});
 	}
 
@@ -106,13 +106,11 @@
 		<CirclePlusSolid size="sm" /><span class="mr-1">acid</span>
 	</Button>
 
-	{#if componentId === null}
-		<!-- <Button class="p-1" onclick={addEmpty}>
+	<!-- <Button class="p-1" onclick={addEmpty}>
 			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
 		</Button> -->
 
-		<Button class="p-1" onclick={openFilesDrawer} data-testid="add-button-saved">
-			<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>
-		</Button>
-	{/if}
+	<Button class="p-1" onclick={openFilesDrawer} data-testid="add-button-saved">
+		<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>
+	</Button>
 </div>

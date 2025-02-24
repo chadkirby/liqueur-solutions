@@ -1,28 +1,24 @@
 import type { IngredientToAdd } from './mixture-types.js';
 import { Mixture } from './mixture.js';
 
-function deepGet(getter: (mx: Mixture) => number | -1, mixture: Mixture): number | -1 {
+export function deepGet(getter: (mx: Mixture) => number | false, mixture: Mixture): number | false {
 	const value = getter(mixture);
-	if (value !== -1) return value;
+	if (value !== false) return value;
 	for (const ingredient of mixture.ingredients.values()) {
 		if (ingredient.item instanceof Mixture) {
 			const value = deepGet(getter, ingredient.item);
-			if (value !== -1) return value;
+			if (value !== false) return value;
 		}
 	}
-	return -1;
+	return false;
 }
 
-function deepSet<T>(
-	setter: (mx: Mixture, value: T) => boolean,
-	mixture: Mixture,
-	value: T,
-): boolean {
-	const wasSet = setter(mixture, value);
+export function deepSet<T>(setter: (mx: Mixture) => boolean, mixture: Mixture): boolean {
+	const wasSet = setter(mixture);
 	if (wasSet) return true;
 	for (const ingredient of mixture.ingredients.values()) {
 		if (ingredient.item instanceof Mixture) {
-			const wasSet = deepSet(setter, ingredient.item, value);
+			const wasSet = deepSet(setter, ingredient.item);
 			if (wasSet) return true;
 		}
 	}
@@ -30,39 +26,15 @@ function deepSet<T>(
 }
 
 export const deep = {
-	getIngredientAbv(mixture: Mixture, id: string): number | -1 {
-		return deepGet((mx) => mx.getIngredientAbv(id), mixture);
-	},
-
-	getIngredientBrix(mixture: Mixture, id: string): number | -1 {
-		return deepGet((mx) => mx.getIngredientBrix(id), mixture);
-	},
-
-	getIngredientVolume(mixture: Mixture, id: string): number | -1 {
-		return deepGet((mx) => mx.getIngredientVolume(id), mixture);
-	},
-
-	getIngredientMass(mixture: Mixture, id: string): number | -1 {
-		return deepGet((mx) => mx.getIngredientMass(id), mixture);
-	},
-
-	getIngredientPH(mixture: Mixture, id: string): number | -1 {
-		return deepGet((mx) => (mx.id === id ? mx.getPH() : -1), mixture);
-	},
-
 	setIngredientVolume(mixture: Mixture, id: string, value: number): boolean {
-		return deepSet((mx, value) => mx.setIngredientVolume(id, value), mixture, value);
+		return deepSet((mx) => mx.setIngredientVolume(id, value), mixture);
 	},
 
 	setIngredientMass(mixture: Mixture, id: string, value: number): boolean {
-		return deepSet((mx, value) => mx.setIngredientMass(id, value), mixture, value);
+		return deepSet((mx) => mx.setIngredientMass(value, id), mixture);
 	},
 
 	removeIngredient(mixture: Mixture, id: string): boolean {
-		return deepSet((mx) => mx.removeIngredient(id), mixture, undefined);
-	},
-
-	replaceIngredient(mixture: Mixture, id: string, replacement: IngredientToAdd): boolean {
-		return deepSet((mx) => mx.replaceIngredient(id, replacement), mixture, replacement);
+		return deepSet((mx) => mx.removeIngredient(id), mixture);
 	},
 };
