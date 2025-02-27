@@ -13,67 +13,67 @@
 		componentId,
 		callback,
 		mixtureStore,
-	}: { componentId: string | null; mixtureStore: MixtureStore; callback?: () => void } = $props();
+	}: { componentId: string | null; mixtureStore: MixtureStore; callback?: (newId: string) => void } = $props();
 
 	function addSpirit() {
-		if (callback) callback();
 		const spirit = newSpirit(100, 40);
-		mixtureStore.addIngredientTo(componentId, { name: '', item: spirit, mass: spirit.mass });
+		const newId = mixtureStore.addIngredientTo(componentId, { name: '', item: spirit, mass: spirit.mass });
+		if (callback) callback(newId);
 	}
 	function addWater() {
-		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, {
+		const newId = mixtureStore.addIngredientTo(componentId, {
 			name: '',
 			item: SubstanceComponent.new('water'),
 			mass: 100,
 		});
+		if (callback) callback(newId);
 	}
 	function addSugar() {
-		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, {
+		const newId = mixtureStore.addIngredientTo(componentId, {
 			name: '',
 			item: SubstanceComponent.new('sucrose'),
 			mass: 100,
 		});
+		if (callback) callback(newId);
 	}
 	function addSyrup() {
-		if (callback) callback();
 		const syrup = newSyrup(100, 50);
-		mixtureStore.addIngredientTo(componentId, {
+		const newId = mixtureStore.addIngredientTo(componentId, {
 			name: '',
 			item: syrup,
 			mass: syrup.mass,
 		});
+		if (callback) callback(newId);
 	}
 
 	function addEmpty() {
-		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture(), mass: 0 });
+		const newId = mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture(), mass: 100 });
+		if (callback) callback(newId);
 	}
 
 	function openFilesDrawer() {
 		filesDrawer.openWith(componentId);
-		if (callback) callback();
+		if (callback) callback('files-drawer');
 	}
 
 	function addCitrus() {
-		if (callback) callback();
 		const juice = citrusFactory.lemon(1000);
-		mixtureStore.addIngredientTo(componentId, {
+		const newId = mixtureStore.addIngredientTo(componentId, {
 			name: 'lemon juice',
 			id: makeCitrusId('lemon'),
 			item: juice,
 			mass: 100,
 		});
+		if (callback) callback(newId);
 	}
 
 	function addSubstance(substanceId: SubstanceId, mass = 1, name = '') {
-		if (callback) callback();
-		mixtureStore.addIngredientTo(componentId, {
+		const newId = mixtureStore.addIngredientTo(componentId, {
 			name,
 			item: SubstanceComponent.new(substanceId),
 			mass,
 		});
+		if (callback) callback(newId);
 	}
 </script>
 
@@ -106,9 +106,9 @@
 		<CirclePlusSolid size="sm" /><span class="mr-1">acid</span>
 	</Button>
 
-	<!-- <Button class="p-1" onclick={addEmpty}>
+	<Button class="p-1" onclick={addEmpty}>
 			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
-		</Button> -->
+		</Button>
 
 	<Button class="p-1" onclick={openFilesDrawer} data-testid="add-button-saved">
 		<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>
