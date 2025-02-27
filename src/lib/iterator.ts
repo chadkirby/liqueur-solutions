@@ -1,3 +1,5 @@
+type Predicate<T> = (item: T, i: number) => boolean;
+
 export class FancyIterator<T> implements Iterable<T> {
 	private iterableIterator: Iterator<T>;
 
@@ -5,17 +7,19 @@ export class FancyIterator<T> implements Iterable<T> {
 		this.iterableIterator = Symbol.iterator in iterator ? iterator[Symbol.iterator]() : iterator;
 	}
 
-	find(predicate: (item: T) => boolean): Readonly<T> | undefined {
+	find(predicate: Predicate<T>): Readonly<T> | undefined {
+		let i = 0;
 		for (const item of this) {
-			if (predicate(item)) return item;
+			if (predicate(item, i++)) return item;
 		}
 		return undefined;
 	}
 
-	filter(predicate: (item: T) => boolean): T[] {
+	filter(predicate: Predicate<T>): T[] {
 		const results: T[] = [];
+		let i = 0;
 		for (const item of this) {
-			if (predicate(item)) results.push(item);
+			if (predicate(item, i++)) results.push(item);
 		}
 		return results;
 	}
@@ -36,16 +40,18 @@ export class FancyIterator<T> implements Iterable<T> {
 		return accumulator;
 	}
 
-	every(predicate: (item: T) => boolean): boolean {
+	every(predicate: Predicate<T>): boolean {
+		let i = 0;
 		for (const item of this) {
-			if (!predicate(item)) return false;
+			if (!predicate(item, i++)) return false;
 		}
 		return true;
 	}
 
-	some(predicate: (item: T) => boolean): boolean {
+	some(predicate: Predicate<T>): boolean {
+		let i = 0;
 		for (const item of this) {
-			if (predicate(item)) return true;
+			if (predicate(item, i++)) return true;
 		}
 		return false;
 	}
