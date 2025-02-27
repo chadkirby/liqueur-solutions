@@ -390,6 +390,9 @@ export class Mixture implements CommonComponent {
 	}
 
 	describe(): string {
+		if (isEmptyMixture(this)) {
+			return 'Empty Mixture';
+		}
 		if (isSyrup(this)) {
 			const sweeteners = this.eachSubstance()
 				.filter((x) => Sweeteners.some((s) => s.id === x.substanceId))
@@ -858,3 +861,6 @@ export function isCitrusMixture(mx: unknown): mx is Mixture & { id: PrefixedId }
 	return isMixture(mx) && getCitrusPrefix(mx.id) !== null;
 }
 
+export function isEmptyMixture(mx: Mixture): boolean {
+	return mx.mass === 0;
+}

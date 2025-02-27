@@ -4,7 +4,7 @@
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import MassDetails from './displays/MassDetails.svelte';
 	import VolumeDetails from './displays/VolumeDetails.svelte';
-	import { Mixture } from '$lib/mixture.js';
+	import { isEmptyMixture, Mixture } from '$lib/mixture.js';
 	import PhDetails from './displays/PHDetails.svelte';
 	import AbvDetails from './displays/AbvDetails.svelte';
 	import { isAcidId, isSweetenerId } from '$lib/ingredients/substances.js';
@@ -50,9 +50,10 @@
 	parentId: string,
 	className = 'w-24 shrink-0',
 )}
+	{@const isEmpty = isEmptyMixture(mixture)}
 	{@const id = (console.log(mixture.id, parentId), mixture.id)}
-	{@const mass = mixtureStore.get('mass', id)}
-	{@const volume = mixtureStore.get('volume', id)}
+	{@const mass = isEmpty ? 0 : mixtureStore.get('mass', id)}
+	{@const volume = isEmpty ? 0 : mixtureStore.get('volume', id)}
 	<!-- TOTALS -->
 	<VolumeDetails
 		{mixtureStore}

@@ -3,8 +3,6 @@
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import AddComponent from './nav/AddComponent.svelte';
-	import VolumeDetails from './displays/VolumeDetails.svelte';
-	import MassComponent from './displays/MassDetails.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { serializeToUrl } from '$lib/url-serialization.js';
@@ -47,7 +45,6 @@
 	}: { mixtureStore: MixtureStore; id: string; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
-	$inspect(name, mixture?.id);
 
 	// We need to manage open states externally and use the component's ID
 	// as the key in the #each block to prevent Svelte from reusing
@@ -55,7 +52,7 @@
 	// that when we remove a component, its AccordionItem is properly
 	// destroyed rather than being reused for the next component that
 	// takes its place in the list.
-	let openStates = $state(new Map<string, boolean>([['add-component', false]]));
+	let openStates = $state(new Map<string, boolean>([]));
 
 	function setOpen(id: string, value: boolean) {
 		if (value) {
@@ -65,13 +62,15 @@
 		}
 	}
 
-	let editMode = $state(false);
+	// svelte-ignore state_referenced_locally
+	let editMode = $state(mixture?.size === 0);
 	function toggleEditMode() {
 		editMode = !editMode;
 	}
 
 	let editMixtureDialog: HTMLDialogElement | null = $state(null);
 	let editedSubmixture = $state({ id: '', name: '' });
+	let displayName = $derived(mixtureName || mixture?.describe() || 'never');
 </script>
 
 <div>
@@ -98,7 +97,13 @@
 			<AddComponent
 				{mixtureStore}
 				componentId={parentId}
-				callback={() => setOpen('add-component', false)}
+				callback={(addedId) => {
+					const newIngredient = mixture?.ingredients.get(addedId);
+					if (newIngredient && isMixture(newIngredient.item) && newIngredient.item.size === 0) {
+						editedSubmixture = { id: addedId, name: newIngredient.name || newIngredient.item.describe() };
+						editMixtureDialog?.showModal();
+					}
+				}}
 			/>
 		</div>
 	{/if}
@@ -203,7 +208,7 @@
 								<Helper>{'\u00A0'}</Helper>
 								<Button
 									onclick={() => {
-										editedSubmixture = { id, name: ingredient.name };
+										editedSubmixture = { id, name: ingredient.name || ingredient.item.describe() };
 										editMixtureDialog?.showModal();
 									}}
 									class="w-full"
@@ -223,7 +228,7 @@
 			>
 				{#snippet header()}
 					<div class="items-center w-full">
-						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
+						<div class="text-sm pb-2 text-primary-600">Totals ({displayName})</div>
 						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
 							{@render mixtureTotals(mixtureStore, mixture)}
 						</div>
