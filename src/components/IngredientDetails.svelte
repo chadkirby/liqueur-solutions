@@ -7,7 +7,7 @@
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import MassDetails from './displays/MassDetails.svelte';
 	import VolumeDetails from './displays/VolumeDetails.svelte';
-	import { Mixture } from '$lib/mixture.js';
+	import { isMixture, Mixture } from '$lib/mixture.js';
 	import PhDetails from './displays/PHDetails.svelte';
 	import ReadOnlyValue from './ReadOnlyValue.svelte';
 
@@ -95,6 +95,7 @@
 )}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
+	{@const density = isMixture(component) ? component.getDensity() : component.pureDensity}
 	<VolumeDetails
 		{mixtureStore}
 		ingredientId={id}
@@ -104,6 +105,19 @@
 		class={widthClass}
 	/>
 	<MassDetails
+		{mixtureStore}
+		ingredientId={id}
+		ingredientItem={component}
+		{mass}
+		readonly={true}
+		class={widthClass}
+	/>
+	<div class={['mx-1', widthClass]}>
+		<Helper class="tracking-tight">Density</Helper>
+		<ReadOnlyValue values={[density]} formatOptions={[{ unit: 'g/ml' }]} />
+	</div>
+
+	<Cal
 		{mixtureStore}
 		ingredientId={id}
 		ingredientItem={component}
@@ -225,11 +239,11 @@
 		readonly={true}
 		class={widthClass}
 	/>
-	<div class={["mx-1", widthClass]}>
+	<div class={['mx-1', widthClass]}>
 		<Helper class="tracking-tight">𝗉𝘒<sub>𝖺</sub></Helper>
 		<ReadOnlyValue values={substance.pKa ?? [NaN]} formatOptions={[{ unit: 'pH' }]} />
 	</div>
-	<div class={["mx-1", widthClass]}>
+	<div class={['mx-1', widthClass]}>
 		<Helper class="tracking-tight">Density</Helper>
 		<ReadOnlyValue values={[density]} formatOptions={[{ unit: 'g/ml' }]} />
 	</div>
@@ -283,11 +297,7 @@
 	/>
 {/snippet}
 
-{#snippet citrusDetails(
-	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
-	mass: number,
-)}
+{#snippet citrusDetails(mixtureStore: MixtureStore, ingredient: IngredientItem, mass: number)}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
 	<MassDetails
