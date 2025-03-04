@@ -1,6 +1,8 @@
+import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+
 export interface DisplayProps {
-	componentId: string;
-	component: IngredientItemComponent;
+	ingredientId: string;
+	ingredientItem: IngredientItemComponent;
 	mass: number;
 	mixtureStore: MixtureStore;
 	readonly?: boolean;
