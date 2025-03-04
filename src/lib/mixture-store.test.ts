@@ -116,12 +116,12 @@ describe('Mixture Store', () => {
 		});
 
 		// Set ABV
-		store.setAbv('totals', 30);
+		store.setAbv(store.mixture.id, 30);
 		expect(store.mixture.getAbv()).toBeCloseTo(30, 0.01);
 
 		// Set invalid ABV (over 100)
 		try {
-			store.setAbv('totals', 150);
+			store.setAbv(store.mixture.id, 150);
 		} catch (error) {
 			expect(error).toBeDefined();
 		}

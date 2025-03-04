@@ -30,12 +30,11 @@ import type {
 	MixtureAnalysis,
 	SolverTarget,
 } from './mixture-types.js';
-import { deep, deepGet, deepSet } from './deep-mixture.js';
+import { deep, deepGet } from './deep-mixture.js';
 import { citrusFactory } from './mixture-factories.js';
 import {
 	citrusJuiceNames,
 	getCitrusPrefix,
-	makeCitrusId,
 	type CitrusJuiceIdPrefix,
 	type CitrusJuiceName,
 } from './ingredients/citrus-ids.js';
@@ -81,7 +80,10 @@ export class MixtureStore {
 		id: string,
 		mixture = this.mixture,
 	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
-		if (id === 'totals' || id === mixture.id) {
+		if (id === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (id === mixture.id) {
 			return {
 				ingredient: { id, name: 'totals', mass: 1, item: mixture },
 				parentId: mixture.id,
@@ -243,10 +245,11 @@ export class MixtureStore {
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
+		if (id === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
 		const originalValue =
-			id === 'totals' || id === this.mixture.id
-				? this.mixture[key]
-				: getIngredientValue(ingredient, key);
+			id === this.mixture.id ? this.mixture[key] : getIngredientValue(ingredient, key);
 		const newValue = increment(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
@@ -276,10 +279,11 @@ export class MixtureStore {
 		if (!this.mixture.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
+		if (id === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
 		const originalValue =
-			id === 'totals' || id === this.mixture.id
-				? this.mixture[key]
-				: getIngredientValue(ingredient, key);
+			id === this.mixture.id ? this.mixture[key] : getIngredientValue(ingredient, key);
 		const newValue = decrement(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
@@ -337,7 +341,10 @@ export class MixtureStore {
 
 	setVolume(id: string, newVolume: number, undoKey = `setVolume-${id}`): number {
 		const originalVolume = this.get('volume', id);
-		if (id === 'totals' || id === this.mixture.id) {
+		if (id === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (id === this.mixture.id) {
 			this.solveTotal('volume', newVolume);
 			return newVolume;
 		}
@@ -365,7 +372,10 @@ export class MixtureStore {
 	}
 
 	setAbv(id: string, newAbv: number, undoKey = `setAbv-${id}`): number {
-		if (id === 'totals' || id === this.mixture.id) {
+		if (id === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (id === this.mixture.id) {
 			this.solveTotal('abv', newAbv);
 			return this.totals.abv;
 		}
@@ -413,7 +423,10 @@ export class MixtureStore {
 	}
 
 	setMass(componentId: string, newMass: number, undoKey = `setMass-${componentId}`): number {
-		if (componentId === 'totals' || componentId === this.mixture.id) {
+		if (componentId === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (componentId === this.mixture.id) {
 			throw new Error('Cannot set mass of totals');
 		}
 		const originalMass = this.get('mass', componentId);
@@ -428,7 +441,10 @@ export class MixtureStore {
 	}
 
 	setBrix(componentId: string, newBrix: number, undoKey = `setBrix-${componentId}`): number {
-		if (componentId === 'totals' || componentId === this.mixture.id) {
+		if (componentId === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (componentId === this.mixture.id) {
 			this.solveTotal('brix', newBrix);
 			return this.totals.brix;
 		}
@@ -458,7 +474,10 @@ export class MixtureStore {
 	}
 
 	setPH(componentId: string, newPH: number, undoKey = `setPH-${componentId}`): number {
-		if (componentId === 'totals' || componentId === this.mixture.id) {
+		if (componentId === 'totals') {
+			throw new Error("Don't use 'totals'");
+		}
+		if (componentId === this.mixture.id) {
 			this.solveTotal('pH', newPH);
 			return this.totals.pH;
 		}
