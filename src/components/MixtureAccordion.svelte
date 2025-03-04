@@ -100,7 +100,10 @@
 				callback={(addedId) => {
 					const newIngredient = mixture?.ingredients.get(addedId);
 					if (newIngredient && isMixture(newIngredient.item) && newIngredient.item.size === 0) {
-						editedSubmixture = { id: addedId, name: newIngredient.name || newIngredient.item.describe() };
+						editedSubmixture = {
+							id: addedId,
+							name: newIngredient.name || newIngredient.item.describe(),
+						};
 						editMixtureDialog?.showModal();
 					}
 				}}
@@ -277,10 +280,6 @@
 				</table>
 			</AccordionItem>
 		</Accordion>
-	{/if}
-	{#if parentId === null}
-		<!-- spacer to totals will scroll above the bottom nav -->
-		<div class="mt-20"></div>
 	{/if}
 </div>
 
