@@ -1,14 +1,14 @@
 <script lang="ts">
-	import NumberSpinner from '../NumberSpinner.svelte';
-	import { format } from '$lib/utils.js';
+	import { format as _format } from '$lib/utils.js';
 	import AltUnitValue from '../AltUnitValue.svelte';
 	import type { DisplayProps } from './display-props.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { isSubstance, isSweetener } from '$lib/mixture.js';
+	import MassSpinner from './MassSpinner.svelte';
 
 	let {
-		componentId,
-		component,
+		ingredientId,
+		ingredientItem,
 		mixtureStore,
 		readonly,
 		class: classProp,
@@ -18,16 +18,16 @@
 	let grams = $derived(mass);
 </script>
 
-<div class={classProp} data-testid="mass-{componentId}">
+<div class={classProp} data-testid="mass-detail">
 	<Helper class="tracking-tight">Mass</Helper>
-	{#if isSweetener(component) && !readonly}
-		<NumberSpinner {mixtureStore} value={grams} type="mass" {componentId} />
-		<Helper class="text-center">{format(grams / 28.3495, { unit: 'oz' })}</Helper>
-	{:else if isSubstance(component)}
+	{#if isSweetener(ingredientItem) && !readonly}
+		<MassSpinner {ingredientId} mass={grams} {mixtureStore} unitSuffix="g" />
+		<Helper class="text-center">{_format(grams / 28.3495, { unit: 'oz' })}</Helper>
+	{:else if isSubstance(ingredientItem)}
 		<AltUnitValue
 			value={grams}
 			type="mass"
-			molecularMass={component.substance.molecule.molecularMass}
+			molecularMass={ingredientItem.substance.molecule.molecularMass}
 		/>
 	{:else}
 		<AltUnitValue value={grams} type="mass" />

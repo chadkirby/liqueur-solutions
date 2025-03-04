@@ -24,7 +24,7 @@
 
 <div class={['flex', 'flex-row', 'gap-1', 'relative', basis, classProp]}>
 	<select
-		class={['w-full', 'appearance-none', 'ls-rounded-box', 'leading-[18px]', 'pl-6', 'py-0.5']}
+		class={['w-full', 'appearance-none', 'ls-rounded-box', 'leading-[18px]', 'pl-6', 'py-1']}
 		{value}
 		{onclick}
 		{onchange}

@@ -1,21 +1,21 @@
 <script lang="ts">
-	import NumberSpinner from '../NumberSpinner.svelte';
+	import VolumeSpinner from './VolumeSpinner.svelte';
 	import AltUnitValue from '../AltUnitValue.svelte';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { format } from '$lib/utils.js';
+	import { format as _format } from '$lib/utils.js';
 	import { isSweetenerId } from '$lib/ingredients/substances.js';
 	import type { IngredientItemComponent } from '$lib/mixture-types.js';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	let {
-		componentId,
+		ingredientId,
 		volume,
 		mixtureStore,
 		readonly,
 		class: classProp,
 		header = 'Volume',
 	}: {
-		componentId: string;
+		ingredientId: string;
 		component: IngredientItemComponent;
 		volume: number;
 		mixtureStore: MixtureStore;
@@ -27,13 +27,13 @@
 	let ml = $derived(volume);
 </script>
 
-<div class={classProp} data-testid={`volume-${componentId}`}>
+<div class={classProp} data-testid="volume-detail">
 	<Helper class="tracking-tight">{header}</Helper>
 
-	{#if isSweetenerId(componentId) || readonly}
+	{#if isSweetenerId(ingredientId) || readonly}
 		<AltUnitValue value={ml} type="volume" />
 	{:else}
-		<NumberSpinner {mixtureStore} value={ml} type="volume" {componentId} />
-		<Helper class="text-center">{format(ml * 0.033814, { unit: 'fl_oz' })}</Helper>
+		<VolumeSpinner {ingredientId} volume={ml} {mixtureStore} />
+		<Helper class="text-center">{_format(ml * 0.033814, { unit: 'fl_oz' })}</Helper>
 	{/if}
 </div>

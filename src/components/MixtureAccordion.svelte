@@ -1,15 +1,8 @@
 <script lang="ts">
-	import { Accordion, AccordionItem, Tooltip } from 'svelte-5-ui-lib';
-	import Mass from './displays/Mass.svelte';
-	import Volume from './displays/Volume.svelte';
+	import { Accordion, AccordionItem } from 'svelte-5-ui-lib';
 	import RemoveButton from './RemoveButton.svelte';
 	import MixtureAccordion from './MixtureAccordion.svelte';
 	import AddComponent from './nav/AddComponent.svelte';
-	import VolumeComponent from './displays/Volume.svelte';
-	import ABVComponent from './displays/ABV.svelte';
-	import BrixComponent from './displays/Brix.svelte';
-	import CalComponent from './displays/Cal.svelte';
-	import MassComponent from './displays/Mass.svelte';
 	import Button from './ui-primitives/Button.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { serializeToUrl } from '$lib/url-serialization.js';
@@ -23,7 +16,6 @@
 		isAcidSubstance,
 		isSaltIngredient,
 	} from '$lib/mixture.js';
-	import Ph from './displays/PH.svelte';
 	import {
 		defaultHeader,
 		sweetenerHeader,
@@ -32,23 +24,25 @@
 		citrusHeader,
 		acidHeader,
 		saltHeader,
-	} from './MixtureHeaders.svelte';
+	} from './IngredientHeaders.svelte';
 	import {
 		saltDetails,
 		sweetenerDetails,
-		waterDetails,
+		defaultDetails,
 		spiritDetails,
 		syrupDetails,
 		acidDetails,
 		citrusDetails,
-	} from './MixtureDetails.svelte';
+	} from './IngredientDetails.svelte';
 	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
+	import Helper from './ui-primitives/Helper.svelte';
+	import { ingredientTotals, mixtureTotals } from './MixtureTotals.svelte';
 
 	let {
 		mixtureStore,
 		id: parentId,
 		name: mixtureName,
-	}: { mixtureStore: MixtureStore; id: string | null; name: string } = $props();
+	}: { mixtureStore: MixtureStore; id: string; name: string } = $props();
 
 	let mixture = $derived(parentId ? mixtureStore.findMixture(parentId) : mixtureStore.mixture);
 
@@ -58,7 +52,7 @@
 	// that when we remove a component, its AccordionItem is properly
 	// destroyed rather than being reused for the next component that
 	// takes its place in the list.
-	let openStates = $state(new Map<string, boolean>([['add-component', false]]));
+	let openStates = $state(new Map<string, boolean>([]));
 
 	function setOpen(id: string, value: boolean) {
 		if (value) {
@@ -68,10 +62,15 @@
 		}
 	}
 
-	let editMode = $state(false);
+	// svelte-ignore state_referenced_locally
+	let editMode = $state(mixture?.size === 0);
 	function toggleEditMode() {
 		editMode = !editMode;
 	}
+
+	let editMixtureDialog: HTMLDialogElement | null = $state(null);
+	let editedSubmixture = $state({ id: '', name: '' });
+	let displayName = $derived(mixtureName || mixture?.describe() || 'never');
 </script>
 
 <div>
@@ -98,7 +97,16 @@
 			<AddComponent
 				{mixtureStore}
 				componentId={parentId}
-				callback={() => setOpen('add-component', false)}
+				callback={(addedId) => {
+					const newIngredient = mixture?.ingredients.get(addedId);
+					if (newIngredient && isMixture(newIngredient.item) && newIngredient.item.size === 0) {
+						editedSubmixture = {
+							id: addedId,
+							name: newIngredient.name || newIngredient.item.describe(),
+						};
+						editMixtureDialog?.showModal();
+					}
+				}}
 			/>
 		</div>
 	{/if}
@@ -157,14 +165,14 @@
 						</div>
 					{/snippet}
 					<div
-						class="flex ml-4 relative gap-1 sm:gap-2"
+						class="flex flex-wrap relative ml-4 gap-1.5 sm:gap-2"
 						data-testid="mixture-ingredient-accordion-details"
 					>
 						<span
 							class={[
 								'absolute',
 								'w-4',
-								'h-9',
+								'h-10',
 								'-left-4',
 								'-top-2',
 								'border-l-2',
@@ -176,15 +184,15 @@
 						{#if isSweetener(component)}
 							{@render sweetenerDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isWater(component)}
-							{@render waterDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSpirit(component)}
 							{@render spiritDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isSimpleSyrup(component)}
 							{@render syrupDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else if isCitrusMixture(component)}
-							{@render citrusDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+							{@render citrusDetails(mixtureStore, ingredient, mass)}
 						{:else if isMixture(component)}
-							<MixtureAccordion {mixtureStore} {id} name={ingredient.name} />
+							{@render ingredientTotals(mixtureStore, component, parentId, 'min-w-16 max-w-24')}
 						{:else if isAcidSubstance(component)}
 							{@render acidDetails(
 								mixtureStore,
@@ -195,23 +203,21 @@
 						{:else if isSaltIngredient(ingredient)}
 							{@render saltDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{:else}
-							<div class="flex flex-row my-1">
-								<Volume
-									{mixtureStore}
-									componentId={id}
-									{component}
-									volume={ingredientVolume}
-									readonly={true}
-									class="basis-1/2"
-								/>
-								<Mass
-									{mixtureStore}
-									componentId={id}
-									{component}
-									{mass}
-									readonly={true}
-									class="basis-1/2"
-								/>
+							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
+						{/if}
+						{#if isMixture(component)}
+							<div class="min-w-16 max-w-24">
+								<!-- need a dummy helper to align the button with other items in totals -->
+								<Helper>{'\u00A0'}</Helper>
+								<Button
+									onclick={() => {
+										editedSubmixture = { id, name: ingredient.name || ingredient.item.describe() };
+										editMixtureDialog?.showModal();
+									}}
+									class="w-full"
+								>
+									<span class="text-primary-500 dark:text-primary-400">Edit</span>
+								</Button>
 							</div>
 						{/if}
 					</div>
@@ -224,53 +230,13 @@
 				onclick={() => setOpen('totals', !openStates.get('totals'))}
 			>
 				{#snippet header()}
-					{@const width = 'w-24 shrink-0'}
-					<!-- TOTALS -->
 					<div class="items-center w-full">
-						<div class="text-sm pb-2 text-primary-600">Totals ({mixtureName})</div>
-						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
-							<VolumeComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								volume={mixture.volume}
-								class={width}
-							/>
-							<ABVComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<BrixComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<Ph
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<MassComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
-							<CalComponent
-								{mixtureStore}
-								componentId={parentId === null ? 'totals' : parentId}
-								component={mixture}
-								mass={mixture.mass}
-								class={width}
-							/>
+						<div class="text-sm pb-2 text-primary-600">Totals ({displayName})</div>
+						<div
+							class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2"
+							data-testid="mixture-totals"
+						>
+							{@render mixtureTotals(mixtureStore, mixture)}
 						</div>
 					</div>
 				{/snippet}
@@ -315,11 +281,30 @@
 			</AccordionItem>
 		</Accordion>
 	{/if}
-	{#if parentId === null}
-		<!-- spacer to totals will scroll above the bottom nav -->
-		<div class="mt-20"></div>
-	{/if}
 </div>
+
+<dialog
+	bind:this={editMixtureDialog}
+	onclose={() => {
+		editedSubmixture = { id: '', name: '' };
+		// Force the parent component to re-evaluate its mixture
+		mixtureStore = mixtureStore;
+	}}
+>
+	<div class="h-[90vh] w-[90vw] max-w-2xl relative overflow-hidden">
+		<div
+			class="sticky top-0 left-0 right-0 bg-white z-10 flex gap-2 justify-between items-center p-2 border-b border-primary-100"
+		>
+			<span class="text-sm font-semibold text-primary-600">Editing {editedSubmixture.name}</span>
+			<Button onclick={() => editMixtureDialog?.close()}>Done</Button>
+		</div>
+		{#if editedSubmixture.id}
+			<div class="p-2 h-full overflow-y-auto">
+				<MixtureAccordion {mixtureStore} id={editedSubmixture.id} name={editedSubmixture.name} />
+			</div>
+		{/if}
+	</div>
+</dialog>
 
 <style>
 	/* Small label that appears above each accordion item */

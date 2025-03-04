@@ -5,7 +5,7 @@
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { Sweeteners } from '$lib/ingredients/substances.js';
 
-	let { component, class: classProp, mass }: DisplayProps = $props();
+	let { ingredientItem: component, class: classProp, mass }: DisplayProps = $props();
 
 	let esm = $derived(component.getEquivalentSugarMass(mass));
 	const sucrose = Sweeteners.find(s => s.id === 'sucrose')!;
