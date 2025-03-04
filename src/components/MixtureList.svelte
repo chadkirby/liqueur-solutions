@@ -43,7 +43,7 @@
 	}
 </script>
 
-<main class="flex flex-col gap-x-2 gap-y-2 mt-4" data-testid="mixture-list">
+<main class="flex flex-col gap-x-2 gap-y-2 mt-4 mb-20" data-testid="mixture-list">
 	<section
 		class="
 			flex flex-row
