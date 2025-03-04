@@ -248,8 +248,7 @@ export class MixtureStore {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		const originalValue =
-			id === this.mixture.id ? this.mixture[key] : getIngredientValue(ingredient, key);
+		const originalValue = id === this.mixture.id ? this.mixture[key] : this.get(key, id);
 		const newValue = increment(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
@@ -282,8 +281,7 @@ export class MixtureStore {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		const originalValue =
-			id === this.mixture.id ? this.mixture[key] : getIngredientValue(ingredient, key);
+		const originalValue = id === this.mixture.id ? this.mixture[key] : this.get(key, id);
 		const newValue = decrement(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
