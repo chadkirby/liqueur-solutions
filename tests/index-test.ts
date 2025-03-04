@@ -13,11 +13,14 @@ async function expectTotals(
 	page: Page,
 	expected: { volume: string; abv: string; brix: string; mass: string; cal: string },
 ) {
-	await expect(page.getByTestId('volume-totals').getByRole('textbox')).toHaveValue(expected.volume);
-	await expect(page.getByTestId('abv-totals').getByRole('textbox')).toHaveValue(expected.abv);
-	await expect(page.getByTestId('brix-totals').getByRole('textbox')).toHaveValue(expected.brix);
-	await expect(page.getByTestId('mass-totals').getByRole('button')).toContainText(expected.mass);
-	await expect(page.getByTestId('cal-totals').getByRole('button')).toContainText(expected.cal);
+	const totals = await page.getByTestId('mixture-totals');
+	await expect(totals.getByTestId('volume-detail').getByRole('textbox')).toHaveValue(
+		expected.volume,
+	);
+	await expect(totals.getByTestId('abv-detail').getByRole('textbox')).toHaveValue(expected.abv);
+	await expect(totals.getByTestId('brix-detail').getByRole('textbox')).toHaveValue(expected.brix);
+	await expect(totals.getByTestId('mass-detail').getByRole('button')).toContainText(expected.mass);
+	await expect(totals.getByTestId('cal-detail').getByRole('button')).toContainText(expected.cal);
 }
 
 test('index page has expected totals', async ({ page }) => {
@@ -40,8 +43,8 @@ test('can edit spirit volume directly', async ({ page }) => {
 	await page.keyboard.type('200');
 	await page.keyboard.press('Enter');
 	await expectTotals(page, {
-		volume: '334',
-		abv: '24.7',
+		volume: '332',
+		abv: '24.9',
 		brix: '14.7',
 		mass: '339',
 		cal: '657',

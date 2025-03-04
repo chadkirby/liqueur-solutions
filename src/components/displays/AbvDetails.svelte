@@ -18,7 +18,7 @@
 	let proof = $derived(abv * 2);
 </script>
 
-<div class={classProp} data-testid="abv-{ingredientId}">
+<div class={classProp} data-testid="abv-detail">
 	<Helper class="tracking-tight">ABV</Helper>
 	{#if !readonly && ingredientItem instanceof Mixture && ingredientItem.canEdit('abv')}
 		<AbvSpinner {ingredientId} {abv} {mixtureStore} />

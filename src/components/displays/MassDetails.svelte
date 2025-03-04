@@ -18,7 +18,7 @@
 	let grams = $derived(mass);
 </script>
 
-<div class={classProp} data-testid="mass-{ingredientId}">
+<div class={classProp} data-testid="mass-detail">
 	<Helper class="tracking-tight">Mass</Helper>
 	{#if isSweetener(ingredientItem) && !readonly}
 		<MassSpinner {ingredientId} mass={grams} {mixtureStore} unitSuffix="g" />

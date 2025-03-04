@@ -161,7 +161,7 @@
 		readonly={true}
 		class={widthClass}
 	/>
-	<div class={widthClass} data-testid="boil-{id}">
+	<div class={widthClass} data-testid="boil-detail">
 		<Helper class="tracking-tight">Boiling Pt.</Helper>
 		<ReadOnlyValue
 			values={abvToBoilTemp(component.abv)}
