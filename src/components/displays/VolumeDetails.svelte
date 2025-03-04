@@ -27,7 +27,7 @@
 	let ml = $derived(volume);
 </script>
 
-<div class={classProp} data-testid={`volume-${ingredientId}`}>
+<div class={classProp} data-testid="volume-detail">
 	<Helper class="tracking-tight">{header}</Helper>
 
 	{#if isSweetenerId(ingredientId) || readonly}

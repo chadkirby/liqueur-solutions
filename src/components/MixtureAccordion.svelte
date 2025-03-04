@@ -229,7 +229,10 @@
 				{#snippet header()}
 					<div class="items-center w-full">
 						<div class="text-sm pb-2 text-primary-600">Totals ({displayName})</div>
-						<div class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2">
+						<div
+							class="flex flex-row flex-wrap mb-1 gap-x-0.5 sm:gap-x-1 gap-y-2"
+							data-testid="mixture-totals"
+						>
 							{@render mixtureTotals(mixtureStore, mixture)}
 						</div>
 					</div>
