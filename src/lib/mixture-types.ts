@@ -24,6 +24,7 @@ type IngredientItemData = {
 	id: string;
 	name: string;
 	mass: number;
+	notes?: string; // Optional notes field
 };
 
 // add in-memory item to the data
@@ -31,6 +32,7 @@ export type IngredientItem = IngredientItemData & {
 	// id: string;
 	// name: string;
 	// mass: number;
+	// notes?: string;
 	item: IngredientItemComponent; // Mixture | SubstanceComponent;
 };
 
