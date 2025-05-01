@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from 'svelte-clerk';
-	import { UserOutline, UserSolid } from 'flowbite-svelte-icons';
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';

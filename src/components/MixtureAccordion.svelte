@@ -52,7 +52,7 @@
 	// that when we remove a component, its AccordionItem is properly
 	// destroyed rather than being reused for the next component that
 	// takes its place in the list.
-	let openStates = $state(new Map<string, boolean>([]));
+	let openStates = $state(new Map<string, boolean>());
 
 	function setOpen(id: string, value: boolean) {
 		if (value) {
@@ -119,7 +119,7 @@
 				{@const ingredientVolume = mixture.getIngredientVolume(id)}
 				<AccordionItem
 					class="py-2 pl-1 pr-2"
-					open={openStates.get(id) ?? false}
+					open={editMode ? false : openStates.get(id) ?? false}
 					onclick={() => setOpen(id, !openStates.get(id))}
 				>
 					{#snippet header()}
