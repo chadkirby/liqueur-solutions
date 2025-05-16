@@ -83,6 +83,9 @@ export class Mixture implements CommonComponent {
 		private _id = componentId(),
 		ingredients: IngredientToAdd[] = [],
 	) {
+		if (!_id) {
+			throw new Error('Invalid id');
+		}
 		for (const ingredient of ingredients) {
 			this.addIngredient(ingredient);
 		}

@@ -111,10 +111,12 @@
 				id="open-copy-button"
 				aria-label="Open a copy"
 				class={btnClass}
-				onclick={() =>
-					goto(serializeToUrl(mixtureStore.name, mixtureStore.mixture), {
+				onclick={() => {
+					const copyUrl = serializeToUrl(`${mixtureStore.name} Copy`, mixtureStore.mixture);
+					goto(`${copyUrl.pathname}${copyUrl.search}`, {
 						invalidateAll: true,
-					})}
+					});
+				}}
 			>
 				<FileCopyOutline class="text-primary-100" />
 			</button>
