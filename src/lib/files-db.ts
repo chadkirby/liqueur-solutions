@@ -1,28 +1,17 @@
-import type { useClerkContext } from 'svelte-clerk';
-
-import { Mixture } from './mixture.js';
 import { isStorageId, type StorageId } from './storage-id.js';
 import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
 import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import { browser } from '$app/environment';
 import { type StoredFileDataV1, isV0Data, isV1Data } from '$lib/data-format.js';
 import { portV0DataToV1 } from './migrations/v0-v1.js';
-
-let user: ReturnType<typeof useClerkContext>['user'] | null = $state(null);
-
-// Default to offline mode, sync when user logs in
-let pushDelay = $derived(user ? 1000 : Infinity);
-let pullInterval = $derived(user ? 5 * 60 * 1000 : Infinity);
+import { Mixture } from './mixture.js';
+import { browser } from '$app/environment';
+import { starredIds } from './starred-ids.svelte.js';
 
 // Space is a logical grouping of data in Replicache
-const SPACE_FILES = 'files';
+export const SPACE_FILES = 'files';
 const SPACE_STARS = 'stars';
 
-// Keep a local cache of starred IDs
-export const starredIds = $state<StorageId[]>([]);
-
 type Mutators = {
-	createFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
 	updateFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
 	deleteFile: (tx: WriteTransaction, id: StorageId) => Promise<void>;
 	addStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
@@ -31,17 +20,14 @@ type Mutators = {
 
 // Define our mutations
 const mutators = {
-	async createFile(tx: WriteTransaction, item: StoredFileDataV1) {
-		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
-	},
-
 	async updateFile(tx: WriteTransaction, item: StoredFileDataV1) {
 		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
 	},
 
 	async deleteFile(tx: WriteTransaction, id: StorageId) {
-		await tx.del(`${SPACE_FILES}/${id}`);
+		const deleted = await tx.del(`${SPACE_FILES}/${id}`);
 		await mutators.deleteStar(tx, id);
+		console.log(`Deleted ${deleted} item with id ${id}`);
 	},
 
 	async addStar(tx: WriteTransaction, id: StorageId) {
@@ -53,48 +39,90 @@ const mutators = {
 	},
 } satisfies Mutators;
 
-class FilesDb {
-	private rep: Replicache<Mutators> | null = null;
+export class FilesDb {
+	readonly rep: Replicache<Mutators> | null = null; // Replicache instance
+	private starsUnsubscribe: (() => void) | null = null; // To store unsubscribe function
 
 	constructor() {
-		if (!browser) return;
-		this.rep = new Replicache({
-			name: 'mixture-files',
-			licenseKey: PUBLIC_REPLICACHE_LICENSE_KEY,
-			mutators,
-			pushURL: '/api/replicache/push',
-			pullURL: '/api/replicache/pull',
-			pushDelay,
-			pullInterval,
-		});
-		// Listen for auth changes to enable/disable sync
-		this.initializeSync();
+		if (browser) {
+			// Initialize with offline settings immediately
+			try {
+				this.rep = new Replicache({
+					name: 'mixture-files',
+					licenseKey: PUBLIC_REPLICACHE_LICENSE_KEY,
+					mutators,
+					pushURL: '/api/replicache/push',
+					pullURL: '/api/replicache/pull',
+					pushDelay: Infinity,
+					pullInterval: null,
+				});
+				// Initialize stars subscription and store unsubscribe function
+				this.starsUnsubscribe = this.rep.subscribe(
+					async (tx) => {
+						const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
+						return stars.map(([key]) => key.split('/')[1] as StorageId);
+					},
+					{
+						onData: (stars) => {
+							// Update the global reactive store
+							starredIds.length = 0;
+							starredIds.push(...stars);
+						},
+					},
+				);
 
-		// Initialize stars subscription
-		const unsubscribe = this.subscribeToStars((stars) => {
-			starredIds.length = 0;
-			starredIds.push(...stars);
-		});
-
-		// Clean up subscription on module unload
-		if (import.meta.hot) {
-			import.meta.hot.dispose(() => {
-				if (unsubscribe) unsubscribe();
-			});
+				console.log('FilesDb: Initial Replicache instance ready.');
+			} catch (error) {
+				console.error('Failed to initialize Replicache:', error);
+			}
 		}
 	}
 
-	private async initializeSync() {
-		if (browser) {
-			try {
-				const { useClerkContext } = await import('svelte-clerk');
-				const context = useClerkContext();
-				user = context.user ?? null;
-				// Enable sync when user is logged in
-				if (user) await this.rep?.pull(); // Initial pull
-			} catch (error) {
-				console.error('Failed to initialize sync:', error);
+	startSync() {
+		if (this.rep && this.rep.pullInterval === null) {
+			// Only start sync if it was previously stopped
+			console.log('Starting Replicache sync...');
+			this.rep.pushDelay = 1000; // Set push delay to 1 second
+			this.rep.pullInterval = 5 * 60 * 1000; // Set pull interval to 5 minutes
+		}
+	}
+
+	stopSync() {
+		console.log('Stopping Replicache sync...');
+		if (this.rep) {
+			this.rep.pushDelay = Infinity; // Disable push
+			this.rep.pullInterval = null; // Disable pull
+		}
+	}
+
+	close(): void {
+		console.log('Closing FilesDb instance and Replicache...');
+		this.starsUnsubscribe?.(); // Unsubscribe from stars
+		this.rep?.close(); // Close Replicache
+		this.starsUnsubscribe = null;
+	}
+
+	async runJanitor() {
+		// Use the reactive getter for the janitor
+		console.log('Running janitor task...');
+		const MAX_UNSTARRED_ITEMS = 100;
+		try {
+			const items = await this.scan();
+			const unstarredItems = Array.from(items.entries()).filter(([id]) => !starredIds.includes(id));
+
+			if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
+				console.log(
+					`Janitor: Found ${unstarredItems.length} unstarred items, exceeding limit of ${MAX_UNSTARRED_ITEMS}. Cleaning up...`,
+				);
+				for (const [id] of unstarredItems.slice(MAX_UNSTARRED_ITEMS)) {
+					console.log(`Janitor: Deleting old unstarred item ${id}`);
+					await this.delete(id);
+				}
+			} else {
+				console.log(`Janitor: Found ${unstarredItems.length} unstarred items. No cleanup needed.`);
 			}
+		} catch (error) {
+			console.error('Janitor task failed:', error);
 		}
 	}
 
@@ -149,7 +177,7 @@ class FilesDb {
 		await this.rep?.mutate.deleteStar(id);
 	}
 
-	async scan(
+	private async scan(
 		sortBy: keyof StoredFileDataV1 = 'accessTime',
 	): Promise<Map<StorageId, StoredFileDataV1>> {
 		const items = await this.rep?.query(async (tx) => {
@@ -186,46 +214,26 @@ class FilesDb {
 		return new Map(sortedEntries);
 	}
 
-	subscribeToStars(callback: (stars: StorageId[]) => void) {
-		return this.rep?.subscribe(
-			async (tx) => {
-				const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
-				return stars.map(([key]) => key.split('/')[1] as StorageId);
-			},
-			{
-				onData: callback,
-			},
-		);
-	}
-
+	/**
+	 * Subscribe to the full set of files; fires initially and on any add/update/delete.
+	 */
 	subscribe(callback: (items: Map<StorageId, StoredFileDataV1>) => void) {
-		// Subscribe to changes in the files space
-		return this.rep?.subscribe(
-			// Body function that computes the value
+		if (!this.rep) return null;
+		return this.rep.subscribe(
+			// Query all file entries under SPACE_FILES for accurate change tracking
 			async (tx) => {
 				const items = new Map<StorageId, StoredFileDataV1>();
-				const starred = new Set(starredIds);
-
-				// First get starred items
-				for (const id of starred) {
-					if (isStorageId(id)) {
-						const item = await tx.get(`${SPACE_FILES}/${id}`);
-						if (item) items.set(id, item as StoredFileDataV1);
+				const allEntries = await tx.scan({ prefix: SPACE_FILES }).values().toArray();
+				for (const data of allEntries) {
+					if (isV1Data(data)) {
+						items.set(data.id, data);
+					} else if (isV0Data(data)) {
+						const v1Data = portV0DataToV1(data);
+						items.set(v1Data.id, v1Data);
 					}
 				}
-
-				// Then get all other items
-				const allItems = await tx.scan({ prefix: SPACE_FILES }).entries().toArray();
-				for (const [key, item] of allItems) {
-					const id = key.split('/')[1] as StorageId;
-					if (!starred.has(id)) {
-						items.set(id, item as StoredFileDataV1);
-					}
-				}
-
 				return items;
 			},
-			// Options with callback
 			{
 				onData: callback,
 			},
@@ -234,22 +242,6 @@ class FilesDb {
 }
 
 export const filesDb = new FilesDb();
-
-// Run the janitor once after page load to clean up unstarred items
-setTimeout(async () => {
-	const MAX_UNSTARRED_ITEMS = 100;
-	const items = await filesDb.scan();
-	const unstarredItems = Array.from(items.entries()).filter(([id]) => !starredIds.includes(id));
-
-	// If we have more unstarred items than our limit, delete the oldest ones
-	if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
-		// Sort by access time is already done by scan()
-		// Delete all items after the first MAX_UNSTARRED_ITEMS
-		for (const [id] of unstarredItems.slice(MAX_UNSTARRED_ITEMS)) {
-			await filesDb.delete(id);
-		}
-	}
-}, 1000);
 
 /**
  * Extracts the name of a mixture from a StorageId.

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from 'svelte-clerk';
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
@@ -8,15 +7,29 @@
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { filesDb, starredIds } from '$lib/storage.svelte.js';
+	import { filesDb } from '$lib/files-db.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
+
+	import { getContext } from 'svelte';
+	import type { Writable } from 'svelte/store';
+	import type { Clerk } from '@clerk/clerk-js';
+	import type { UserResource } from '@clerk/types';
+	import { starredIds } from '$lib/starred-ids.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
 	let { mixtureStore }: Props = $props();
+
+	// Get Clerk stores from context
+	const clerkStores = getContext<{
+		instance: Writable<Clerk | null>;
+		user: Writable<UserResource | null>;
+	}>('clerk');
+	const clerkInstance = clerkStores.instance; // Get the store itself
+	const clerkUser = clerkStores.user; // Get the store itself
 
 	let storeId = $derived(mixtureStore.storeId);
 
@@ -39,6 +52,24 @@
 	function handleToggleStar(event?: Event) {
 		event?.preventDefault();
 		filesDb.toggleStar(storeId);
+	}
+
+	function handleSignIn() {
+		// Pass redirect URL options if needed, check ClerkJS docs
+		$clerkInstance?.openSignIn({});
+	}
+
+	function handleSignUp() {
+		$clerkInstance?.openSignUp({});
+	}
+
+	function handleOpenUserProfile() {
+		$clerkInstance?.openUserProfile({});
+	}
+
+	function handleSignOut() {
+		// Provide afterSignOutUrl, defaults to current URL if not specified
+		$clerkInstance?.signOut({ redirectUrl: window.location.href });
 	}
 </script>
 
@@ -74,41 +105,61 @@
 			/>
 		</div>
 
-		<SignedIn>
-			<UserButton afterSignOutUrl={window.location.href}></UserButton>
-		</SignedIn>
-		<SignedOut>
-			<SignInButton mode="modal">
+		{#if $clerkUser}
+			<div class="flex items-center gap-x-2">
+				<!-- User Button Replacement -->
 				<button
+					onclick={handleOpenUserProfile}
+					class="rounded-full w-8 h-8 overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+					aria-label="Open user profile"
+				>
+					{#if $clerkUser.imageUrl}
+						<img src={$clerkUser.imageUrl} alt="User profile" class="w-full h-full object-cover" />
+					{:else}
+						<!-- Fallback avatar -->
+						<span
+							class="flex items-center justify-center w-full h-full bg-gray-300 text-gray-600 text-xs font-semibold"
+						>
+							{$clerkUser.firstName?.charAt(0)}{$clerkUser.lastName?.charAt(0)}
+						</span>
+					{/if}
+				</button>
+			</div>
+		{:else}
+			<!-- User is signed out -->
+			<div class="flex items-center gap-x-2">
+				<!-- Sign In Button Replacement -->
+				<button
+					onclick={handleSignIn}
 					class="rounded-full
-					w-16 p-0.5
-					text-center
-					border
-					border-primary-300
-					dark:border-primary-400
-					text-primary-900
-					font-medium
-					text-sm"
+									w-16 p-0.5
+									text-center
+									border
+									border-primary-300
+									dark:border-primary-400
+									text-primary-900
+									font-medium
+									text-sm"
 				>
 					Sign in
 				</button>
-			</SignInButton>
 
-			<SignUpButton mode="modal">
+				<!-- Sign Up Button Replacement -->
 				<button
-				class="rounded-full
-				w-16 p-0.5
-				text-center
-				border
-				border-primary-300
-				dark:border-primary-400
-				bg-white    font-medium
-				text-sm"
+					onclick={handleSignUp}
+					class="rounded-full
+									w-16 p-0.5
+									text-center
+									border
+									border-primary-300
+									dark:border-primary-400
+									bg-white font-medium
+									text-sm"
 				>
 					Sign up
 				</button>
-			</SignUpButton>
-		</SignedOut>
+			</div>
+		{/if}
 	</section>
 
 	<MixtureAccordion {mixtureStore} id={mixtureStore.mixture.id} name={mixtureStore.name} />

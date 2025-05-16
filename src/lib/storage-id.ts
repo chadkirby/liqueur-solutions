@@ -12,7 +12,7 @@ export function generateStorageId(): StorageId {
 }
 
 export function isStorageId(value: unknown): value is StorageId {
-	return typeof value === 'string';
+	return typeof value === 'string' && value.length > 0;
 }
 
 export function assertStorageId(value: unknown): asserts value is StorageId {
