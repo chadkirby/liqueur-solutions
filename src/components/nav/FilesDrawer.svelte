@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
@@ -34,7 +35,7 @@
 	let { mixtureStore }: Props = $props();
 
 	let onlyStars = $state(false);
-	let items = $state(new Map<StorageId, StoredFileDataV1>());
+	let items = new SvelteMap<StorageId, StoredFileDataV1>();
 	let files = $derived(
 		Array.from(items.values()).filter((f, i) => {
 			if (i === 0) console.log('filtering', items.size);
@@ -47,7 +48,7 @@
 		async (tx) => await tx.scan({ prefix: SPACE_FILES }).values().toArray(),
 		(allItems) => {
 			console.log('scan data', allItems.length);
-			items = new Map<StorageId, StoredFileDataV1>();
+			items.clear();
 			for (const data of allItems) {
 				if (isV1Data(data)) {
 					items.set(data.id, data);
@@ -247,7 +248,12 @@
 						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
 					</div>
 					<div class="flex flex-row justify-around">
-						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
+						<Tooltip
+							color="default"
+							offset={6}
+							position="bottom"
+							triggeredBy={`#${domIdFor('remove', id)}`}
+						>
 							Delete {name}
 						</Tooltip>
 						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('open', id)}`}>
