@@ -44,21 +44,10 @@
 	);
 
 	// Subscribe to file changes
-	const unsubscribe = filesDb.rep?.subscribe(
-		async (tx) => await tx.scan({ prefix: SPACE_FILES }).values().toArray(),
-		(allItems) => {
-			console.log('scan data', allItems.length);
-			items.clear();
-			for (const data of allItems) {
-				if (isV1Data(data)) {
-					items.set(data.id, data);
-				} else if (isV0Data(data)) {
-					const v1Data = portV0DataToV1(data);
-					items.set(v1Data.id, v1Data);
-				}
-			}
-		},
-	);
+	const unsubscribe = filesDb.subscribe((item, i) => {
+		if (i === 0) items.clear();
+		items.set(item.id, item);
+	});
 
 	// Clean up subscription
 	if (import.meta.hot) {
