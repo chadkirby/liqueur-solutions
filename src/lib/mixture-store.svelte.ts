@@ -755,8 +755,7 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
 	}
 
-	mixture.updateFrom(working);
-	return mixture;
+	return working;
 }
 
 function getIngredientValue(

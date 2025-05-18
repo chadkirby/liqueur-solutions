@@ -116,9 +116,12 @@ export class Mixture implements CommonComponent {
 	 * update our data to match another mixture (opposite of clone)
 	 */
 	updateFrom(other: Mixture) {
+		// get the other ingredients before we empty out the list so that
+		// nothing bad happens if we end up updating from the same mixture.
+		const otherIngredientList = [...other.eachIngredient()];
 		// empty the ingredient list
 		this.ingredientList.splice(0, this.ingredientList.length);
-		for (const { ingredient } of other.eachIngredient()) {
+		for (const { ingredient } of otherIngredientList) {
 			const newIngredient = {
 				...ingredient,
 				item: ingredient.item.clone(),
