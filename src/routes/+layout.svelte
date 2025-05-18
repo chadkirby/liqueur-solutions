@@ -8,9 +8,10 @@
 	import { filesDb } from '$lib/files-db';
 
 	import '../app.postcss';
+	import type { UserResource } from '@clerk/types';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
-	const clerkUser = writable<any>(null);
+	const clerkUser = writable<UserResource | null>(null);
 
 	interface Props {
 		children?: Snippet;
@@ -32,12 +33,11 @@
 			console.log('Clerk loaded');
 			// 5) Push Clerk instance & initial user onto our stores
 			clerkInstance.set(clerk);
-			clerkUser.set(clerk.user);
-
+			clerkUser.set(clerk.user ?? null);
 
 			// 6) Listen for any future sign-in / sign-out events
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
-				clerkUser.set(user);
+				clerkUser.set(user ?? null);
 				if (user) {
 					filesDb.startSync();
 				} else {
