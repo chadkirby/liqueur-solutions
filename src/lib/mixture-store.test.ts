@@ -115,13 +115,16 @@ describe('Mixture Store', () => {
 			mass: 100,
 		});
 
+		const mx = store.mixture;
+		console.log('mixture', mx);
+
 		// Set ABV
-		store.setAbv(store.mixture.id, 30);
-		expect(store.mixture.getAbv()).toBeCloseTo(30, 0.01);
+		store.setAbv(mx.id, 30);
+		expect(store.snapshot().mixture.getAbv()).toBeCloseTo(30, 0.01);
 
 		// Set invalid ABV (over 100)
 		try {
-			store.setAbv(store.mixture.id, 150);
+			store.setAbv(mx.id, 150);
 		} catch (error) {
 			expect(error).toBeDefined();
 		}

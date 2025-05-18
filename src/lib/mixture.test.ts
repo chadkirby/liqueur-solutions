@@ -1,4 +1,4 @@
-import { test, assert, describe } from 'vitest';
+import { test, assert, describe, expect } from 'vitest';
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 
@@ -254,4 +254,149 @@ test('can clone', () => {
 		});
 	const clone = mx.clone();
 	assert.deepEqual(clone, mx, 'clone');
+});
+
+test('addIngredient preserves notes field', () => {
+	const mixture = new Mixture();
+
+	mixture.addIngredient({
+		name: 'Ingredient with Notes',
+		mass: 50,
+		notes: 'Special instructions',
+		item: SubstanceComponent.new('sucrose'),
+	});
+
+	const ingredient = [...mixture.ingredients.values()][0];
+	assert.strictEqual(ingredient.notes, 'Special instructions');
+});
+
+describe('Mixture with notes', () => {
+	test('notes are preserved when serializing and deserializing ingredients', () => {
+		const mixture = new Mixture();
+		mixture.addIngredient({
+			name: 'Test Ingredient',
+			mass: 100,
+			notes: 'This is a test note',
+			item: SubstanceComponent.new('water'),
+		});
+
+		// Serialize and deserialize
+		const data = mixture.serialize();
+		const deserializedMixture = Mixture.deserialize(data[0][0], data);
+
+		// Check if the notes are preserved
+		const ingredient = [...deserializedMixture.ingredients.values()][0];
+		assert.strictEqual(ingredient.notes, 'This is a test note');
+	});
+
+	test('notes are preserved when cloning a mixture', () => {
+		const mixture = new Mixture();
+		mixture.addIngredient({
+			name: 'Test Ingredient',
+			mass: 100,
+			notes: 'This is a test note',
+			item: SubstanceComponent.new('water'),
+		});
+
+		const clone = mixture.clone();
+
+		const ingredient = clone.findIngredient(() => true);
+		assert.ok(ingredient, 'Ingredient should exist in the clone');
+		assert.strictEqual(
+			ingredient!.notes,
+			'This is a test note',
+			'Cloned ingredient notes should match original',
+		);
+	});
+});
+
+test('updateFrom preserves notes in ingredients', () => {
+	const sourceMixture = new Mixture();
+	sourceMixture.addIngredient({
+		name: 'Source Ingredient',
+		mass: 100,
+		notes: 'Notes from source',
+		item: SubstanceComponent.new('water'),
+	});
+
+	const targetMixture = new Mixture();
+	targetMixture.updateFrom(sourceMixture);
+
+	const ingredient = [...targetMixture.ingredients.values()][0];
+	assert.strictEqual(ingredient.notes, 'Notes from source');
+});
+
+test('replaceIngredient preserves notes when specified', () => {
+	const mixture = new Mixture();
+	mixture.addIngredient({
+		id: 'original',
+		name: 'Original',
+		mass: 100,
+		notes: 'Original notes',
+		item: SubstanceComponent.new('water'),
+	});
+
+	const success = mixture.replaceIngredient('original', {
+		name: 'Replacement',
+		mass: 200,
+		notes: 'New notes',
+		item: SubstanceComponent.new('ethanol'),
+	});
+
+	assert.strictEqual(success, true);
+	const replacedIngredient = [...mixture.ingredients.values()][0];
+	assert.strictEqual(replacedIngredient.notes, 'New notes');
+});
+
+test('replaceIngredient does not add notes when not specified', () => {
+	const mixture = new Mixture();
+	mixture.addIngredient({
+		id: 'original',
+		name: 'Original',
+		mass: 100,
+		notes: 'Original notes',
+		item: SubstanceComponent.new('water'),
+	});
+
+	const success = mixture.replaceIngredient('original', {
+		name: 'Replacement',
+		mass: 200,
+		item: SubstanceComponent.new('ethanol'),
+	});
+
+	assert.strictEqual(success, true);
+	const replacedIngredient = [...mixture.ingredients.values()][0];
+	assert.strictEqual(replacedIngredient.notes, undefined);
+});
+
+test('empty notes field is preserved', () => {
+	const mixture = new Mixture();
+	mixture.addIngredient({
+		name: 'Test',
+		mass: 100,
+		notes: '', // Empty string
+		item: SubstanceComponent.new('water'),
+	});
+
+	const data = mixture.serialize();
+	const deserializedMixture = Mixture.deserialize(data[0][0], data);
+
+	const ingredient = [...deserializedMixture.ingredients.values()][0];
+	expect(ingredient.notes).toBe(''); // Should be empty string, not null/undefined
+});
+
+test('undefined notes field is handled correctly', () => {
+	const mixture = new Mixture();
+	mixture.addIngredient({
+		name: 'Test',
+		mass: 100,
+		// No notes field
+		item: SubstanceComponent.new('water'),
+	});
+
+	const data = mixture.serialize();
+	const deserializedMixture = Mixture.deserialize(data[0][0], data);
+
+	const ingredient = [...deserializedMixture.ingredients.values()][0];
+	expect(ingredient.notes).toBeUndefined();
 });

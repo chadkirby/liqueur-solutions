@@ -10,7 +10,7 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 
 	const push = await request.json();
 	const bucket = getR2Bucket(platform);
-	const userId = locals.auth.userId; // Get from Clerk
+	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
 		throw error(401, 'Unauthorized');
@@ -18,11 +18,10 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 
 	// Process each mutation in the push
 	for (const mutation of push.mutations) {
-		const { id, name, args } = mutation;
+		const { name, args } = mutation;
 
 		try {
 			switch (name) {
-				case 'createFile':
 				case 'updateFile': {
 					const item = args;
 					await bucket.put(`files/${userId}/${item.id}`, JSON.stringify(item));

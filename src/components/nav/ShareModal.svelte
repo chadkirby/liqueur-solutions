@@ -16,7 +16,7 @@
 	let toastStatus = $state(false);
 
 	const copyUrlToClipboard = async () => {
-		const url = serializeToUrl(mixtureStore.name, mixtureStore.mixture);
+		const url = serializeToUrl(mixtureStore.name, mixtureStore.mixture).toString();
 		try {
 			await navigator.clipboard.writeText(url);
 			toastStatus = true;
@@ -103,7 +103,7 @@
 	>
 		<div id="qr-code" class="flex flex-col content-center items-center gap-2">
 			<QRCode
-				data={serializeToUrl(mixtureStore.name, mixtureStore.mixture)}
+				data={serializeToUrl(mixtureStore.name, mixtureStore.mixture).toString()}
 				size={256}
 				downloadUrlFileFormat="png"
 				dispatchDownloadUrl

@@ -16,7 +16,7 @@ export type StoredFileDataV1 = {
 	ingredientDb: IngredientDbData;
 };
 
-export function isV1Data(data: unknown): boolean {
+export function isV1Data(data: unknown): data is StoredFileDataV1 {
 	if (typeof data !== 'object' || data === null) {
 		return false;
 	}

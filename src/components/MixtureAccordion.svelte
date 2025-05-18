@@ -52,7 +52,7 @@
 	// that when we remove a component, its AccordionItem is properly
 	// destroyed rather than being reused for the next component that
 	// takes its place in the list.
-	let openStates = $state(new Map<string, boolean>([]));
+	let openStates = $state(new Map<string, boolean>());
 
 	function setOpen(id: string, value: boolean) {
 		if (value) {
@@ -83,7 +83,8 @@
 		{#if parentId !== null}
 			<Button
 				class="py-1 px-1.5 border-1 !justify-start gap-1"
-				onclick={() => mixture && (window.location.href = serializeToUrl(mixtureName, mixture))}
+				onclick={() =>
+					mixture && (window.location.href = serializeToUrl(mixtureName, mixture).toString())}
 			>
 				<span class="italic text-xs font-normal text-primary-500 dark:text-primary-400 leading-3"
 					>Open a copy</span
@@ -119,7 +120,7 @@
 				{@const ingredientVolume = mixture.getIngredientVolume(id)}
 				<AccordionItem
 					class="py-2 pl-1 pr-2"
-					open={openStates.get(id) ?? false}
+					open={editMode ? false : (openStates.get(id) ?? false)}
 					onclick={() => setOpen(id, !openStates.get(id))}
 				>
 					{#snippet header()}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
@@ -9,7 +10,7 @@
 		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { filesDb, deserializeFromStorage } from '$lib/storage.svelte';
+	import { deserializeFromStorage, filesDb, SPACE_FILES } from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
@@ -26,6 +27,7 @@
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
+	import { starredIds } from '$lib/starred-ids.svelte.js';
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
@@ -33,23 +35,24 @@
 	let { mixtureStore }: Props = $props();
 
 	let onlyStars = $state(false);
-	let items = $state(new Map<StorageId, StoredFileDataV1>());
-		let starredIds = $state([] as StorageId[]);
-	let files = $derived(Array.from(items.values()).filter((f) => !onlyStars || starredIds.includes(f.id)));
+	let items = new SvelteMap<StorageId, StoredFileDataV1>();
+	let files = $derived(
+		Array.from(items.values()).filter((f, i) => {
+			if (i === 0) console.log('filtering', items.size);
+			return !onlyStars || starredIds.includes(f.id);
+		}),
+	);
 
 	// Subscribe to file changes
-	const unsubscribe = filesDb.subscribe((_items) => {
-		items = _items;
-	});
-	const unsubscribeStars = filesDb.subscribeToStars((_stars) => {
-		starredIds = _stars;
+	const unsubscribe = filesDb.subscribe((item, i) => {
+		if (i === 0) items.clear();
+		items.set(item.id, item);
 	});
 
 	// Clean up subscription
 	if (import.meta.hot) {
 		import.meta.hot.dispose(() => {
 			if (unsubscribe) unsubscribe();
-			if (unsubscribeStars) unsubscribeStars();
 		});
 	}
 
@@ -234,7 +237,12 @@
 						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
 					</div>
 					<div class="flex flex-row justify-around">
-						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('remove', id)}`}>
+						<Tooltip
+							color="default"
+							offset={6}
+							position="bottom"
+							triggeredBy={`#${domIdFor('remove', id)}`}
+						>
 							Delete {name}
 						</Tooltip>
 						<Tooltip color="default" offset={6} triggeredBy={`#${domIdFor('open', id)}`}>

@@ -51,7 +51,7 @@
 	className = 'w-24 shrink-0',
 )}
 	{@const isEmpty = isEmptyMixture(mixture)}
-	{@const id = (console.log(mixture.id, parentId), mixture.id)}
+	{@const id = mixture.id}
 	{@const mass = isEmpty ? 0 : mixtureStore.get('mass', id)}
 	{@const volume = isEmpty ? 0 : mixtureStore.get('volume', id)}
 	<!-- TOTALS -->

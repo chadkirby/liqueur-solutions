@@ -3,6 +3,20 @@ import { expect, test, type Page } from '@playwright/test';
 const standardMixture =
 	'/Test%20Mixture?gz=H4sIAFnxWGcAA43QTW6DMBAF4Lt4HUUG%2F3OO7qos3OCqVrGN8BgCEXevqeomEpGS1Ugzb77FuyKYe4Ma5OwF0mDQAZ2D64M3HiJq3q%2FIa7fd88G2ec7LRbkQhbMir1oNGjUvIwa%2BtA9dsUZIc4Io6fy5t27ZMXRpe6f4iLGQnNRSEVoruq6Hf3rSYIYC24Vg8w1y0Xu3BIvK1FGpuiJcVJgzgXlmT%2FdyQf04MMJwz1v5XK0wfmRACHzqqJV0T8TJGDD%2Bl4np4%2B1vm85DiFulTsdcJsvuaf0BprabO7cBAAA%3D';
 
+test.beforeEach(async ({ page }) => {
+	await page.route('/api/replicache/pull', async (route) => {
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				cookie: '~mock-cookie',
+				lastMutationIDChanges: {},
+				patch: [],
+			}),
+		});
+	});
+});
+
 test('index page has mixture list', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByTestId('mixture-list')).toBeVisible();
@@ -90,7 +104,7 @@ test('can show share modal', async ({ page }) => {
 	await expect(page.getByTestId('share-modal').locator('#qr-code').getByRole('img')).toBeVisible();
 	// click outside the modal to close it
 	await page.mouse.click(100, 100);
-	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 1000 });
 });
 
 test('esc closes share modal', async ({ page }) => {
@@ -99,7 +113,7 @@ test('esc closes share modal', async ({ page }) => {
 	await expect(page.getByTestId('share-modal')).toBeVisible();
 	// click outside the modal to close it
 	await page.keyboard.press('Escape');
-	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 1000 });
 });
 
 test('can show files drawer', async ({ page }) => {
@@ -116,7 +130,7 @@ test('can show files drawer and close with esc', async ({ page }) => {
 	await page.getByLabel('Files').click();
 	await expect(page.getByRole('heading', { name: 'Saved Mixtures' })).toBeVisible();
 	await page.keyboard.press('Escape');
-	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 5000 });
+	await expect(page.getByTestId('share-modal')).not.toBeVisible({ timeout: 1000 });
 });
 
 test('can toggle add/remove mode', async ({ page }) => {
@@ -154,4 +168,88 @@ test('can add all available ingredients', async ({ page }) => {
 			await page.getByTestId('mixture-ingredient-accordion-header-details').count(),
 		).toBe(i + 1);
 	}
+});
+
+test('can open a copy of a mixture and edits are isolated', async ({ page }) => {
+	await page.goto(standardMixture);
+
+	const mixtureNameInput = page.getByPlaceholder('Name your mixture');
+	await expect(mixtureNameInput, 'initial name is correct').toHaveValue('Test Mixture');
+
+	// Get initial storeId from URL and spirit volume
+	const initialUrl = page.url();
+	const initialStoreId = initialUrl.split('/').pop()!;
+	await page.getByRole('button', { name: 'Spirit' }).click();
+	const spiritVolumeInput = page
+		.getByRole('button', { name: 'Spirit' })
+		.getByRole('textbox')
+		.first();
+	const initialSpiritVolume = await spiritVolumeInput.inputValue();
+
+	// Click the "Open a copy" button
+	await page.locator('#open-copy-button').click();
+
+	// Wait for navigation/update to complete, might need a more specific wait
+	await page.waitForFunction(
+		(expectedName) => {
+			const el = document.querySelector('[placeholder="Name your mixture"]') as HTMLInputElement;
+			return el && el.value === expectedName;
+		},
+		'Test Mixture Copy',
+		{ timeout: 1000 },
+	);
+
+	// Verify new mixture name is "Test Mixture Copy"
+	await expect(mixtureNameInput).toHaveValue('Test Mixture Copy');
+
+	// Verify storeId has changed by checking the URL
+	const copiedUrl = page.url();
+	const copiedStoreId = copiedUrl.split('/').pop()!;
+	expect(copiedStoreId, 'Store ID in URL should change for a copy').not.toBe(initialStoreId);
+
+	// Verify spirit volume is the same in the copy initially
+	await expect(spiritVolumeInput, 'Spirit volume should be identical in the new copy').toHaveValue(
+		initialSpiritVolume,
+	);
+
+	// Edit the volume of the spirit in "Test Mixture Copy"
+	await spiritVolumeInput.click();
+	await spiritVolumeInput.fill('150');
+	await spiritVolumeInput.press('Enter');
+	await expect(spiritVolumeInput, 'Spirit volume in copy should be updated').toHaveValue('150');
+	const copiedSpiritVolumeAfterEdit = await spiritVolumeInput.inputValue();
+
+	// Use browser navigation to go back to "Test Mixture"
+	await page.goBack();
+
+	// Wait for navigation/update to complete
+	await page.waitForFunction(
+		(expectedName) => {
+			const el = document.querySelector('[placeholder="Name your mixture"]') as HTMLInputElement;
+			return el && el.value === expectedName;
+		},
+		'Test Mixture',
+		{ timeout: 1000 },
+	);
+
+	// Verify we are back to the original mixture "Test Mixture"
+	await expect(mixtureNameInput).toHaveValue('Test Mixture');
+
+	// Verify storeId is the original one by checking the URL
+	const currentUrlAfterBack = page.url();
+	const currentStoreIdAfterBack = currentUrlAfterBack.split('/').pop()!;
+	expect(
+		currentStoreIdAfterBack,
+		'Store ID in URL should revert to original after navigating back',
+	).toBe(initialStoreId);
+
+	// Verify spirit volume is the original volume (not affected by edit in copy)
+	await expect(
+		spiritVolumeInput,
+		'Spirit volume in original should remain unchanged after editing copy',
+	).toHaveValue(initialSpiritVolume);
+	expect(
+		await spiritVolumeInput.inputValue(),
+		'Spirit volume in original should not be the copied+edited volume',
+	).not.toBe(copiedSpiritVolumeAfterEdit);
 });
