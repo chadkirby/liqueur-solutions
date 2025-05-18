@@ -60,7 +60,30 @@ function newData(): MixtureStoreData {
 }
 
 export class MixtureStore {
-	private _data = newData();
+	/**
+	 * _data is the current state of the store. It must be reactive for
+	 * all of the UI to work.
+	 */
+	private _data = $state(newData());
+
+	// define several (reactive) properties getters to access
+	// the store data.
+	get storeId() {
+		return this._data.storeId;
+	}
+
+	get name() {
+		return this._data.name;
+	}
+
+	get mixture() {
+		return this._data.mixture;
+	}
+
+	get totals() {
+		return this._data.totals;
+	}
+
 	private _store: Writable<MixtureStoreData> = writable(this._data);
 	readonly subscribe = this._store.subscribe;
 
@@ -116,22 +139,6 @@ export class MixtureStore {
 			return ingredient.item;
 		}
 		return null;
-	}
-
-	get storeId() {
-		return this._data.storeId;
-	}
-
-	get name() {
-		return this._data.name;
-	}
-
-	get mixture() {
-		return this._data.mixture;
-	}
-
-	get totals() {
-		return this._data.totals;
 	}
 
 	private undoRedo = new UndoRedo<MixtureStoreData>();
