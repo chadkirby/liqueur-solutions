@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { redirect } from '@sveltejs/kit';
 import { deserializeFromUrl } from '$lib/url-serialization.js';
 import { generateStorageId } from '$lib/storage-id.js';
-import { filesDb } from '$lib/storage.svelte.js';
+import { filesDb } from '$lib/files-db.js';
 import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
 
 export async function load(args: { url: URL; params: { liqueur: string } }): Promise<never> {

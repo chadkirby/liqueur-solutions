@@ -58,7 +58,7 @@ export class Mixture implements CommonComponent {
 		if (!mixtureData || !isMixtureData(mixtureData)) {
 			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
 		}
-		for (const { id, mass, name } of mixtureData.ingredients) {
+		for (const { id, mass, name, notes } of mixtureData.ingredients) {
 			const data = db.get(id);
 			if (!data) {
 				throw new Error(`Ingredient ${id} not found in ingredientDb`);
@@ -73,6 +73,7 @@ export class Mixture implements CommonComponent {
 				mass,
 				name,
 				item,
+				notes,
 			});
 		}
 		return new Mixture(mixtureData.id, ingredients);
@@ -82,6 +83,9 @@ export class Mixture implements CommonComponent {
 		private _id = componentId(),
 		ingredients: IngredientToAdd[] = [],
 	) {
+		if (!_id) {
+			throw new Error('Invalid id');
+		}
 		for (const ingredient of ingredients) {
 			this.addIngredient(ingredient);
 		}
@@ -112,9 +116,12 @@ export class Mixture implements CommonComponent {
 	 * update our data to match another mixture (opposite of clone)
 	 */
 	updateFrom(other: Mixture) {
+		// get the other ingredients before we empty out the list so that
+		// nothing bad happens if we end up updating from the same mixture.
+		const otherIngredientList = [...other.eachIngredient()];
 		// empty the ingredient list
 		this.ingredientList.splice(0, this.ingredientList.length);
-		for (const { ingredient } of other.eachIngredient()) {
+		for (const { ingredient } of otherIngredientList) {
 			const newIngredient = {
 				...ingredient,
 				item: ingredient.item.clone(),
@@ -130,10 +137,11 @@ export class Mixture implements CommonComponent {
 	private serializeMixtureData(): MixtureData {
 		return {
 			id: this.id,
-			ingredients: this.ingredientList.map(({ id, mass, name }) => ({
+			ingredients: this.ingredientList.map(({ id, mass, name, notes }) => ({
 				id,
 				mass,
 				name,
+				notes,
 			})),
 		} as const;
 	}
@@ -202,6 +210,7 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
+			notes: ingredient.notes,
 		};
 		this.ingredientList.push(ingredientItem);
 		return this;
@@ -235,6 +244,7 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
+			notes: ingredient.notes,
 		};
 		this.ingredientList.splice(index, 1, newIngredient);
 
@@ -432,10 +442,11 @@ export class Mixture implements CommonComponent {
 	}
 
 	findIngredient(
-		predicate: (item: IngredientItemComponent) => boolean,
+		predicate: (item: IngredientItemComponent, i: number) => boolean,
 	): IngredientItem | undefined {
+		let i = 0;
 		for (const { ingredient } of this.eachIngredient()) {
-			if (predicate(ingredient.item)) return ingredient;
+			if (predicate(ingredient.item, i++)) return ingredient;
 		}
 		return undefined;
 	}

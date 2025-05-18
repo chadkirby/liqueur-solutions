@@ -1,4 +1,4 @@
-import { type Updater } from 'svelte/store';
+import { type Updater, writable, type Writable } from 'svelte/store';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { digitsForDisplay, getTotals } from './utils.js';
 import {
@@ -59,26 +59,52 @@ function newData(): MixtureStoreData {
 	};
 }
 
-// exported for testing
 export class MixtureStore {
+	/**
+	 * _data is the current state of the store. It must be reactive for
+	 * all of the UI to work.
+	 */
 	private _data = $state(newData());
-	constructor(
-		data = newData(),
-		private readonly opts: { onUpdate?: (data: MixtureStoreData) => void } = {},
-	) {
-		this._data = data;
+
+	// define several (reactive) properties getters to access
+	// the store data.
+	get storeId() {
+		return this._data.storeId;
+	}
+
+	get name() {
+		return this._data.name;
+	}
+
+	get mixture() {
+		return this._data.mixture;
+	}
+
+	get totals() {
+		return this._data.totals;
+	}
+
+	private _store: Writable<MixtureStoreData> = writable(this._data);
+	readonly subscribe = this._store.subscribe;
+
+	/**
+	 * Create a new MixtureStore
+	 * @param data initial store data
+	 */
+	constructor(data: MixtureStoreData = newData()) {
+		this._save(data);
 	}
 
 	snapshot(): MixtureStoreData {
 		return {
 			...this._data,
-			mixture: this.mixture.clone(),
+			mixture: this._data.mixture.clone(),
 		};
 	}
 
 	private findIngredient(
 		id: string,
-		mixture = this.mixture,
+		mixture = this._data.mixture,
 	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
@@ -104,30 +130,15 @@ export class MixtureStore {
 	}
 
 	findMixture(id: string) {
-		if (id === this.mixture.id) {
-			return this.mixture;
+		const mx = this._data.mixture;
+		if (id === mx.id) {
+			return mx;
 		}
 		const { ingredient } = this.findIngredient(id);
 		if (ingredient && ingredient.item instanceof Mixture) {
 			return ingredient.item;
 		}
 		return null;
-	}
-
-	get storeId() {
-		return this._data.storeId;
-	}
-
-	get name() {
-		return this._data.name;
-	}
-
-	get mixture() {
-		return this._data.mixture;
-	}
-
-	get totals() {
-		return this._data.totals;
 	}
 
 	private undoRedo = new UndoRedo<MixtureStoreData>();
@@ -150,18 +161,16 @@ export class MixtureStore {
 			newData.totals = getTotals(newData.mixture);
 		}
 		this._save(newData);
-		if (this.opts.onUpdate) {
-			this.opts.onUpdate(newData);
-		}
 		return newData;
 	}
 
-	private async _save(newData: MixtureStoreData) {
+	private _save(newData: MixtureStoreData) {
 		this._data = { ...newData };
+		this._store.set(this._data);
 	}
 
 	setName(newName: string, undoKey = 'setName') {
-		const originalName = this.name;
+		const originalName = this._data.name;
 		this.update({
 			undoKey: undoKey,
 			updater(data) {
@@ -216,7 +225,7 @@ export class MixtureStore {
 
 		const ingredientToAdd: IngredientToAdd = {
 			name: targetIngredient.name,
-			mass: deepGet((mx) => mx.getIngredientMass(id), this.mixture) || -1,
+			mass: deepGet((mx) => mx.getIngredientMass(id), this._data.mixture) || -1,
 			item: targetIngredient.item,
 		};
 
@@ -242,13 +251,14 @@ export class MixtureStore {
 		if (!ingredient) {
 			throw new Error(`Unable to find ingredient ${id}`);
 		}
-		if (!this.mixture.canEdit(key)) {
+		const mx = this._data.mixture;
+		if (!mx.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		const originalValue = id === this.mixture.id ? this.mixture[key] : this.get(key, id);
+		const originalValue = id === mx.id ? mx[key] : this.get(key, id);
 		const newValue = increment(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
@@ -275,13 +285,14 @@ export class MixtureStore {
 		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
-		if (!this.mixture.canEdit(key)) {
+		const mx = this._data.mixture;
+		if (!mx.canEdit(key)) {
 			throw new Error(`${key} is not editable`);
 		}
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		const originalValue = id === this.mixture.id ? this.mixture[key] : this.get(key, id);
+		const originalValue = id === mx.id ? mx[key] : this.get(key, id);
 		const newValue = decrement(originalValue, minMax);
 		if (newValue === originalValue) return originalValue;
 
@@ -303,29 +314,30 @@ export class MixtureStore {
 		}
 	}
 
-	get(key: EditableProperty, id = this.mixture.id): number {
+	get(key: EditableProperty, id = this._data.mixture.id): number {
 		if (id === 'totals') {
 			throw new Error("don't use 'totals'");
 		}
-		if (id === this.mixture.id) {
-			return this.totals[key];
+		const mx = this._data.mixture;
+		if (id === mx.id) {
+			return this._data.totals[key];
 		}
 		let value: number | false;
 		switch (key) {
 			case 'abv':
-				value = deepGet((mx) => mx.getIngredientAbv(id), this.mixture);
+				value = deepGet((mx) => mx.getIngredientAbv(id), mx);
 				break;
 			case 'brix':
-				value = deepGet((mx) => mx.getIngredientBrix(id), this.mixture);
+				value = deepGet((mx) => mx.getIngredientBrix(id), mx);
 				break;
 			case 'mass':
-				value = deepGet((mx) => mx.getIngredientMass(id), this.mixture);
+				value = deepGet((mx) => mx.getIngredientMass(id), mx);
 				break;
 			case 'pH':
-				value = deepGet((mx) => (mx.id === id ? mx.getPH() : -1), this.mixture);
+				value = deepGet((mx) => (mx.id === id ? mx.getPH() : -1), mx);
 				break;
 			case 'volume':
-				value = deepGet((mx) => mx.getIngredientVolume(id), this.mixture);
+				value = deepGet((mx) => mx.getIngredientVolume(id), mx);
 				break;
 			default:
 				key satisfies never;
@@ -342,7 +354,8 @@ export class MixtureStore {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (id === this.mixture.id) {
+		const mx = this._data.mixture;
+		if (id === mx.id) {
 			this.solveTotal('volume', newVolume);
 			return newVolume;
 		}
@@ -373,9 +386,10 @@ export class MixtureStore {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (id === this.mixture.id) {
+		const mx = this._data.mixture;
+		if (id === mx.id) {
 			this.solveTotal('abv', newAbv);
-			return this.totals.abv;
+			return this._data.totals.abv;
 		}
 		const originalAbv = this.get('abv', id);
 		const makeUpdater = (targetAbv: number) => {
@@ -424,7 +438,8 @@ export class MixtureStore {
 		if (componentId === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (componentId === this.mixture.id) {
+		const mx = this._data.mixture;
+		if (componentId === mx.id) {
 			throw new Error('Cannot set mass of totals');
 		}
 		const originalMass = this.get('mass', componentId);
@@ -442,9 +457,10 @@ export class MixtureStore {
 		if (componentId === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (componentId === this.mixture.id) {
+		const mx = this._data.mixture;
+		if (componentId === mx.id) {
 			this.solveTotal('brix', newBrix);
-			return this.totals.brix;
+			return this._data.totals.brix;
 		}
 		const originalBrix = this.get('brix', componentId);
 		const makeUpdater = (targetBrix: number) => {
@@ -475,9 +491,10 @@ export class MixtureStore {
 		if (componentId === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (componentId === this.mixture.id) {
+		const mx = this._data.mixture;
+		if (componentId === mx.id) {
 			this.solveTotal('pH', newPH);
-			return this.totals.pH;
+			return this._data.totals.pH;
 		}
 		const originalPH = this.get('pH', componentId);
 		const makeUpdater = (targetPH: number) => {
@@ -527,7 +544,7 @@ export class MixtureStore {
 	}
 
 	getSweetenerTypes(id: string): SweetenerType[] {
-		const { ingredient } = this.findIngredient(id, this.mixture);
+		const { ingredient } = this.findIngredient(id, this._data.mixture);
 		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
@@ -580,7 +597,7 @@ export class MixtureStore {
 	}
 
 	updateAcidType(id: string, newType: AcidType, undoKey = `updateAcidType-${id}`): void {
-		const { ingredient } = this.findIngredient(id, this.mixture);
+		const { ingredient } = this.findIngredient(id, this._data.mixture);
 		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
@@ -601,12 +618,12 @@ export class MixtureStore {
 	}
 
 	updateSaltType(id: string, newType: SaltType, undoKey = `updateSaltType-${id}`): void {
-		const { ingredient } = this.findIngredient(id, this.mixture);
+		const { ingredient } = this.findIngredient(id, this._data.mixture);
 		if (!ingredient) {
 			throw new Error(`Unable to find component ${id}`);
 		}
 		if (!isSubstance(ingredient.item)) {
-			throw new Error(`Unable to set acid type of mixture ${id}`);
+			throw new Error(`Unable to set salt type of mixture ${id}`);
 		}
 		const originalSaltType = ingredient.item.substanceId;
 		if (!isSaltId(originalSaltType)) {
@@ -659,10 +676,10 @@ export class MixtureStore {
 	}
 
 	solveTotal(key: keyof SolverTarget, newValue: number, undoKey = `solveTotal-${key}`): void {
-		const originalValue = this.totals[key];
+		const originalValue = this._data.totals[key];
 		const makeUpdater = (targetValue: number) => {
 			return (data: MixtureStoreData) => {
-				const working = solveTotal(this.mixture, key, targetValue);
+				const working = solveTotal(data.mixture, key, targetValue);
 				data.mixture.updateFrom(working);
 				return data;
 			};
@@ -744,8 +761,7 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
 	}
 
-	mixture.updateFrom(working);
-	return mixture;
+	return working;
 }
 
 function getIngredientValue(
