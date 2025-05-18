@@ -25,7 +25,7 @@ const mutators = {
 	},
 
 	async deleteFile(tx: WriteTransaction, id: StorageId) {
-		const deleted = await tx.del(`${SPACE_FILES}/${id}`);
+		await tx.del(`${SPACE_FILES}/${id}`);
 		await mutators.deleteStar(tx, id);
 	},
 
@@ -216,25 +216,19 @@ export class FilesDb {
 	/**
 	 * Subscribe to the full set of files; fires initially and on any add/update/delete.
 	 */
-	subscribe(callback: (items: Map<StorageId, StoredFileDataV1>) => void) {
+	subscribe(callback: (item: StoredFileDataV1, i: number) => void) {
 		if (!this.rep) return null;
 		return this.rep.subscribe(
-			// Query all file entries under SPACE_FILES for accurate change tracking
-			async (tx) => {
-				const items = new Map<StorageId, StoredFileDataV1>();
-				const allEntries = await tx.scan({ prefix: SPACE_FILES }).values().toArray();
-				for (const data of allEntries) {
+			async (tx) => await tx.scan({ prefix: SPACE_FILES }).values().toArray(),
+			(allItems) => {
+				for (const [i, data] of allItems.entries()) {
 					if (isV1Data(data)) {
-						items.set(data.id, data);
+						callback(data, i);
 					} else if (isV0Data(data)) {
 						const v1Data = portV0DataToV1(data);
-						items.set(v1Data.id, v1Data);
+						callback(v1Data, i);
 					}
 				}
-				return items;
-			},
-			{
-				onData: callback,
 			},
 		);
 	}

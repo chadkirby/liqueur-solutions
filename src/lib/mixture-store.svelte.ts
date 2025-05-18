@@ -69,7 +69,6 @@ export class MixtureStore {
 	 * @param data initial store data
 	 */
 	constructor(data: MixtureStoreData = newData()) {
-		console.log('MixtureStore constructor', data.name);
 		this._save(data);
 	}
 
