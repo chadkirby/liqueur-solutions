@@ -4185,6 +4185,11 @@ thenify-all@^1.0.0:
   dependencies:
     any-promise "^1.0.0"
 
+tinybase@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/tinybase/-/tinybase-6.1.1.tgz#d69496b3c37e5666fbacb2054bb61b3a0a076ecc"
+  integrity sha512-UL+K21Hu5V9ZSW7Por8uTlICnPR+m2/ve9DEOmuDhQwpMnqg9hLgYpthPkJKouql650slxcnRFJyBKIJ254tOw==
+
 tinybench@^2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/tinybench/-/tinybench-2.9.0.tgz#103c9f8ba6d7237a47ab6dd1dcff77251863426b"

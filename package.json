@@ -92,6 +92,7 @@
 		"p-debounce": "^4.0.0",
 		"replicache": "^15.0.1",
 		"rollbar": "^2.26.4",
-		"svelte-portal": "^2.2.1"
+		"svelte-portal": "^2.2.1",
+		"tinybase": "^6.1.1"
 	}
 }

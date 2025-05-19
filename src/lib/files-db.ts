@@ -1,339 +1,231 @@
 import { isStorageId, type StorageId } from './storage-id.js';
-import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
-import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import { type StoredFileDataV1, isV0Data, isV1Data } from '$lib/data-format.js';
-import { portV0DataToV1 } from './migrations/v0-v1.js';
+import { type StoredFileDataV1 } from '$lib/data-format.js';
 import { Mixture } from './mixture.js';
 import { browser } from '$app/environment';
 import { starredIds } from './starred-ids.svelte.js';
 import { SimpleHash } from './simple-hash.js';
 import { isMixtureData } from './mixture-types.js';
 import { isSubstanceIid } from './ingredients/substances.js';
-
-// Space is a logical grouping of data in Replicache
-const SPACE_FILES = 'files';
-const SPACE_STARS = 'stars';
-
-type Mutators = {
-	updateFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
-	deleteFile: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-	addStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-	deleteStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-};
-
-// Define our mutations
-const mutators = {
-	async updateFile(tx: WriteTransaction, item: StoredFileDataV1) {
-		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
-	},
-
-	async deleteFile(tx: WriteTransaction, id: StorageId) {
-		await tx.del(`${SPACE_FILES}/${id}`);
-		await mutators.deleteStar(tx, id);
-	},
-
-	async addStar(tx: WriteTransaction, id: StorageId) {
-		await tx.set(`${SPACE_STARS}/${id}`, true);
-	},
-
-	async deleteStar(tx: WriteTransaction, id: StorageId) {
-		await tx.del(`${SPACE_STARS}/${id}`);
-	},
-} satisfies Mutators;
+import { createStore } from 'tinybase';
+import { createRemotePersister } from 'tinybase/persisters/persister-remote';
 
 export class FilesDb {
-	readonly rep: Replicache<Mutators> | null = null; // Replicache instance
-	private starsUnsubscribe: (() => void) | null = null; // To store unsubscribe function
-
+	private store = browser ? createStore().setTables({ files: {}, stars: {} }) : null;
+	private persister: any = null;
+	private localSaveListener: string | null = null;
 	constructor() {
-		if (browser) {
-			// Initialize with offline settings, and expect +layout.svelte.ts
-			// to call startSync() when clerk is initialized and we have a
-			// userId. We only expect to stay offline for a short time (unless
-			// the user isn't logged in).
-			try {
-				this.rep = new Replicache({
-					name: 'mixture-files',
-					licenseKey: PUBLIC_REPLICACHE_LICENSE_KEY,
-					mutators,
-					pushURL: '/api/replicache/push',
-					pullURL: '/api/replicache/pull',
-					pushDelay: Infinity,
-					pullInterval: null,
-					logLevel: 'debug',
-				});
-				console.log('[FilesDb] Replicache instance created. Client Group ID:', this.rep.clientID); // rep.clientID is the clientGroupID
-				// Initialize stars subscription and store unsubscribe function
-				this.starsUnsubscribe = this.rep.subscribe(
-					async (tx) => {
-						const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
-						return stars.map(([key]) => key.split('/')[1] as StorageId);
-					},
-					{
-						onData: (stars) => {
-							// Update the global reactive store
-							starredIds.length = 0;
-							starredIds.push(...stars);
-						},
-					},
-				);
-
-				console.log('FilesDb: Initial Replicache instance ready.');
-			} catch (error) {
-				console.error('Failed to initialize Replicache:', error);
-			}
-		}
-	}
-
-	startSync() {
-		if (this.rep && this.rep.pullInterval === null) {
-			// Only start sync if it was previously stopped
-			console.log('Starting Replicache sync...');
-			this.rep.pushDelay = 1000; // Set push delay to 1 second
-			this.rep.pullInterval = 5 * 60 * 1000; // Set pull interval to 5 minutes
-		}
-	}
-
-	stopSync() {
-		console.log('Stopping Replicache sync...');
-		if (this.rep) {
-			this.rep.pushDelay = Infinity; // Disable push
-			this.rep.pullInterval = null; // Disable pull
-		}
-	}
-
-	close(): void {
-		console.log('Closing FilesDb instance and Replicache...');
-		this.starsUnsubscribe?.(); // Unsubscribe from stars
-		this.rep?.close(); // Close Replicache
-		this.starsUnsubscribe = null;
-	}
-
-	async runJanitor() {
-		console.log('Running janitor task...');
-		const MAX_UNSTARRED_ITEMS = 100;
-		try {
-			const items = await this.scan();
-			const unstarredItems = Array.from(items.entries()).filter(([id]) => !starredIds.includes(id));
-
-			if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
-				console.log(
-					`Janitor: Found ${unstarredItems.length} unstarred items, exceeding limit of ${MAX_UNSTARRED_ITEMS}. Cleaning up...`,
-				);
-				for (const [id] of unstarredItems.slice(MAX_UNSTARRED_ITEMS)) {
-					console.log(`Janitor: Deleting old unstarred item ${id}`);
-					await this.delete(id);
+		if (browser && this.store) {
+			const saved = localStorage.getItem('files-db');
+			if (saved) {
+				try {
+					const tables = JSON.parse(saved);
+					this.store.setTables(tables);
+				} catch {
+					console.warn('FilesDb: Failed to parse saved data');
 				}
-			} else {
-				console.log(`Janitor: Found ${unstarredItems.length} unstarred items. No cleanup needed.`);
 			}
-		} catch (error) {
-			console.error('Janitor task failed:', error);
-		}
-	}
-
-	async migrateV0ToV1() {
-		if (!this.rep) return;
-		console.log('Running migration task...');
-		try {
-			const items = await this.rep.query(async (tx) => {
-				return await tx.scan({ prefix: SPACE_FILES }).values().toArray();
+			this.localSaveListener = this.store.addTablesListener((store) => {
+				localStorage.setItem('files-db', JSON.stringify(store.getTables()));
 			});
-			let migratedCount = 0;
-			for (const item of items) {
-				if (isV0Data(item)) {
-					console.log(`Migrating item ${item.id} from v0 to v1...`);
-					const v1Data = portV0DataToV1(item);
-					await this.rep.mutate.updateFile(v1Data);
-					migratedCount++;
-				}
-			}
-			console.log(`Migration task completed. Migrated ${migratedCount} items.`);
-		} catch (error) {
-			console.error('Migration task failed:', error);
+			const initialStars = this.store.getRowIds('stars');
+			starredIds.length = 0;
+			starredIds.push(...initialStars);
+			this.store.addRowIdsListener('stars', (store) => {
+				const ids = store.getRowIds('stars');
+				starredIds.length = 0;
+				starredIds.push(...ids);
+			});
 		}
 	}
-
-	getItemHash(item: StoredFileDataV1): string {
-		// ignore IDs, but use all other fields
-		const hash = new SimpleHash().update(item.name).update(item.desc);
-		for (const [_, ingredient] of item.ingredientDb) {
-			if (isMixtureData(ingredient)) {
-				for (const { id, name, mass, notes } of ingredient.ingredients) {
-					hash
-						.update(name)
-						.update(mass.toString())
-						.update(notes || '');
-					if (isSubstanceIid(id)) {
-						hash.update(id);
-					}
-				}
-			} else {
-				hash.update(ingredient.id);
-			}
+	/**
+	 * Begin syncing to remote R2 store. Call after user auth is ready.
+	 */
+	startSync(): void {
+		if (!browser || !this.store) return;
+		if (!this.persister) {
+			this.persister = createRemotePersister(
+				this.store,
+				'/api/tinybase/load',
+				'/api/tinybase/save',
+				300,
+				(e) => console.error('TinyBase sync error', e),
+			);
 		}
-		return hash.toString();
-	}
-
-	async hasId(id: StorageId): Promise<boolean> {
-		if (!isStorageId(id)) return false;
-		const item = await this.rep?.query(async (tx) => {
-			return await tx.get(`${SPACE_FILES}/${id}`);
-		});
-		return item !== null;
+		// Begin auto-persist and auto-load loops
+		this.persister.startAutoPersisting();
+		this.persister.startAutoLoad();
+		// Immediately save current local store to remote
+		this.persister.save().catch((e: any) =>
+			console.error('TinyBase initial save error', e)
+		);
 	}
 
 	/**
-	 * Check if an equivalent item exists in the database.
+	 * Stop syncing to remote store (leave local store intact).
 	 */
-	async hasEquivalentItem(item: StoredFileDataV1): Promise<boolean> {
-		if (!isStorageId(item.id)) return false;
-		const targetHash = this.getItemHash(item);
-		const items = await this.scan();
-		for (const existingItem of items.values()) {
-			if (this.getItemHash(existingItem) === targetHash) {
-				return true;
+	stopSync(): void {
+		if (this.persister) {
+			this.persister.stopAutoLoad();
+			this.persister.stopAutoPersisting();
+		}
+	}
+	close(): void {
+		if (browser && this.store) {
+			if (this.localSaveListener !== null) {
+				this.store.delListener(this.localSaveListener);
+				this.localSaveListener = null;
 			}
+			if (this.persister) {
+				this.persister.destroy?.();
+				this.persister = null;
+			}
+		}
+	}
+	async runJanitor(): Promise<void> {
+		const MAX = 100;
+		if (!this.store) return;
+		try {
+			const ids = this.store.getRowIds('files');
+			const stars = new Set(this.store.getRowIds('stars'));
+			for (const id of ids.filter((i) => !stars.has(i)).slice(MAX)) {
+				this.delete(id);
+			}
+		} catch (e) {
+			console.error('FilesDb janitor error', e);
+		}
+	}
+	async migrateV0ToV1(): Promise<void> {}
+	getItemHash(item: StoredFileDataV1): string {
+		const h = new SimpleHash().update(item.name).update(item.desc);
+		for (const [_, ing] of item.ingredientDb) {
+			if (isMixtureData(ing)) {
+				for (const { id, name, mass, notes } of ing.ingredients) {
+					h.update(name)
+						.update(mass.toString())
+						.update(notes || '');
+					if (isSubstanceIid(id)) h.update(id);
+				}
+			} else {
+				h.update(ing.id);
+			}
+		}
+		return h.toString();
+	}
+	async hasId(id: StorageId): Promise<boolean> {
+		if (!isStorageId(id) || !this.store) return false;
+		return this.store.getRow('files', id) !== undefined;
+	}
+	async hasEquivalentItem(item: StoredFileDataV1): Promise<boolean> {
+		if (!isStorageId(item.id) || !this.store) return false;
+		const target = this.getItemHash(item);
+		for (const e of this.scan().values()) {
+			if (this.getItemHash(e) === target) return true;
 		}
 		return false;
 	}
-
-	async read(id: StorageId): Promise<StoredFileDataV1 | null> {
-		if (!isStorageId(id)) return null;
-		const item = await this.rep?.query(async (tx) => {
-			const data = await tx.get(`${SPACE_FILES}/${id}`);
-			if (isV0Data(data)) {
-				return portV0DataToV1(data);
-			}
-			return data;
-		});
-		return item as StoredFileDataV1 | null;
-	}
-
-	async write(item: StoredFileDataV1): Promise<void> {
-		if (!isStorageId(item.id)) return;
-		await this.rep?.mutate.updateFile(item);
-	}
-
+  /**
+   * Read a stored file by ID from the TinyBase table.
+   */
+  async read(id: StorageId): Promise<StoredFileDataV1 | null> {
+    if (!isStorageId(id) || !this.store) return null;
+    const row = this.store.getRow('files', id) as { data?: string } | undefined;
+    if (!row?.data) return null;
+    try {
+      return JSON.parse(row.data) as StoredFileDataV1;
+    } catch (e) {
+      console.warn(`FilesDb: failed to parse JSON for id ${id}`, e);
+      return null;
+    }
+  }
+  /**
+   * Write (upsert) a file record into the TinyBase table.
+   */
+  async write(item: StoredFileDataV1): Promise<void> {
+    if (!isStorageId(item.id) || !this.store) return;
+    // JSON-serialize the entire record into one cell
+    this.store.setRow('files', item.id, { data: JSON.stringify(item) });
+  }
 	async writeIfNoEquivalentExists(item: StoredFileDataV1, starred = false): Promise<void> {
-		if (!isStorageId(item.id)) return;
-		const exists = await this.hasEquivalentItem(item);
-		if (!exists) {
+		if (!isStorageId(item.id) || !this.store) return;
+		if (!(await this.hasEquivalentItem(item))) {
 			await this.write(item);
-			if (starred) {
-				await this.addStar(item.id);
-			}
+			if (starred) await this.addStar(item.id);
 		}
 	}
-
 	async delete(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		await this.rep?.mutate.deleteFile(id);
+		if (!isStorageId(id) || !this.store) return;
+		this.store.delRow('files', id);
+		this.store.delRow('stars', id);
 	}
-
 	async toggleStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (starredIds.includes(id)) {
-			await this.removeStar(id);
-		} else {
-			await this.addStar(id);
-		}
+		if (!isStorageId(id) || !this.store) return;
+		const s = this.store.getRowIds('stars');
+		if (s.includes(id)) await this.removeStar(id);
+		else await this.addStar(id);
 	}
-
 	async addStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (starredIds.includes(id)) return;
-		await this.rep?.mutate.addStar(id);
+		if (!isStorageId(id) || !this.store) return;
+		const s = this.store.getRowIds('stars');
+		if (!s.includes(id)) this.store.setRow('stars', id, {});
 	}
-
 	async removeStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (!starredIds.includes(id)) return;
-		await this.rep?.mutate.deleteStar(id);
+		if (!isStorageId(id) || !this.store) return;
+		const s = this.store.getRowIds('stars');
+		if (s.includes(id)) this.store.delRow('stars', id);
 	}
-
-	private async scan(
-		sortBy: keyof StoredFileDataV1 = 'accessTime',
-	): Promise<Map<StorageId, StoredFileDataV1>> {
-		const items = await this.rep?.query(async (tx) => {
-			const items = new Map<StorageId, StoredFileDataV1>();
-			const starred = new Set(starredIds);
-
-			// First get starred items
-			for (const id of starred) {
-				if (isStorageId(id)) {
-					const item = await tx.get(`${SPACE_FILES}/${id}`);
-					if (item) items.set(id, item as StoredFileDataV1);
-				}
-			}
-
-			// Then get all other items
-			const allItems = await tx.scan({ prefix: SPACE_FILES }).entries().toArray();
-			for (const [key, item] of allItems) {
-				const id = key.split('/')[1] as StorageId;
-				if (!starred.has(id)) {
-					items.set(id, item as StoredFileDataV1);
-				}
-			}
-
-			return items;
-		});
-
-		// Sort items by the specified field
-		const sortedEntries = Array.from(items?.entries() ?? []).sort(([, a], [, b]) => {
-			const aVal = a[sortBy];
-			const bVal = b[sortBy];
-			return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-		});
-
-		return new Map(sortedEntries);
-	}
-
-	/**
-	 * Subscribe to the full set of files; fires initially and on any add/update/delete.
-	 */
-	subscribe(callback: (item: StoredFileDataV1, i: number) => void) {
-		if (!this.rep) return null;
-		return this.rep.subscribe(
-			async (tx) => await tx.scan({ prefix: SPACE_FILES }).values().toArray(),
-			(allItems) => {
-				for (const [i, data] of allItems.entries()) {
-					if (isV1Data(data)) {
-						callback(data, i);
-					} else if (isV0Data(data)) {
-						const v1Data = portV0DataToV1(data);
-						callback(v1Data, i);
-					}
-				}
-			},
-		);
+  /**
+   * Retrieve all stored files, ordering starred first, then by sortBy descending.
+   */
+  private scan(sortBy: keyof StoredFileDataV1 = 'accessTime'): Map<StorageId, StoredFileDataV1> {
+    const m = new Map<StorageId, StoredFileDataV1>();
+    if (!this.store) return m;
+    // Gather all file IDs
+    const ids = this.store.getRowIds('files');
+    const stars = new Set(this.store.getRowIds('stars'));
+    for (const id of ids) {
+      const row = this.store.getRow('files', id) as { data?: string } | undefined;
+      if (!row?.data) continue;
+      try {
+        const data = JSON.parse(row.data) as StoredFileDataV1;
+        m.set(id, data);
+      } catch {
+        // skip invalid JSON
+      }
+    }
+    // Sort: starred first, then by sortBy descending
+    const arr = [...m.values()].sort((a, b) => {
+      const aStar = stars.has(a.id) ? 0 : 1;
+      const bStar = stars.has(b.id) ? 0 : 1;
+      if (aStar !== bStar) return aStar - bStar;
+      return a[sortBy] < b[sortBy] ? 1 : a[sortBy] > b[sortBy] ? -1 : 0;
+    });
+    return new Map(arr.map(i => [i.id, i]));
+  }
+	subscribe(cb: (i: StoredFileDataV1, idx: number) => void): (() => void) | null {
+		if (!browser || !this.store) return null;
+		const emit = () => {
+			let idx = 0;
+			for (const i of this.scan().values()) cb(i, idx++);
+		};
+		emit();
+		const fL = this.store.addTableListener('files', emit);
+		const sL = this.store.addTableListener('stars', emit);
+		return () => {
+			this.store!.delListener(fL);
+			this.store!.delListener(sL);
+		};
 	}
 }
-
 export const filesDb = new FilesDb();
-if (browser) {
-	window.filesDb = filesDb;
-}
 
-/**
- * Extracts the name of a mixture from a StorageId.
- */
 export async function getName(id: StorageId): Promise<string> {
-	const item = await filesDb.read(id);
-	return item?.name || '';
+	const f = await filesDb.read(id);
+	return f?.name || '';
 }
 
-/**
- * Deserializes a mixture from storage.
- */
 export async function deserializeFromStorage(id: string): Promise<Mixture> {
-	if (!isStorageId(id)) {
-		throw new Error('Invalid id');
-	}
-	const item = await filesDb.read(id);
-	const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-	if (!v1Data) {
-		throw new Error('No item found');
-	}
-	return Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb);
+	if (!isStorageId(id)) throw new Error('Invalid id');
+	const f = await filesDb.read(id);
+	if (!f) throw new Error('No item found');
+	return Mixture.deserialize(f.rootMixtureId, f.ingredientDb);
 }
