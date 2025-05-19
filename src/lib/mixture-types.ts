@@ -85,9 +85,6 @@ export function isSubstanceData(data: IngredientData): data is SubstanceData {
 
 export type IngredientData = MixtureData | SubstanceData;
 
-// serialized Map<string, IngredientData>
-export type IngredientDbData = Array<[string, IngredientData]>;
-
 export interface SolverTarget {
 	/** between 0-100 */
 	abv: number;
