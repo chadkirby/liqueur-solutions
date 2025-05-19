@@ -10,7 +10,7 @@
 		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { deserializeFromStorage, filesDb, SPACE_FILES } from '$lib/files-db.js';
+	import { deserializeFromStorage, filesDb } from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
@@ -149,11 +149,11 @@
 							rootMixtureId: mixture.id,
 							ingredientDb: mixture.serialize(),
 						};
-						filesDb.write(v1Data).then(() => filesDb.toggleStar(v1Data.id));
+						filesDb.writeIfNoEquivalentExists(v1Data, true);
 						continue;
 					}
 					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data) filesDb.write(v1Data);
+					if (v1Data) filesDb.writeIfNoEquivalentExists(v1Data, true);
 				}
 			};
 			reader.readAsText(importFiles[0]);
