@@ -25,7 +25,6 @@ import {
 	type DecoratedIngredient,
 	type DecoratedSubstance,
 	type EditableProperty,
-	type IngredientDbData,
 	type IngredientItem,
 	type IngredientItemComponent,
 	type IngredientSubstanceItem,
@@ -33,6 +32,7 @@ import {
 	type MixtureAnalysis,
 	type MixtureData,
 } from './mixture-types.js';
+import type { IngredientDbData } from './data-format.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 

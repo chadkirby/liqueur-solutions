@@ -1,4 +1,6 @@
-import type { IngredientDbData } from './mixture-types.js';
+import { isSubstanceIid } from './ingredients/substances.js';
+import { isMixtureData, type IngredientData } from './mixture-types.js';
+import { SimpleHash } from './simple-hash.js';
 
 export const currentDataVersion = 1;
 
@@ -15,6 +17,28 @@ export type StoredFileDataV1 = {
 	rootMixtureId: string;
 	ingredientDb: IngredientDbData;
 };
+
+export function getIngredientHash(
+	item: Pick<StoredFileDataV1, 'name' | 'desc' | 'ingredientDb'>,
+): string {
+	const h = new SimpleHash().update(item.name).update(item.desc);
+	for (const [_, ing] of item.ingredientDb) {
+		if (isMixtureData(ing)) {
+			for (const { id, name, mass, notes } of ing.ingredients) {
+				h.update(name)
+					.update(mass.toString())
+					.update(notes || '');
+				if (isSubstanceIid(id)) h.update(id);
+			}
+		} else {
+			h.update(ing.id);
+		}
+	}
+	return h.toString();
+}
+
+// serialized Map<string, IngredientData>
+export type IngredientDbData = Array<[string, IngredientData]>;
 
 export function isV1Data(data: unknown): data is StoredFileDataV1 {
 	if (typeof data !== 'object' || data === null) {
