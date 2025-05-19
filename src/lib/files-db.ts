@@ -1,84 +1,115 @@
 import { isStorageId, type StorageId } from './storage-id.js';
-import { type StoredFileDataV1 } from '$lib/data-format.js';
+import { currentDataVersion, getIngredientHash, type StoredFileDataV1 } from '$lib/data-format.js';
 import { Mixture } from './mixture.js';
 import { browser } from '$app/environment';
 import { starredIds } from './starred-ids.svelte.js';
-import { SimpleHash } from './simple-hash.js';
-import { isMixtureData } from './mixture-types.js';
-import { isSubstanceIid } from './ingredients/substances.js';
-import { createStore } from 'tinybase';
-import { createRemotePersister } from 'tinybase/persisters/persister-remote';
+import type { TablesSchema } from 'tinybase';
+import { createMergeableStore, type MergeableStore } from 'tinybase/with-schemas';
+import {
+	createLocalPersister,
+	type LocalPersister,
+} from 'tinybase/persisters/persister-browser/with-schemas';
+import {
+	createRemotePersister,
+	type RemotePersister,
+} from 'tinybase/persisters/persister-remote/with-schemas';
+
+type TinyTableRow = Omit<StoredFileDataV1, 'ingredientDb'> & {
+	ingredientDb: string; // serialized Map<string, IngredientData>
+	ingredientHash: string; // hash of the file contents
+};
+
+const tableSchema: TablesSchema = {
+	files: {
+		version: { type: 'number' },
+		id: { type: 'string' },
+		name: { type: 'string' },
+		accessTime: { type: 'number' },
+		desc: { type: 'string' },
+		rootMixtureId: { type: 'string' },
+		ingredientDb: { type: 'string' }, // serialized Map<string, IngredientData>
+		ingredientHash: { type: 'string' }, // hash of the file contents
+	},
+	stars: {
+		id: { type: 'string' },
+	},
+} as const;
+
+const valueSchema = {
+	currentDataVersion: { type: 'number', default: currentDataVersion },
+} as const;
 
 export class FilesDb {
-	private store = browser ? createStore().setTables({ files: {}, stars: {} }) : null;
-	private persister: any = null;
-	private localSaveListener: string | null = null;
+	private store: MergeableStore<[typeof tableSchema, typeof valueSchema]> | null = browser
+		? createMergeableStore().setSchema(tableSchema, valueSchema)
+		: null;
+	private remotePersister: RemotePersister<[typeof tableSchema, typeof valueSchema]> | null = null;
+	private localPersister: LocalPersister<[typeof tableSchema, typeof valueSchema]> | null = null;
+	private starsListenerId: string | null = null;
+
 	constructor() {
 		if (browser && this.store) {
-			const saved = localStorage.getItem('files-db');
-			if (saved) {
-				try {
-					const tables = JSON.parse(saved);
-					this.store.setTables(tables);
-				} catch {
-					console.warn('FilesDb: Failed to parse saved data');
-				}
-			}
-			this.localSaveListener = this.store.addTablesListener((store) => {
-				localStorage.setItem('files-db', JSON.stringify(store.getTables()));
-			});
-			const initialStars = this.store.getRowIds('stars');
-			starredIds.length = 0;
-			starredIds.push(...initialStars);
-			this.store.addRowIdsListener('stars', (store) => {
+			this.localPersister = createLocalPersister(this.store, 'files-db');
+			this.starsListenerId = this.store.addRowIdsListener('stars', (store) => {
 				const ids = store.getRowIds('stars');
 				starredIds.length = 0;
 				starredIds.push(...ids);
 			});
 		}
 	}
+
+	async init(): Promise<void> {
+		if (!browser || !this.store || !this.localPersister) return;
+		if (this.localPersister.isAutoLoading() && this.localPersister.isAutoSaving()) {
+			// Already initialized
+			return;
+		}
+		await this.localPersister.startAutoPersisting();
+		await this.localPersister.load();
+		const files = this.store.getRowIds('files');
+		console.log('FilesDb: loaded', files.length, 'files');
+		const initialStars = this.store.getRowIds('stars');
+		starredIds.length = 0;
+		starredIds.push(...initialStars);
+	}
 	/**
 	 * Begin syncing to remote R2 store. Call after user auth is ready.
 	 */
-	startSync(): void {
+	async startSync(): Promise<void> {
 		if (!browser || !this.store) return;
-		if (!this.persister) {
-			this.persister = createRemotePersister(
-				this.store,
-				'/api/tinybase/load',
-				'/api/tinybase/save',
-				300,
-				(e) => console.error('TinyBase sync error', e),
-			);
-		}
-		// Begin auto-persist and auto-load loops
-		this.persister.startAutoPersisting();
-		this.persister.startAutoLoad();
-		// Immediately save current local store to remote
-		this.persister.save().catch((e: any) =>
-			console.error('TinyBase initial save error', e)
+		this.remotePersister ??= createRemotePersister(
+			this.store,
+			'/api/tinybase/load',
+			'/api/tinybase/save',
+			300,
+			(e) => console.error('TinyBase sync error', e),
 		);
+
+		// Begin auto-persist and auto-load loops
+		await this.remotePersister.startAutoPersisting();
 	}
 
 	/**
 	 * Stop syncing to remote store (leave local store intact).
 	 */
-	stopSync(): void {
-		if (this.persister) {
-			this.persister.stopAutoLoad();
-			this.persister.stopAutoPersisting();
+	async stopSync(): Promise<void> {
+		if (this.remotePersister) {
+			await this.remotePersister.stopAutoPersisting();
 		}
 	}
 	close(): void {
-		if (browser && this.store) {
-			if (this.localSaveListener !== null) {
-				this.store.delListener(this.localSaveListener);
-				this.localSaveListener = null;
-			}
-			if (this.persister) {
-				this.persister.destroy?.();
-				this.persister = null;
-			}
+		if (this.localPersister) {
+			this.localPersister.stopAutoPersisting();
+			this.localPersister.destroy?.();
+			this.localPersister = null;
+		}
+		if (this.remotePersister) {
+			this.remotePersister.stopAutoPersisting();
+			this.remotePersister.destroy?.();
+			this.remotePersister = null;
+		}
+		if (this.store) {
+			if (this.starsListenerId) this.store.delListener(this.starsListenerId);
 		}
 	}
 	async runJanitor(): Promise<void> {
@@ -94,57 +125,58 @@ export class FilesDb {
 			console.error('FilesDb janitor error', e);
 		}
 	}
-	async migrateV0ToV1(): Promise<void> {}
-	getItemHash(item: StoredFileDataV1): string {
-		const h = new SimpleHash().update(item.name).update(item.desc);
-		for (const [_, ing] of item.ingredientDb) {
-			if (isMixtureData(ing)) {
-				for (const { id, name, mass, notes } of ing.ingredients) {
-					h.update(name)
-						.update(mass.toString())
-						.update(notes || '');
-					if (isSubstanceIid(id)) h.update(id);
-				}
-			} else {
-				h.update(ing.id);
-			}
-		}
-		return h.toString();
-	}
 	async hasId(id: StorageId): Promise<boolean> {
 		if (!isStorageId(id) || !this.store) return false;
 		return this.store.getRow('files', id) !== undefined;
 	}
+
 	async hasEquivalentItem(item: StoredFileDataV1): Promise<boolean> {
 		if (!isStorageId(item.id) || !this.store) return false;
-		const target = this.getItemHash(item);
+		const target = getIngredientHash(item);
 		for (const e of this.scan().values()) {
-			if (this.getItemHash(e) === target) return true;
+			if (e.ingredientHash === target) return true;
 		}
 		return false;
 	}
-  /**
-   * Read a stored file by ID from the TinyBase table.
-   */
-  async read(id: StorageId): Promise<StoredFileDataV1 | null> {
-    if (!isStorageId(id) || !this.store) return null;
-    const row = this.store.getRow('files', id) as { data?: string } | undefined;
-    if (!row?.data) return null;
-    try {
-      return JSON.parse(row.data) as StoredFileDataV1;
-    } catch (e) {
-      console.warn(`FilesDb: failed to parse JSON for id ${id}`, e);
-      return null;
-    }
-  }
-  /**
-   * Write (upsert) a file record into the TinyBase table.
-   */
-  async write(item: StoredFileDataV1): Promise<void> {
-    if (!isStorageId(item.id) || !this.store) return;
-    // JSON-serialize the entire record into one cell
-    this.store.setRow('files', item.id, { data: JSON.stringify(item) });
-  }
+	/**
+	 * Read a stored file by ID from the TinyBase table.
+	 */
+	async read(id: StorageId) {
+		if (!isStorageId(id) || !this.store) return null;
+		await this.init();
+		const row = this.store.getRow('files', id);
+		if (!row) return null;
+		try {
+			return this.tinyRowToData(row as TinyTableRow);
+		} catch (e) {
+			console.warn(`FilesDb: failed to parse JSON for id ${id}`, e);
+			return null;
+		}
+	}
+	/**
+	 * Write (upsert) a file record into the TinyBase table.
+	 */
+	async write(item: StoredFileDataV1): Promise<void> {
+		if (!isStorageId(item.id) || !this.store) return;
+		this.store.setRow('files', item.id, this.dataToTinyRow(item));
+	}
+
+	private dataToTinyRow(item: StoredFileDataV1): TinyTableRow {
+		const ingredientDb = JSON.stringify(item.ingredientDb);
+		return {
+			...item,
+			ingredientDb,
+			ingredientHash: getIngredientHash(item),
+		};
+	}
+
+	private tinyRowToData(item: TinyTableRow): StoredFileDataV1 & { ingredientHash: string } {
+		return {
+			...item,
+			ingredientDb: JSON.parse(item.ingredientDb),
+		};
+	}
+
 	async writeIfNoEquivalentExists(item: StoredFileDataV1, starred = false): Promise<void> {
 		if (!isStorageId(item.id) || !this.store) return;
 		if (!(await this.hasEquivalentItem(item))) {
@@ -173,34 +205,34 @@ export class FilesDb {
 		const s = this.store.getRowIds('stars');
 		if (s.includes(id)) this.store.delRow('stars', id);
 	}
-  /**
-   * Retrieve all stored files, ordering starred first, then by sortBy descending.
-   */
-  private scan(sortBy: keyof StoredFileDataV1 = 'accessTime'): Map<StorageId, StoredFileDataV1> {
-    const m = new Map<StorageId, StoredFileDataV1>();
-    if (!this.store) return m;
-    // Gather all file IDs
-    const ids = this.store.getRowIds('files');
-    const stars = new Set(this.store.getRowIds('stars'));
-    for (const id of ids) {
-      const row = this.store.getRow('files', id) as { data?: string } | undefined;
-      if (!row?.data) continue;
-      try {
-        const data = JSON.parse(row.data) as StoredFileDataV1;
-        m.set(id, data);
-      } catch {
-        // skip invalid JSON
-      }
-    }
-    // Sort: starred first, then by sortBy descending
-    const arr = [...m.values()].sort((a, b) => {
-      const aStar = stars.has(a.id) ? 0 : 1;
-      const bStar = stars.has(b.id) ? 0 : 1;
-      if (aStar !== bStar) return aStar - bStar;
-      return a[sortBy] < b[sortBy] ? 1 : a[sortBy] > b[sortBy] ? -1 : 0;
-    });
-    return new Map(arr.map(i => [i.id, i]));
-  }
+	/**
+	 * Retrieve all stored files, ordering starred first, then by sortBy descending.
+	 */
+	private scan(sortBy: keyof StoredFileDataV1 = 'accessTime') {
+		const m = new Map<StorageId, ReturnType<FilesDb['tinyRowToData']>>();
+		if (!this.store) return m;
+		// Gather all file IDs
+		const ids = this.store.getRowIds('files');
+		const stars = new Set(this.store.getRowIds('stars'));
+		for (const id of ids) {
+			const row = this.store.getRow('files', id);
+			if (!row) continue;
+			try {
+				m.set(id, this.tinyRowToData(row as TinyTableRow));
+			} catch (e) {
+				console.warn(`FilesDb: failed to parse JSON for id ${id}`, e); // Log the error for better debugging
+			}
+		}
+		// Sort: starred first, then by sortBy descending
+		const arr = [...m.values()].sort((a, b) => {
+			const aStar = stars.has(a.id) ? 0 : 1;
+			const bStar = stars.has(b.id) ? 0 : 1;
+			if (aStar !== bStar) return aStar - bStar;
+			return a[sortBy] < b[sortBy] ? 1 : a[sortBy] > b[sortBy] ? -1 : 0;
+		});
+		return new Map(arr.map((i) => [i.id, i]));
+	}
+
 	subscribe(cb: (i: StoredFileDataV1, idx: number) => void): (() => void) | null {
 		if (!browser || !this.store) return null;
 		const emit = () => {
@@ -225,6 +257,7 @@ export async function getName(id: StorageId): Promise<string> {
 
 export async function deserializeFromStorage(id: string): Promise<Mixture> {
 	if (!isStorageId(id)) throw new Error('Invalid id');
+	await filesDb.init();
 	const f = await filesDb.read(id);
 	if (!f) throw new Error('No item found');
 	return Mixture.deserialize(f.rootMixtureId, f.ingredientDb);
