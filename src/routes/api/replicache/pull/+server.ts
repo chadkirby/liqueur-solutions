@@ -23,6 +23,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
+import type { PatchOperation } from 'replicache';
 
 export async function POST({ request, platform, locals }: RequestEvent) {
 	// Parse the incoming pull request body.
@@ -33,15 +34,22 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 	// Extract clientGroupID for v1 API and validate presence.
 	const clientGroupID = (pull as any).clientGroupID as string;
 	if (typeof clientGroupID !== 'string') {
+		console.error('[Pull] Missing clientGroupID in request body.');
 		throw error(400, 'Missing clientGroupID');
 	}
-	// Use cookie from pull or default to empty.
-	const prevCookie = typeof pull.cookie === 'string' ? pull.cookie : '';
+	// Use cookie from pull (as numeric value) or default to 0
+	const prevVersion = Number(pull.cookie || 0);
+
+	let serverLMI = 0; // Default LMI
+
 	if (!platform) {
 		// Development mode: no R2 available, return empty patch
+		console.log(
+			`[Pull-Dev] DEV MODE for clientGroupID: ${clientGroupID}. Returning empty patch and LMI 0.`,
+		);
 		return json({
-			cookie: prevCookie,
-			lastMutationIDChanges: {},
+			cookie: prevVersion,
+			lastMutationIDChanges: { [clientGroupID]: serverLMI }, // Send default LMI
 			patch: [],
 		});
 	}
@@ -50,77 +58,94 @@ export async function POST({ request, platform, locals }: RequestEvent) {
 
 	if (!userId) {
 		// Unauthenticated: no data
+		console.log(
+			`[Pull] Unauthenticated access attempt for clientGroupID: ${clientGroupID}. Returning empty patch and LMI 0.`,
+		);
 		return json({
-			cookie: prevCookie,
-			lastMutationIDChanges: {},
+			cookie: prevVersion,
+			lastMutationIDChanges: { [clientGroupID]: serverLMI }, // Send default LMI
 			patch: [],
 		});
 	}
 
+	// Fetch the server's lastMutationID for this clientGroupID
+	const lmiKey = `lmi/${clientGroupID}`;
+	try {
+		const lmiObj = await bucket.get(lmiKey);
+		if (lmiObj) {
+			const lmiText = await lmiObj.text();
+			const parsedLMI = Number(lmiText || 0);
+			if (!isNaN(parsedLMI)) {
+				serverLMI = parsedLMI;
+			} else {
+				console.warn(`[Pull] Invalid LMI found in R2 for ${lmiKey}: '${lmiText}'. Using LMI 0.`);
+			}
+		}
+		console.log(`[Pull] Fetched serverLMI for clientGroupID '${clientGroupID}': ${serverLMI}`);
+	} catch (e: any) {
+		console.error(
+			`[Pull] Error fetching LMI for clientGroupID '${clientGroupID}' from R2 key '${lmiKey}': ${e.message}. Using LMI 0.`,
+		);
+		// Continue with LMI 0, but log the error. Depending on policy, you might throw.
+	}
+
+	// Use the serverLMI as the version/cookie
+	const nextVersion = serverLMI;
+	const changed = nextVersion > prevVersion;
+
 	// Authenticated user: fetch data from R2, compute patch, and new cookie fingerprint.
 	try {
-		const items = [];
+		const items: Array<PatchOperation & { op: 'put' }> = [];
 
-		// Sanitize userId for safe inclusion in R2 object keys: only alphanumeric and underscore.
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
+		// Only fetch and create patch if the version changed
+		if (changed) {
+			// Sanitize userId for safe inclusion in R2 object keys: only alphanumeric and underscore.
+			const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
 
-		// List all file objects for this authenticated user from R2.
-		const files = await bucket.list({ prefix: `files/${safeId}/` });
-		for (const obj of files.objects) {
-			const content = await bucket.get(obj.key);
-			if (content) {
+			// List all file objects for this authenticated user from R2.
+			const files = await bucket.list({ prefix: `files/${safeId}/` });
+			for (const obj of files.objects) {
+				const r2Obj = await bucket.get(obj.key);
+				const key = obj.key.replace(`files/${safeId}/`, 'files/'); // Strip user ID from key
+
+				if (r2Obj) {
+					items.push({
+						op: 'put',
+						key,
+						value: await r2Obj.json(),
+					});
+				}
+			}
+
+			// List all 'star' flags for this user from R2.
+			const stars = await bucket.list({ prefix: `stars/${safeId}/` });
+			for (const obj of stars.objects) {
 				items.push({
 					op: 'put',
-					key: obj.key.replace(`files/${safeId}/`, 'files/'), // Strip user ID from key
-					value: await content.json(),
+					key: obj.key.replace(`stars/${safeId}/`, 'stars/'), // Strip user ID from key
+					value: true, // Stars are stored as presence, value is true
 				});
 			}
 		}
 
-		// List all 'star' flags for this user from R2.
-		const stars = await bucket.list({ prefix: `stars/${safeId}/` });
-		for (const obj of stars.objects) {
-			items.push({
-				op: 'put',
-				key: obj.key.replace(`stars/${safeId}/`, 'stars/'), // Strip user ID from key
-				value: true,
-			});
-		}
-
-		// Compute a fingerprint hash over the current item set to detect client desynchronization:
-		// - Build tokens for each entry: "key:version" for files, "key:true" for stars.
-		// - Sort tokens, join with "|", and SHA-256 hash.
-		const tokens = items.map((it) =>
-			it.key.startsWith('files/') ? `${it.key}:${(it.value as any).version}` : `${it.key}:true`,
+		console.log(
+			`[Pull] For clientGroupID '${clientGroupID}': Data changed: ${changed}. ` +
+				`PrevVersion: ${prevVersion}, NextVersion: ${nextVersion}. Items: ${items.length}`,
 		);
-		tokens.sort();
-		const encoder = new TextEncoder();
-		const data = encoder.encode(tokens.join('|'));
-		const hashBuf = await crypto.subtle.digest('SHA-256', data);
-		const hashHex = Array.from(new Uint8Array(hashBuf))
-			.map((b) => b.toString(16).padStart(2, '0'))
-			.join('');
-		// Build a lexicographically monotonic cookie string:
-		// - Prefix "~" ensures it sorts after any legacy cookies.
-		// - Include Date.now() for monotonicity and the content hash for change detection.
-		const now = Date.now().toString();
-		const newCookie = `~${now}-${hashHex}`;
-		// Compute previous hash from prevCookie (after "-" if prefixed by "~").
-		let prevHash = '';
-		if (prevCookie.startsWith('~')) {
-			const idx = prevCookie.indexOf('-');
-			if (idx > 0) {
-				prevHash = prevCookie.slice(idx + 1);
-			}
-		}
-		const changed = prevHash !== hashHex;
+
 		return json({
-			cookie: changed ? newCookie : prevCookie,
-			lastMutationIDChanges: changed ? { [clientGroupID]: 0 } : {},
+			cookie: nextVersion, // Use numeric LMI as the cookie
+			lastMutationIDChanges: { [clientGroupID]: serverLMI },
 			patch: changed ? items : [],
 		});
-	} catch (err) {
-		console.error('Pull error:', err);
-		throw error(500, 'Failed to process pull');
+	} catch (err: any) {
+		// Explicitly type err
+		console.error(
+			`[Pull] Error processing pull for clientGroupID '${clientGroupID}':`,
+			err.message,
+			err,
+		);
+		// Even in case of error generating patch, try to send the LMI
+		throw error(500, `Failed to process pull: ${err.message}`);
 	}
 }

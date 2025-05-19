@@ -6,9 +6,12 @@ import { portV0DataToV1 } from './migrations/v0-v1.js';
 import { Mixture } from './mixture.js';
 import { browser } from '$app/environment';
 import { starredIds } from './starred-ids.svelte.js';
+import { SimpleHash } from './simple-hash.js';
+import { isMixtureData } from './mixture-types.js';
+import { isSubstanceIid } from './ingredients/substances.js';
 
 // Space is a logical grouping of data in Replicache
-export const SPACE_FILES = 'files';
+const SPACE_FILES = 'files';
 const SPACE_STARS = 'stars';
 
 type Mutators = {
@@ -44,7 +47,10 @@ export class FilesDb {
 
 	constructor() {
 		if (browser) {
-			// Initialize with offline settings immediately
+			// Initialize with offline settings, and expect +layout.svelte.ts
+			// to call startSync() when clerk is initialized and we have a
+			// userId. We only expect to stay offline for a short time (unless
+			// the user isn't logged in).
 			try {
 				this.rep = new Replicache({
 					name: 'mixture-files',
@@ -54,7 +60,9 @@ export class FilesDb {
 					pullURL: '/api/replicache/pull',
 					pushDelay: Infinity,
 					pullInterval: null,
+					logLevel: 'debug',
 				});
+				console.log('[FilesDb] Replicache instance created. Client Group ID:', this.rep.clientID); // rep.clientID is the clientGroupID
 				// Initialize stars subscription and store unsubscribe function
 				this.starsUnsubscribe = this.rep.subscribe(
 					async (tx) => {
@@ -102,7 +110,6 @@ export class FilesDb {
 	}
 
 	async runJanitor() {
-		// Use the reactive getter for the janitor
 		console.log('Running janitor task...');
 		const MAX_UNSTARRED_ITEMS = 100;
 		try {
@@ -125,12 +132,70 @@ export class FilesDb {
 		}
 	}
 
-	async has(id: StorageId): Promise<boolean> {
+	async migrateV0ToV1() {
+		if (!this.rep) return;
+		console.log('Running migration task...');
+		try {
+			const items = await this.rep.query(async (tx) => {
+				return await tx.scan({ prefix: SPACE_FILES }).values().toArray();
+			});
+			let migratedCount = 0;
+			for (const item of items) {
+				if (isV0Data(item)) {
+					console.log(`Migrating item ${item.id} from v0 to v1...`);
+					const v1Data = portV0DataToV1(item);
+					await this.rep.mutate.updateFile(v1Data);
+					migratedCount++;
+				}
+			}
+			console.log(`Migration task completed. Migrated ${migratedCount} items.`);
+		} catch (error) {
+			console.error('Migration task failed:', error);
+		}
+	}
+
+	getItemHash(item: StoredFileDataV1): string {
+		// ignore IDs, but use all other fields
+		const hash = new SimpleHash().update(item.name).update(item.desc);
+		for (const [_, ingredient] of item.ingredientDb) {
+			if (isMixtureData(ingredient)) {
+				for (const { id, name, mass, notes } of ingredient.ingredients) {
+					hash
+						.update(name)
+						.update(mass.toString())
+						.update(notes || '');
+					if (isSubstanceIid(id)) {
+						hash.update(id);
+					}
+				}
+			} else {
+				hash.update(ingredient.id);
+			}
+		}
+		return hash.toString();
+	}
+
+	async hasId(id: StorageId): Promise<boolean> {
 		if (!isStorageId(id)) return false;
 		const item = await this.rep?.query(async (tx) => {
 			return await tx.get(`${SPACE_FILES}/${id}`);
 		});
 		return item !== null;
+	}
+
+	/**
+	 * Check if an equivalent item exists in the database.
+	 */
+	async hasEquivalentItem(item: StoredFileDataV1): Promise<boolean> {
+		if (!isStorageId(item.id)) return false;
+		const targetHash = this.getItemHash(item);
+		const items = await this.scan();
+		for (const existingItem of items.values()) {
+			if (this.getItemHash(existingItem) === targetHash) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	async read(id: StorageId): Promise<StoredFileDataV1 | null> {
@@ -148,6 +213,17 @@ export class FilesDb {
 	async write(item: StoredFileDataV1): Promise<void> {
 		if (!isStorageId(item.id)) return;
 		await this.rep?.mutate.updateFile(item);
+	}
+
+	async writeIfNoEquivalentExists(item: StoredFileDataV1, starred = false): Promise<void> {
+		if (!isStorageId(item.id)) return;
+		const exists = await this.hasEquivalentItem(item);
+		if (!exists) {
+			await this.write(item);
+			if (starred) {
+				await this.addStar(item.id);
+			}
+		}
 	}
 
 	async delete(id: StorageId): Promise<void> {
@@ -235,6 +311,9 @@ export class FilesDb {
 }
 
 export const filesDb = new FilesDb();
+if (browser) {
+	window.filesDb = filesDb;
+}
 
 /**
  * Extracts the name of a mixture from a StorageId.
