@@ -22,6 +22,7 @@ export async function load(args: { url: URL }): Promise<never> {
 	};
 
 	if (browser) {
+		await filesDb.init();
 		await filesDb.write(item);
 	}
 	// throws { status: 303, redirect: `/edit/${item.id}` }

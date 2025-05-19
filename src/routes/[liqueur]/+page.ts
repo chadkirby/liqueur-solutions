@@ -21,6 +21,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 	};
 
 	if (browser) {
+		await filesDb.init();
 		await filesDb.write(item);
 	}
 	// throws { status: 303, redirect: `/edit/${item.id}` }

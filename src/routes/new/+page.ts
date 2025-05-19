@@ -31,6 +31,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 
 	if (browser) {
 		const { filesDb } = await import('$lib/files-db.js');
+		await filesDb.init();
 		await filesDb.write(item);
 	}
 	throw redirect(303, `/edit/${item.id}`);

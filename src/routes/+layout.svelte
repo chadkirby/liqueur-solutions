@@ -48,7 +48,7 @@
 
 		// schedule the janitor task to run once
 		const janitor = setTimeout(() => {
-			filesDb.runJanitor().then(() => filesDb.migrateV0ToV1());
+			filesDb.runJanitor();
 		}, 2000);
 
 		// 7) Clean up when this layout is unmounted
