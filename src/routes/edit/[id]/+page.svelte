@@ -5,7 +5,7 @@
 	import BottomNav from '../../../components/nav/BottomNav.svelte';
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Spinner } from 'svelte-5-ui-lib';
-	import { filesDb } from '$lib/files-db.js';
+	import { write } from '$lib/files-db.js';
 	import { onDestroy } from 'svelte';
 	import { currentDataVersion } from '$lib/data-format.js';
 	import { page } from '$app/state';
@@ -48,7 +48,7 @@
 				});
 
 				unsubscribeMixture = mixtureStore.subscribe((upd) => {
-					filesDb.write({
+					write({
 						version: currentDataVersion,
 						id: upd.storeId,
 						accessTime: Date.now(),

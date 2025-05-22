@@ -7,7 +7,6 @@
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { filesDb } from '$lib/files-db.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
@@ -16,6 +15,7 @@
 	import type { Clerk } from '@clerk/clerk-js';
 	import type { UserResource } from '@clerk/types';
 	import { starredIds } from '$lib/starred-ids.svelte.js';
+	import { toggleStar } from '$lib/files-db.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -47,11 +47,11 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let isStarred = $derived(starredIds.includes(storeId));
+	let isStarred = $derived($starredIds.includes(storeId));
 
 	function handleToggleStar(event?: Event) {
 		event?.preventDefault();
-		filesDb.toggleStar(storeId);
+		toggleStar(storeId);
 	}
 
 	function handleSignIn() {

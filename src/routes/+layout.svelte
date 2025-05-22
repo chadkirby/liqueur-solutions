@@ -3,15 +3,14 @@
 	import { Clerk } from '@clerk/clerk-js';
 	import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$env/static/public';
 	import { experimental__simple } from '@clerk/themes';
-	import { writable, get } from 'svelte/store'; // Added 'get'
+	import { writable, get } from 'svelte/store';
 	import { setContext } from 'svelte';
-	// import { filesDb } from '$lib/files-db'; // Will be updated or replaced
 
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 
 	// PartyKitSync imports
-	import { initializePartyKitSync, partyKitSync as partyKitSyncStore } from '$lib/partykit-sync-store.svelte.js';
+	import { initializePartyKitSync, partyKitSyncStore } from '$lib/files-db.js';
 	import type PartyKitSync from '$lib/partykit-sync.js'; // Ensure this path is correct and PartyKitSync is the default export or a named export
 
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
@@ -31,8 +30,8 @@
 
 	// Subscribe to Clerk user changes to initialize/destroy PartyKitSync
 	clerkUser.subscribe(async ($user) => {
-		const $clerk = get(clerkInstance); // Get current Clerk instance
-		if ($user && $user.id && $clerk && typeof $clerk.session?.getToken === 'function') {
+		const currentClerk = get(clerkInstance); // Get current Clerk instance
+		if ($user && $user.id && currentClerk && typeof currentClerk.session?.getToken === 'function') {
 			if (currentPartyKitSync && currentPartyKitSync.userId === $user.id) {
 				// Already initialized for this user
 				return;
@@ -43,7 +42,7 @@
 				partyKitSyncStore.set(null);
 			}
 			console.log(`Initializing PartyKitSync for user ${$user.id}`);
-			const getToken = () => $clerk.session!.getToken({ template: 'partykit' });
+			const getToken = () => currentClerk.session!.getToken({ template: 'partykit' });
 			currentPartyKitSync = initializePartyKitSync($user.id, getToken);
 			// Optional: Attach to window for debugging: window.partyKitSync = currentPartyKitSync;
 		} else if (!$user && currentPartyKitSync) {

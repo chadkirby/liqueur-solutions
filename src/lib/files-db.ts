@@ -1,13 +1,21 @@
-import { type StorageId, type StoredFileDataV1 } from './data-types.js'; // Updated import
-import { partyKitSync as partyKitSyncStore } from './partykit-sync-store.svelte.js'; // Import PartyKitSync store
+import { type StoredFileDataV1 } from './data-format.js';
 import { get, type Unsubscriber } from 'svelte/store'; // To get store value once and for types
 import { Mixture } from './mixture.js';
-// import { isV0Data, isV1Data } from '$lib/data-format.js'; // No longer needed for v0/v1 checks here
-// import { portV0DataToV1 } from './migrations/v0-v1.js'; // No longer needed
-import { starredIds } from './starred-ids.svelte.js'; // Still used for janitor logic, but now derived
+import type { StorageId } from './storage-id.js';
 
-// No longer a class, but a collection of functions using PartyKitSync
-// No Replicache specific code, no mutators, no SPACE_FILES/SPACE_STARS constants for Replicache
+import { writable, type Writable } from 'svelte/store';
+import PartyKitSync from '$lib/partykit-sync.js'; // Adjusted path, assuming partykit-sync.ts exports the class as default
+
+export const partyKitSyncStore: Writable<PartyKitSync | null> = writable(null);
+
+export function initializePartyKitSync(
+	userId: string,
+	getToken: () => Promise<string | null>,
+): PartyKitSync {
+	const instance = new PartyKitSync(userId, getToken);
+	partyKitSyncStore.set(instance);
+	return instance;
+}
 
 // Helper to get PartyKitSync instance
 function getPks() {
@@ -72,7 +80,8 @@ export async function write(item: StoredFileDataV1): Promise<void> {
 	pks.updateFile(item);
 }
 
-export async function deleteFile(id: StorageId): Promise<void> { // Renamed from delete to deleteFile for clarity
+export async function deleteFile(id: StorageId): Promise<void> {
+	// Renamed from delete to deleteFile for clarity
 	const pks = getPks();
 	if (!pks) return;
 	pks.deleteFile(id);
@@ -130,7 +139,7 @@ export async function scan(
  * For now, let's provide a way to subscribe to the array of files.
  */
 export function subscribeToFiles(
-	callback: (files: StoredFileDataV1[]) => void
+	callback: (files: StoredFileDataV1[]) => void,
 ): Unsubscriber | null {
 	const pks = getPks();
 	if (!pks) {
@@ -162,9 +171,8 @@ export async function deserializeFromStorage(id: string): Promise<Mixture> {
 		throw new Error(`No item found for id: ${id}`);
 	}
 	// Ensure ingredientDb is an object if Mixture.deserialize expects that
-	const ingredientDbForMixture = typeof item.ingredientDb === 'string'
-		? JSON.parse(item.ingredientDb)
-		: item.ingredientDb;
+	const ingredientDbForMixture =
+		typeof item.ingredientDb === 'string' ? JSON.parse(item.ingredientDb) : item.ingredientDb;
 
 	return Mixture.deserialize(item.rootMixtureId, ingredientDbForMixture);
 }

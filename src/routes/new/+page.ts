@@ -5,6 +5,7 @@ import { newSpirit } from '$lib/mixture-factories.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { redirect } from '@sveltejs/kit';
+import { write } from '$lib/files-db.js';
 
 export async function load(args: { url: URL; params: { liqueur: string } }): Promise<never> {
 	const adjectives = ['Untitled', 'New', 'Delicious', 'Refreshing', 'Tasty', 'Boozy'];
@@ -30,8 +31,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 	};
 
 	if (browser) {
-		const { filesDb } = await import('$lib/files-db.js');
-		await filesDb.write(item);
+		await write(item);
 	}
 	throw redirect(303, `/edit/${item.id}`);
 }

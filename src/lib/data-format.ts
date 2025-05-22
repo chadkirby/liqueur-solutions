@@ -1,4 +1,5 @@
 import type { IngredientDbData } from './mixture-types.js';
+import type { StorageId } from './storage-id.js';
 
 export const currentDataVersion = 1;
 
@@ -8,7 +9,7 @@ export const currentDataVersion = 1;
  */
 export type StoredFileDataV1 = {
 	version: typeof currentDataVersion;
-	id: string;
+	id: StorageId;
 	name: string;
 	accessTime: number;
 	desc: string;

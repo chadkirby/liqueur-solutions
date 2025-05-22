@@ -1,6 +1,6 @@
 import { writable, type Writable } from 'svelte/store';
-// import type { IngredientDbData } from './mixture-types.js'; // No longer directly needed here
-import type { StoredFileDataV1, StorageId } from './data-types.js'; // Import from data-types.ts
+import type { StoredFileDataV1 } from './data-format.js';
+import type { StorageId } from './storage-id.js';
 
 // --- PartyKitSync Class ---
 // currentDataVersion is now part of StoredFileDataV1 if needed, or managed by server
@@ -8,7 +8,7 @@ import type { StoredFileDataV1, StorageId } from './data-types.js'; // Import fr
 const PUBLIC_PARTYKIT_HOST = process.env.PUBLIC_PARTYKIT_HOST || 'localhost:1999'; // Default for local dev
 
 export class PartyKitSync {
-	private userId: string;
+	readonly userId: string;
 	private getToken: () => Promise<string | null>;
 	private ws: WebSocket | null = null;
 	private reconnectAttempts = 0;
@@ -25,7 +25,7 @@ export class PartyKitSync {
 		this.stars = writable<StorageId[]>([]);
 
 		if (!userId) {
-			console.error("PartyKitSync: userId is required for initialization.");
+			console.error('PartyKitSync: userId is required for initialization.');
 			// Potentially throw an error or handle this state more gracefully
 			return;
 		}
@@ -35,7 +35,7 @@ export class PartyKitSync {
 	private async getWebSocketUrl(): Promise<string> {
 		const token = await this.getToken();
 		if (!token) {
-			throw new Error("Authentication token not available.");
+			throw new Error('Authentication token not available.');
 		}
 		const protocol = PUBLIC_PARTYKIT_HOST.startsWith('localhost') ? 'ws' : 'wss';
 		return `${protocol}://${PUBLIC_PARTYKIT_HOST}/parties/user/user-${this.userId}?token=${token}`;
@@ -43,7 +43,7 @@ export class PartyKitSync {
 
 	async connect(): Promise<void> {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			console.log("PartyKitSync: Already connected.");
+			console.log('PartyKitSync: Already connected.');
 			return;
 		}
 
@@ -70,40 +70,50 @@ export class PartyKitSync {
 							// No specific parsing needed here unless server changes format.
 							// ingredientDb: typeof file.ingredientDb === 'string' ? JSON.parse(file.ingredientDb) : file.ingredientDb,
 						})) as StoredFileDataV1[];
-						const starsData = (message.stars || []).map((s: { fileId: string }) => s.fileId) as StorageId[];
+						const starsData = (message.stars || []).map(
+							(s: { fileId: string }) => s.fileId,
+						) as StorageId[];
 
 						this.files.set(filesData);
 						this.stars.set(starsData);
 						// console.log("PartyKitSync: Received allData", { files: filesData.length, stars: starsData.length });
 					} else if (message.error) {
-						console.error("PartyKitSync: Received error from server:", message.error);
+						console.error('PartyKitSync: Received error from server:', message.error);
 					} else {
 						// console.log("PartyKitSync: Received message:", message);
 					}
 				} catch (e) {
-					console.error("PartyKitSync: Error parsing message from server:", e);
+					console.error('PartyKitSync: Error parsing message from server:', e);
 				}
 			};
 
 			this.ws.onclose = (event) => {
-				console.log(`PartyKitSync: Connection closed (code: ${event.code}, reason: ${event.reason})`);
+				console.log(
+					`PartyKitSync: Connection closed (code: ${event.code}, reason: ${event.reason})`,
+				);
 				this.ws = null;
 				if (this.reconnectAttempts < this.maxReconnectAttempts) {
-					const delay = Math.min(30000, this.reconnectInterval * Math.pow(2, this.reconnectAttempts));
+					const delay = Math.min(
+						30000,
+						this.reconnectInterval * Math.pow(2, this.reconnectAttempts),
+					);
 					console.log(`PartyKitSync: Attempting to reconnect in ${delay}ms...`);
 					setTimeout(() => this.connect(), delay);
 					this.reconnectAttempts++;
 				} else {
-					console.error("PartyKitSync: Max reconnection attempts reached.");
+					console.error('PartyKitSync: Max reconnection attempts reached.');
 				}
 			};
 
 			this.ws.onerror = (error) => {
-				console.error("PartyKitSync: WebSocket error:", error);
+				console.error('PartyKitSync: WebSocket error:', error);
 				// onclose will likely be called next, triggering reconnection logic
 			};
 		} catch (error) {
-			console.error("PartyKitSync: Failed to get WebSocket URL or initial connection failed:", error);
+			console.error(
+				'PartyKitSync: Failed to get WebSocket URL or initial connection failed:',
+				error,
+			);
 			// Handle token error or other pre-connection issues, maybe retry with backoff too
 			if (this.reconnectAttempts < this.maxReconnectAttempts) {
 				const delay = Math.min(30000, this.reconnectInterval * Math.pow(2, this.reconnectAttempts));
@@ -118,7 +128,7 @@ export class PartyKitSync {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify({ type, payload }));
 		} else {
-			console.warn("PartyKitSync: WebSocket not connected. Message not sent:", { type, payload });
+			console.warn('PartyKitSync: WebSocket not connected. Message not sent:', { type, payload });
 			// Optionally queue message or try to reconnect
 		}
 	}
@@ -128,28 +138,29 @@ export class PartyKitSync {
 		// Ensure ingredientDb is stringified if it's an object, as the server expects a JSON string (TEXT column)
 		const payload = {
 			...fileData,
-			ingredientDb: typeof fileData.ingredientDb === 'object'
-				? JSON.stringify(fileData.ingredientDb)
-				: fileData.ingredientDb,
-			version: fileData.version // ensure version is part of the payload
+			ingredientDb:
+				typeof fileData.ingredientDb === 'object'
+					? JSON.stringify(fileData.ingredientDb)
+					: fileData.ingredientDb,
+			version: fileData.version, // ensure version is part of the payload
 		};
-		this.sendMessage("updateFile", payload);
+		this.sendMessage('updateFile', payload);
 	}
 
 	deleteFile(fileId: StorageId): void {
-		this.sendMessage("deleteFile", { id: fileId });
+		this.sendMessage('deleteFile', { id: fileId });
 	}
 
 	addStar(fileId: StorageId): void {
-		this.sendMessage("addStar", { id: fileId });
+		this.sendMessage('addStar', { id: fileId });
 	}
 
 	deleteStar(fileId: StorageId): void {
-		this.sendMessage("deleteStar", { id: fileId });
+		this.sendMessage('deleteStar', { id: fileId });
 	}
 
 	requestAllData(): void {
-		this.sendMessage("getAllData", {});
+		this.sendMessage('getAllData', {});
 	}
 
 	// --- Local Data Access and Subscriptions ---
@@ -163,8 +174,8 @@ export class PartyKitSync {
 
 	readFile(id: StorageId): StoredFileDataV1 | undefined {
 		let file: StoredFileDataV1 | undefined;
-		this.files.subscribe(value => {
-			file = value.find(f => f.id === id);
+		this.files.subscribe((value) => {
+			file = value.find((f) => f.id === id);
 		})(); // Immediate subscribe and unsubscribe to get current value
 		return file;
 	}
@@ -172,10 +183,10 @@ export class PartyKitSync {
 	hasFile(id: StorageId): boolean {
 		return !!this.readFile(id);
 	}
-	
+
 	isStarred(id: StorageId): boolean {
 		let starred = false;
-		this.stars.subscribe(value => {
+		this.stars.subscribe((value) => {
 			starred = value.includes(id);
 		})();
 		return starred;
@@ -191,7 +202,7 @@ export class PartyKitSync {
 
 	// --- Cleanup ---
 	close(): void {
-		console.log("PartyKitSync: Closing connection and cleaning up.");
+		console.log('PartyKitSync: Closing connection and cleaning up.');
 		this.reconnectAttempts = this.maxReconnectAttempts; // Prevent further reconnections
 		if (this.ws) {
 			this.ws.close();

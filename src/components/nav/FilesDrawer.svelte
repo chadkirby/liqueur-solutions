@@ -11,24 +11,24 @@
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	// filesDb is now a collection of functions, SPACE_FILES is no longer exported or needed client-side
-	import { deserializeFromStorage, deleteFile as filesDbDelete, toggleStar as filesDbToggleStar, write as filesDbWrite, subscribeToFiles } from '$lib/files-db.js';
+	import {
+		deserializeFromStorage,
+		deleteFile as filesDbDelete,
+		toggleStar as filesDbToggleStar,
+		write as filesDbWrite,
+		subscribeToFiles,
+	} from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte.js'; // Corrected path
-	import type { StorageId } from '$lib/data-types.js'; // Updated path
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import {
-		currentDataVersion,
-		isV0Data,
-		isV1Data,
-		type StoredFileDataV1,
-	} from '$lib/data-format.js';
+	import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { starredIds } from '$lib/starred-ids.svelte.js';
+	import type { StorageId } from '$lib/storage-id.js';
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
@@ -39,8 +39,8 @@
 	let items = new SvelteMap<StorageId, StoredFileDataV1>();
 	let files = $derived(
 		Array.from(items.values())
-			.filter((f) => !onlyStars || starredIds.includes(f.id))
-			.sort((a, b) => b.accessTime - a.accessTime) // Keep existing sort logic if any, or adapt
+			.filter((f) => !onlyStars || $starredIds.includes(f.id))
+			.sort((a, b) => b.accessTime - a.accessTime), // Keep existing sort logic if any, or adapt
 	);
 
 	// Subscribe to file changes using the new subscribeToFiles
@@ -63,7 +63,8 @@
 	let drawerStatus = $derived(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
 
-	async function removeItem(id: StorageId) { // Changed key to id and directly use StorageId
+	async function removeItem(id: StorageId) {
+		// Changed key to id and directly use StorageId
 		filesDbDelete(id); // Use imported deleteFile
 	}
 
@@ -122,7 +123,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files.filter((f) => starredIds.includes(f.id));
+		const data = files.filter((f) => $starredIds.includes(f.id));
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -149,7 +150,7 @@
 							name: item.name,
 							accessTime: item.accessTime || Date.now(),
 							version: currentDataVersion, // Ensure currentDataVersion is defined, or use item.version
-							// desc: item.desc || mixture.describe(), // desc is not in StoredFileDataV1 on server
+							desc: item.desc || mixture.describe(),
 							rootMixtureId: mixture.id,
 							ingredientDb: mixture.serialize(), // This will be stringified by PartyKitSync
 						};
@@ -232,8 +233,8 @@
 						"
 					>
 						<div class="flex flex-row items-center gap-2">
-							<Button onclick={() => filesDbToggleStar(id)}> {/* Use imported toggleStar */}
-								{#if starredIds.includes(id)}
+							<Button onclick={() => filesDbToggleStar(id)}>
+								{#if $starredIds.includes(id)}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />
@@ -241,7 +242,7 @@
 							</Button>
 							<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
 						</div>
-						{/* <span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span> */}{/* desc removed from StoredFileDataV1 */}
+						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
 					</div>
 					<div class="flex flex-row justify-around">
 						<Tooltip
@@ -299,7 +300,7 @@
 				</Button>
 				<section>
 					<Helper>Import (JSON format from export)</Helper>
-					<Fileupload bind:files={importFiles} accept=".json"/>
+					<Fileupload bind:files={importFiles} accept=".json" />
 				</section>
 			</div>
 		</div></Drawer
