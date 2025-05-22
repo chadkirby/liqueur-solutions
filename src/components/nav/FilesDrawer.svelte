@@ -10,9 +10,10 @@
 		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { deserializeFromStorage, filesDb, SPACE_FILES } from '$lib/files-db.js';
-	import { filesDrawer } from '$lib/files-drawer-store.svelte';
-	import { toStorageId, type StorageId } from '$lib/storage-id.js';
+	// filesDb is now a collection of functions, SPACE_FILES is no longer exported or needed client-side
+	import { deserializeFromStorage, deleteFile as filesDbDelete, toggleStar as filesDbToggleStar, write as filesDbWrite, subscribeToFiles } from '$lib/files-db.js';
+	import { filesDrawer } from '$lib/files-drawer-store.svelte.js'; // Corrected path
+	import type { StorageId } from '$lib/data-types.js'; // Updated path
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
@@ -37,16 +38,19 @@
 	let onlyStars = $state(false);
 	let items = new SvelteMap<StorageId, StoredFileDataV1>();
 	let files = $derived(
-		Array.from(items.values()).filter((f, i) => {
-			if (i === 0) console.log('filtering', items.size);
-			return !onlyStars || starredIds.includes(f.id);
-		}),
+		Array.from(items.values())
+			.filter((f) => !onlyStars || starredIds.includes(f.id))
+			.sort((a, b) => b.accessTime - a.accessTime) // Keep existing sort logic if any, or adapt
 	);
 
-	// Subscribe to file changes
-	const unsubscribe = filesDb.subscribe((item, i) => {
-		if (i === 0) items.clear();
-		items.set(item.id, item);
+	// Subscribe to file changes using the new subscribeToFiles
+	const unsubscribe = subscribeToFiles((allFiles: StoredFileDataV1[]) => {
+		// Repopulate the SvelteMap. This ensures reactivity.
+		// Could be optimized if direct map manipulation is preferred and supported by SvelteMap's reactivity.
+		items.clear();
+		for (const file of allFiles) {
+			items.set(file.id, file);
+		}
 	});
 
 	// Clean up subscription
@@ -59,9 +63,8 @@
 	let drawerStatus = $derived(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
 
-	async function removeItem(key: string) {
-		const id = toStorageId(key);
-		filesDb.delete(id);
+	async function removeItem(id: StorageId) { // Changed key to id and directly use StorageId
+		filesDbDelete(id); // Use imported deleteFile
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -140,20 +143,24 @@
 					if ('href' in item && 'name' in item) {
 						const url = new URL(resolveRelativeUrl(item.href));
 						const { mixture } = deserializeFromUrl(url.searchParams);
+						const newFileId = componentId(); // Generate ID once
 						const v1Data: StoredFileDataV1 = {
-							id: componentId(),
+							id: newFileId,
 							name: item.name,
 							accessTime: item.accessTime || Date.now(),
-							version: currentDataVersion,
-							desc: item.desc || mixture.describe(),
+							version: currentDataVersion, // Ensure currentDataVersion is defined, or use item.version
+							// desc: item.desc || mixture.describe(), // desc is not in StoredFileDataV1 on server
 							rootMixtureId: mixture.id,
-							ingredientDb: mixture.serialize(),
+							ingredientDb: mixture.serialize(), // This will be stringified by PartyKitSync
 						};
-						filesDb.write(v1Data).then(() => filesDb.toggleStar(v1Data.id));
+						filesDbWrite(v1Data).then(() => filesDbToggleStar(newFileId)); // Use imported toggleStar
 						continue;
 					}
-					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data) filesDb.write(v1Data);
+					// Assuming item is already StoredFileDataV1 if not a URL import
+					// The old isV0Data/isV1Data logic is removed as filesDb now expects V1 from PartyKitSync
+					if (item && typeof item === 'object' && 'id' in item && 'version' in item) {
+						filesDbWrite(item as StoredFileDataV1);
+					}
 				}
 			};
 			reader.readAsText(importFiles[0]);
@@ -225,7 +232,7 @@
 						"
 					>
 						<div class="flex flex-row items-center gap-2">
-							<Button onclick={() => filesDb.toggleStar(id)}>
+							<Button onclick={() => filesDbToggleStar(id)}> {/* Use imported toggleStar */}
 								{#if starredIds.includes(id)}
 									<StarSolid size="xs" />
 								{:else}
@@ -234,7 +241,7 @@
 							</Button>
 							<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
 						</div>
-						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
+						{/* <span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span> */}{/* desc removed from StoredFileDataV1 */}
 					</div>
 					<div class="flex flex-row justify-around">
 						<Tooltip
@@ -288,11 +295,11 @@
 			<!-- export-all button -->
 			<div class="flex flex-col justify-center mt-4 gap-4">
 				<Button class="px-2 py-1 text-primary-600 dark:text-primary-400" onclick={handleExport}>
-					Export All
+					Export Starred
 				</Button>
 				<section>
-					<Helper>Import</Helper>
-					<Fileupload bind:files={importFiles} />
+					<Helper>Import (JSON format from export)</Helper>
+					<Fileupload bind:files={importFiles} accept=".json"/>
 				</section>
 			</div>
 		</div></Drawer

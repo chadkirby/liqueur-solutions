@@ -1,246 +1,184 @@
-import { isStorageId, type StorageId } from './storage-id.js';
-import { Replicache, type WriteTransaction, type ReadonlyJSONValue } from 'replicache';
-import { PUBLIC_REPLICACHE_LICENSE_KEY } from '$env/static/public';
-import { type StoredFileDataV1, isV0Data, isV1Data } from '$lib/data-format.js';
-import { portV0DataToV1 } from './migrations/v0-v1.js';
+import { type StorageId, type StoredFileDataV1 } from './data-types'; // Updated import
+import { partyKitSync as partyKitSyncStore } from './partykit-sync-store.svelte'; // Import PartyKitSync store
+import { get, type Unsubscriber } from 'svelte/store'; // To get store value once and for types
 import { Mixture } from './mixture.js';
-import { browser } from '$app/environment';
-import { starredIds } from './starred-ids.svelte.js';
+// import { isV0Data, isV1Data } from '$lib/data-format.js'; // No longer needed for v0/v1 checks here
+// import { portV0DataToV1 } from './migrations/v0-v1.js'; // No longer needed
+import { starredIds } from './starred-ids.svelte'; // Still used for janitor logic, but now derived
 
-// Space is a logical grouping of data in Replicache
-export const SPACE_FILES = 'files';
-const SPACE_STARS = 'stars';
+// No longer a class, but a collection of functions using PartyKitSync
+// No Replicache specific code, no mutators, no SPACE_FILES/SPACE_STARS constants for Replicache
 
-type Mutators = {
-	updateFile: (tx: WriteTransaction, item: StoredFileDataV1) => Promise<void>;
-	deleteFile: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-	addStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-	deleteStar: (tx: WriteTransaction, id: StorageId) => Promise<void>;
-};
+// Helper to get PartyKitSync instance
+function getPks() {
+	const pksInstance = get(partyKitSyncStore);
+	if (!pksInstance) {
+		// This case should ideally not happen if PartyKitSync is initialized correctly on app load
+		// and UI is blocked or limited until it's ready.
+		console.warn('PartyKitSync instance not available. Operations might fail.');
+	}
+	return pksInstance;
+}
 
-// Define our mutations
-const mutators = {
-	async updateFile(tx: WriteTransaction, item: StoredFileDataV1) {
-		await tx.set(`${SPACE_FILES}/${item.id}`, item as ReadonlyJSONValue);
-	},
+// startSync and stopSync are implicitly handled by PartyKitSync's connect/close logic
+// and its own reconnection mechanisms. Clerk user changes in +layout.svelte manage this.
+export function startSync() {
+	// PartyKitSync connects automatically based on user session.
+	// This function can be a no-op or log for compatibility.
+	console.log('filesDb.startSync called (now managed by PartyKitSync lifecycle)');
+}
 
-	async deleteFile(tx: WriteTransaction, id: StorageId) {
-		await tx.del(`${SPACE_FILES}/${id}`);
-		await mutators.deleteStar(tx, id);
-	},
+export function stopSync() {
+	// PartyKitSync closes automatically based on user session.
+	// This function can be a no-op or log for compatibility.
+	console.log('filesDb.stopSync called (now managed by PartyKitSync lifecycle)');
+}
 
-	async addStar(tx: WriteTransaction, id: StorageId) {
-		await tx.set(`${SPACE_STARS}/${id}`, true);
-	},
+export function close() {
+	// This might still be called from old code.
+	// PartyKitSync instance is closed when user logs out or layout unmounts.
+	// Explicitly calling pks.close() here might be redundant or interfere
+	// if not handled carefully with the main lifecycle in +layout.svelte.
+	console.log('filesDb.close called (PartyKitSync manages its own connection lifecycle)');
+}
 
-	async deleteStar(tx: WriteTransaction, id: StorageId) {
-		await tx.del(`${SPACE_STARS}/${id}`);
-	},
-} satisfies Mutators;
+export async function runJanitor() {
+	const pks = getPks();
+	if (!pks) return;
 
-export class FilesDb {
-	readonly rep: Replicache<Mutators> | null = null; // Replicache instance
-	private starsUnsubscribe: (() => void) | null = null; // To store unsubscribe function
+	console.log('Running janitor task (PartyKitSync)...');
+	const MAX_UNSTARRED_ITEMS = 100;
+	try {
+		// Get all files from PartyKitSync store
+		const allFiles = get(pks.getFiles());
+		const currentStarredIds = get(starredIds); // Get current stars from derived store
 
-	constructor() {
-		if (browser) {
-			// Initialize with offline settings immediately
-			try {
-				this.rep = new Replicache({
-					name: 'mixture-files',
-					licenseKey: PUBLIC_REPLICACHE_LICENSE_KEY,
-					mutators,
-					pushURL: '/api/replicache/push',
-					pullURL: '/api/replicache/pull',
-					pushDelay: Infinity,
-					pullInterval: null,
-				});
-				// Initialize stars subscription and store unsubscribe function
-				this.starsUnsubscribe = this.rep.subscribe(
-					async (tx) => {
-						const stars = await tx.scan({ prefix: SPACE_STARS }).entries().toArray();
-						return stars.map(([key]) => key.split('/')[1] as StorageId);
-					},
-					{
-						onData: (stars) => {
-							// Update the global reactive store
-							starredIds.length = 0;
-							starredIds.push(...stars);
-						},
-					},
-				);
+		const unstarredItems = allFiles.filter((file) => !currentStarredIds.includes(file.id));
 
-				console.log('FilesDb: Initial Replicache instance ready.');
-			} catch (error) {
-				console.error('Failed to initialize Replicache:', error);
+		if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
+			console.log(
+				`Janitor: Found ${unstarredItems.length} unstarred items, exceeding limit of ${MAX_UNSTARRED_ITEMS}. Cleaning up...`,
+			);
+			// Sort by accessTime to delete oldest first
+			unstarredItems.sort((a, b) => a.accessTime - b.accessTime);
+			for (const itemToDelete of unstarredItems.slice(0, unstarredItems.length - MAX_UNSTARRED_ITEMS)) {
+				console.log(`Janitor: Deleting old unstarred item ${itemToDelete.id}`);
+				pks.deleteFile(itemToDelete.id); // This will trigger a broadcast and update stores
 			}
-		}
-	}
-
-	startSync() {
-		if (this.rep && this.rep.pullInterval === null) {
-			// Only start sync if it was previously stopped
-			console.log('Starting Replicache sync...');
-			this.rep.pushDelay = 1000; // Set push delay to 1 second
-			this.rep.pullInterval = 5 * 60 * 1000; // Set pull interval to 5 minutes
-		}
-	}
-
-	stopSync() {
-		console.log('Stopping Replicache sync...');
-		if (this.rep) {
-			this.rep.pushDelay = Infinity; // Disable push
-			this.rep.pullInterval = null; // Disable pull
-		}
-	}
-
-	close(): void {
-		console.log('Closing FilesDb instance and Replicache...');
-		this.starsUnsubscribe?.(); // Unsubscribe from stars
-		this.rep?.close(); // Close Replicache
-		this.starsUnsubscribe = null;
-	}
-
-	async runJanitor() {
-		// Use the reactive getter for the janitor
-		console.log('Running janitor task...');
-		const MAX_UNSTARRED_ITEMS = 100;
-		try {
-			const items = await this.scan();
-			const unstarredItems = Array.from(items.entries()).filter(([id]) => !starredIds.includes(id));
-
-			if (unstarredItems.length > MAX_UNSTARRED_ITEMS) {
-				console.log(
-					`Janitor: Found ${unstarredItems.length} unstarred items, exceeding limit of ${MAX_UNSTARRED_ITEMS}. Cleaning up...`,
-				);
-				for (const [id] of unstarredItems.slice(MAX_UNSTARRED_ITEMS)) {
-					console.log(`Janitor: Deleting old unstarred item ${id}`);
-					await this.delete(id);
-				}
-			} else {
-				console.log(`Janitor: Found ${unstarredItems.length} unstarred items. No cleanup needed.`);
-			}
-		} catch (error) {
-			console.error('Janitor task failed:', error);
-		}
-	}
-
-	async has(id: StorageId): Promise<boolean> {
-		if (!isStorageId(id)) return false;
-		const item = await this.rep?.query(async (tx) => {
-			return await tx.get(`${SPACE_FILES}/${id}`);
-		});
-		return item !== null;
-	}
-
-	async read(id: StorageId): Promise<StoredFileDataV1 | null> {
-		if (!isStorageId(id)) return null;
-		const item = await this.rep?.query(async (tx) => {
-			const data = await tx.get(`${SPACE_FILES}/${id}`);
-			if (isV0Data(data)) {
-				return portV0DataToV1(data);
-			}
-			return data;
-		});
-		return item as StoredFileDataV1 | null;
-	}
-
-	async write(item: StoredFileDataV1): Promise<void> {
-		if (!isStorageId(item.id)) return;
-		await this.rep?.mutate.updateFile(item);
-	}
-
-	async delete(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		await this.rep?.mutate.deleteFile(id);
-	}
-
-	async toggleStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (starredIds.includes(id)) {
-			await this.removeStar(id);
 		} else {
-			await this.addStar(id);
+			console.log(`Janitor: Found ${unstarredItems.length} unstarred items. No cleanup needed.`);
 		}
-	}
-
-	async addStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (starredIds.includes(id)) return;
-		await this.rep?.mutate.addStar(id);
-	}
-
-	async removeStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id)) return;
-		if (!starredIds.includes(id)) return;
-		await this.rep?.mutate.deleteStar(id);
-	}
-
-	private async scan(
-		sortBy: keyof StoredFileDataV1 = 'accessTime',
-	): Promise<Map<StorageId, StoredFileDataV1>> {
-		const items = await this.rep?.query(async (tx) => {
-			const items = new Map<StorageId, StoredFileDataV1>();
-			const starred = new Set(starredIds);
-
-			// First get starred items
-			for (const id of starred) {
-				if (isStorageId(id)) {
-					const item = await tx.get(`${SPACE_FILES}/${id}`);
-					if (item) items.set(id, item as StoredFileDataV1);
-				}
-			}
-
-			// Then get all other items
-			const allItems = await tx.scan({ prefix: SPACE_FILES }).entries().toArray();
-			for (const [key, item] of allItems) {
-				const id = key.split('/')[1] as StorageId;
-				if (!starred.has(id)) {
-					items.set(id, item as StoredFileDataV1);
-				}
-			}
-
-			return items;
-		});
-
-		// Sort items by the specified field
-		const sortedEntries = Array.from(items?.entries() ?? []).sort(([, a], [, b]) => {
-			const aVal = a[sortBy];
-			const bVal = b[sortBy];
-			return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-		});
-
-		return new Map(sortedEntries);
-	}
-
-	/**
-	 * Subscribe to the full set of files; fires initially and on any add/update/delete.
-	 */
-	subscribe(callback: (item: StoredFileDataV1, i: number) => void) {
-		if (!this.rep) return null;
-		return this.rep.subscribe(
-			async (tx) => await tx.scan({ prefix: SPACE_FILES }).values().toArray(),
-			(allItems) => {
-				for (const [i, data] of allItems.entries()) {
-					if (isV1Data(data)) {
-						callback(data, i);
-					} else if (isV0Data(data)) {
-						const v1Data = portV0DataToV1(data);
-						callback(v1Data, i);
-					}
-				}
-			},
-		);
+	} catch (error) {
+		console.error('Janitor task failed:', error);
 	}
 }
 
-export const filesDb = new FilesDb();
+export async function has(id: StorageId): Promise<boolean> {
+	const pks = getPks();
+	if (!pks) return false;
+	// Assuming PartyKitSync has a way to check for a file or read it
+	// For now, using readFile and checking existence
+	const file = pks.readFile(id); // readFile is synchronous in current PartyKitSync
+	return !!file;
+}
+
+export async function read(id: StorageId): Promise<StoredFileDataV1 | null> {
+	const pks = getPks();
+	if (!pks) return null;
+	const file = pks.readFile(id); // readFile is synchronous
+	// Data should already be in StoredFileDataV1 format from PartyKitSync
+	// No V0 to V1 conversion needed here as server and PartyKitSync handle V1
+	return file || null;
+}
+
+export async function write(item: StoredFileDataV1): Promise<void> {
+	const pks = getPks();
+	if (!pks) return;
+	// Make sure version is set, PartyKitSync expects it.
+	// If your app logic doesn't set it, default it here or in PartyKitSync.
+	// const currentDataVersion = 1; // Or import from data-types if defined there
+	// item.version = item.version || currentDataVersion;
+	pks.updateFile(item);
+}
+
+export async function deleteFile(id: StorageId): Promise<void> { // Renamed from delete to deleteFile for clarity
+	const pks = getPks();
+	if (!pks) return;
+	pks.deleteFile(id);
+}
+
+export async function toggleStar(id: StorageId): Promise<void> {
+	const pks = getPks();
+	if (!pks) return;
+	pks.toggleStar(id); // PartyKitSync has this helper
+}
+
+export async function addStar(id: StorageId): Promise<void> {
+	const pks = getPks();
+	if (!pks) return;
+	pks.addStar(id);
+}
+
+export async function removeStar(id: StorageId): Promise<void> {
+	const pks = getPks();
+	if (!pks) return;
+	pks.deleteStar(id);
+}
+
+export async function scan(
+	sortBy: keyof StoredFileDataV1 = 'accessTime',
+): Promise<Map<StorageId, StoredFileDataV1>> {
+	const pks = getPks();
+	if (!pks) return new Map();
+
+	const filesArray = get(pks.getFiles()); // Get current files from the store
+
+	// Sort items by the specified field
+	const sortedArray = [...filesArray].sort((a, b) => {
+		const aVal = a[sortBy];
+		const bVal = b[sortBy];
+		// Assuming descending order like original for accessTime
+		return typeof aVal === 'number' && typeof bVal === 'number'
+			? bVal - aVal
+			: String(bVal).localeCompare(String(aVal));
+	});
+
+	const itemsMap = new Map<StorageId, StoredFileDataV1>();
+	for (const item of sortedArray) {
+		itemsMap.set(item.id, item);
+	}
+	return itemsMap;
+}
+
+/**
+ * Subscribe to the full set of files; fires initially and on any add/update/delete.
+ * This needs to adapt to Svelte store subscriptions.
+ * The original callback style was `(item: StoredFileDataV1, i: number) => void`
+ * Svelte stores typically provide the whole array.
+ * We can try to emulate the old behavior or suggest components subscribe to partyKitSync.getFiles() directly.
+ * For now, let's provide a way to subscribe to the array of files.
+ */
+export function subscribeToFiles(
+	callback: (files: StoredFileDataV1[]) => void
+): Unsubscriber | null {
+	const pks = getPks();
+	if (!pks) {
+		callback([]);
+		return null;
+	}
+	const filesStore = pks.getFiles();
+	const unsubscribe = filesStore.subscribe(callback);
+	return unsubscribe;
+}
+
+// The global filesDb instance is no longer needed as we export functions.
+// export const filesDb = new FilesDb(); // Remove this line
 
 /**
  * Extracts the name of a mixture from a StorageId.
  */
 export async function getName(id: StorageId): Promise<string> {
-	const item = await filesDb.read(id);
+	const item = await read(id); // Uses the new read function
 	return item?.name || '';
 }
 
@@ -248,13 +186,17 @@ export async function getName(id: StorageId): Promise<string> {
  * Deserializes a mixture from storage.
  */
 export async function deserializeFromStorage(id: string): Promise<Mixture> {
-	if (!isStorageId(id)) {
-		throw new Error('Invalid id');
+	const item = await read(id); // Uses the new read function
+	if (!item) {
+		throw new Error(`No item found for id: ${id}`);
 	}
-	const item = await filesDb.read(id);
-	const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-	if (!v1Data) {
-		throw new Error('No item found');
-	}
-	return Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb);
+	// Ensure ingredientDb is an object if Mixture.deserialize expects that
+	const ingredientDbForMixture = typeof item.ingredientDb === 'string'
+		? JSON.parse(item.ingredientDb)
+		: item.ingredientDb;
+
+	return Mixture.deserialize(item.rootMixtureId, ingredientDbForMixture);
 }
+
+// Legacy 'delete' function name if needed for compatibility, points to deleteFile
+export const deleteItem = deleteFile;

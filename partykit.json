@@ -1,0 +1,8 @@
+{
+  "name": "liqueur-solutions",
+  "main": "party/index.ts",
+  "compatibilityDate": "2023-12-18",
+  "parties": {
+    "user": "party/index.ts"
+  }
+}
