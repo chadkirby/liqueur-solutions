@@ -35,13 +35,4 @@
 	}
 </script>
 
-<NumberSpinner
-	{value}
-	{set}
-	{increment}
-	{decrement}
-	{format}
-	{minMax}
-	{...rest}
-	unitSuffix="ml"
-/>
+<NumberSpinner {value} {set} {increment} {decrement} {format} {minMax} {...rest} unitSuffix="ml" />

@@ -34,13 +34,4 @@
 	}
 </script>
 
-<NumberSpinner
-	{value}
-	{set}
-	{increment}
-	{decrement}
-	{format}
-	{minMax}
-	{unitSuffix}
-	{...rest}
-/>
+<NumberSpinner {value} {set} {increment} {decrement} {format} {minMax} {unitSuffix} {...rest} />

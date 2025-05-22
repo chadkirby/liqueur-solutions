@@ -18,12 +18,17 @@
 	const sweeteners = sweetenerIds.map((id) => ({ value: id, name: id }));
 
 	let subType = $derived(mixtureStore.getSweetenerTypes(componentId).at(0) ?? '');
-
 </script>
 
-<Dropdown class={classProp} {basis} {onclick} value={subType} onchange={(e) => {
-	mixtureStore.updateSweetenerType(componentId, e.currentTarget.value as SweetenerType);
-}}>
+<Dropdown
+	class={classProp}
+	{basis}
+	{onclick}
+	value={subType}
+	onchange={(e) => {
+		mixtureStore.updateSweetenerType(componentId, e.currentTarget.value as SweetenerType);
+	}}
+>
 	{#each sweeteners as { value, name }}
 		<option {value} selected={value === subType}>{name}</option>
 	{/each}

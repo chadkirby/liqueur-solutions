@@ -1,11 +1,11 @@
 {
-  "name": "liqueur-solutions",
-  "main": "party/index.ts",
-  "compatibilityDate": "2023-12-18",
-  "parties": {
-    "user": {
-      "path": "party/index.ts",
-      "cron": "0 * * * *"
-    }
-  }
+	"name": "liqueur-solutions",
+	"main": "party/index.ts",
+	"compatibilityDate": "2023-12-18",
+	"parties": {
+		"user": {
+			"path": "party/index.ts",
+			"cron": "0 * * * *"
+		}
+	}
 }

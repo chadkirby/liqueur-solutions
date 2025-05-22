@@ -38,9 +38,7 @@
 	let isKeyboardEditing = $state(false);
 	let touchStartTime = $state(0);
 	let formattedValue = $derived(
-		isKeyboardEditing
-			? value.toFixed(digitsForDisplay(value, minMax.max))
-			: format(value),
+		isKeyboardEditing ? value.toFixed(digitsForDisplay(value, minMax.max)) : format(value),
 	);
 	let input: HTMLInputElement | null = $state(null);
 
@@ -174,7 +172,6 @@
 		}
 		return value;
 	}
-
 </script>
 
 <div id={divId} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">
