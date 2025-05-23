@@ -1,25 +1,72 @@
 import { isSubstanceIid } from './ingredients/substances.js';
 import { isMixtureData, type IngredientData } from './mixture-types.js';
 import { SimpleHash } from './simple-hash.js';
+import type { StorageId } from './storage-id.js';
+import type { CellSchema } from 'tinybase';
 
 export const currentDataVersion = 1;
 
-/**
- * FileItem represents a stored mixture file. All types must be
- * compatible with Replicache's ReadonlyJSONValue.
- */
-export type StoredFileDataV1 = {
-	version: typeof currentDataVersion;
-	id: string;
-	name: string;
-	accessTime: number;
-	desc: string;
-	rootMixtureId: string;
-	ingredientDb: IngredientDbData;
+// Base type from schema (includes all fields including sync fields)
+export type DeserializedFileDataV1 = {
+	readonly version: 1;
+	readonly id: StorageId;
+	readonly name: string;
+	readonly accessTime: number;
+	readonly desc: string;
+	readonly rootMixtureId: string;
+	readonly ingredientDb: IngredientDbData;
+	readonly _ingredientHash: string;
 };
 
+export type SerializedFileDataV1 = Omit<DeserializedFileDataV1, 'ingredientDb'> & {
+	readonly ingredientJSON: string;
+};
+
+// Type to map TypeScript types to schema types
+type TypeToSchemaType<T> = T extends string
+	? 'string'
+	: T extends number
+		? 'number'
+		: T extends boolean
+			? 'boolean'
+			: never;
+
+// Type to ensure schema matches our data type
+type SchemaForType<T> = {
+	[K in keyof T]: {
+		type: TypeToSchemaType<T[K]>;
+		default?: T[K];
+	};
+};
+
+/**
+ * The schema for the file data as stored in the database.
+ */
+export const fileSchemaV1 = {
+	version: { type: 'number', default: currentDataVersion },
+	id: { type: 'string' },
+	name: { type: 'string' },
+	accessTime: { type: 'number' },
+	desc: { type: 'string' },
+	rootMixtureId: { type: 'string' },
+	ingredientJSON: { type: 'string' }, // serialized Map<string, IngredientData>
+	_ingredientHash: { type: 'string' }, // hash of the local file contents
+} as const satisfies Record<string, CellSchema> satisfies SchemaForType<SerializedFileDataV1>;
+
+export type FileSyncMeta = {
+	readonly remoteHash: string;
+	readonly remoteAccessTime: number;
+	readonly lastSyncAttempt: number;
+};
+
+export const fileSyncSchema = {
+	remoteHash: { type: 'string', default: '' }, // hash of the file contents on the server
+	remoteAccessTime: { type: 'number', default: 0 }, // last access time on the server
+	lastSyncAttempt: { type: 'number', default: 0 }, // last sync attempt time
+} as const satisfies Record<string, CellSchema> satisfies SchemaForType<FileSyncMeta>;
+
 export function getIngredientHash(
-	item: Pick<StoredFileDataV1, 'name' | 'desc' | 'ingredientDb'>,
+	item: Pick<DeserializedFileDataV1, 'name' | 'desc' | 'ingredientDb'>,
 ): string {
 	const h = new SimpleHash().update(item.name).update(item.desc);
 	for (const [_, ing] of item.ingredientDb) {
@@ -40,7 +87,7 @@ export function getIngredientHash(
 // serialized Map<string, IngredientData>
 export type IngredientDbData = Array<[string, IngredientData]>;
 
-export function isV1Data(data: unknown): data is StoredFileDataV1 {
+export function isV1Data(data: unknown): data is DeserializedFileDataV1 {
 	if (typeof data !== 'object' || data === null) {
 		return false;
 	}

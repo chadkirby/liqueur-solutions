@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
+import { currentDataVersion, type DeserializedFileDataV1 } from '$lib/data-format.js';
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
 import { componentId, Mixture } from '$lib/mixture.js';
@@ -19,7 +19,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 		{ name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
 	]);
 
-	const item: StoredFileDataV1 = {
+	const item: DeserializedFileDataV1 = {
 		version: currentDataVersion,
 		id: generateStorageId(),
 		accessTime: Date.now(),
@@ -27,6 +27,7 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 		desc: mixture.describe(),
 		rootMixtureId: mixture.id,
 		ingredientDb: mixture.serialize(),
+		_ingredientHash: mixture.getIngredientHash(name),
 	};
 
 	if (browser) {

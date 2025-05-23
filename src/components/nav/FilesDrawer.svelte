@@ -12,15 +12,16 @@
 	import Portal from 'svelte-portal';
 	import { deserializeFromStorage, filesDb } from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
-	import { toStorageId, type StorageId } from '$lib/storage-id.js';
+	import { isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
 	import {
 		currentDataVersion,
+		getIngredientHash,
 		isV0Data,
 		isV1Data,
-		type StoredFileDataV1,
+		type DeserializedFileDataV1,
 	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
@@ -35,7 +36,7 @@
 	let { mixtureStore }: Props = $props();
 
 	let onlyStars = $state(false);
-	let items = new SvelteMap<StorageId, StoredFileDataV1>();
+	let items = new SvelteMap<StorageId, DeserializedFileDataV1>();
 	let files = $derived(
 		Array.from(items.values()).filter((f, i) => {
 			if (i === 0) console.log('filtering', items.size);
@@ -131,6 +132,12 @@
 
 	let importFiles: FileList | undefined = $state();
 
+	async function writeUnlessExists(item: DeserializedFileDataV1): Promise<void> {
+		if (!isStorageId(item.id)) return;
+		if (await filesDb.hasEquivalentItem(item)) return;
+		await filesDb.write(item);
+	}
+
 	$effect(() => {
 		if (importFiles) {
 			const reader = new FileReader();
@@ -140,20 +147,23 @@
 					if ('href' in item && 'name' in item) {
 						const url = new URL(resolveRelativeUrl(item.href));
 						const { mixture } = deserializeFromUrl(url.searchParams);
-						const v1Data: StoredFileDataV1 = {
+						const desc = item.desc || mixture.describe();
+						const ingredientDb = mixture.serialize();
+						const v1Data: DeserializedFileDataV1 = {
 							id: componentId(),
 							name: item.name,
 							accessTime: item.accessTime || Date.now(),
 							version: currentDataVersion,
-							desc: item.desc || mixture.describe(),
+							desc,
 							rootMixtureId: mixture.id,
-							ingredientDb: mixture.serialize(),
+							ingredientDb,
+							_ingredientHash: getIngredientHash({ name: item.name, desc, ingredientDb }),
 						};
-						filesDb.writeIfNoEquivalentExists(v1Data, true);
+						writeUnlessExists(v1Data);
 						continue;
 					}
 					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data) filesDb.writeIfNoEquivalentExists(v1Data, true);
+					if (v1Data) writeUnlessExists(v1Data);
 				}
 			};
 			reader.readAsText(importFiles[0]);
