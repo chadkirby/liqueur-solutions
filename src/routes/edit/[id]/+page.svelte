@@ -56,6 +56,7 @@
 						desc: upd.mixture.describe(),
 						rootMixtureId: upd.mixture.id,
 						ingredientDb: upd.mixture.serialize(),
+						_ingredientHash: upd.mixture.getIngredientHash(upd.name),
 					});
 				});
 			} catch (err: any) {

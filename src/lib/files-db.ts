@@ -1,60 +1,39 @@
 import { isStorageId, type StorageId } from './storage-id.js';
-import { currentDataVersion, getIngredientHash, type StoredFileDataV1 } from '$lib/data-format.js';
+import {
+	currentDataVersion,
+	fileSchemaV1,
+	fileSyncSchema,
+	type DeserializedFileDataV1,
+	type FileSyncMeta,
+	type SerializedFileDataV1,
+} from '$lib/data-format.js';
 import { Mixture } from './mixture.js';
 import { browser } from '$app/environment';
-import { starredIds } from './starred-ids.svelte.js';
 import type { TablesSchema } from 'tinybase';
-import { createMergeableStore, type MergeableStore } from 'tinybase/with-schemas';
+import { createStore, type Store } from 'tinybase/with-schemas';
 import {
 	createLocalPersister,
 	type LocalPersister,
 } from 'tinybase/persisters/persister-browser/with-schemas';
-import {
-	createRemotePersister,
-	type RemotePersister,
-} from 'tinybase/persisters/persister-remote/with-schemas';
 
-type TinyTableRow = Omit<StoredFileDataV1, 'ingredientDb'> & {
-	ingredientDb: string; // serialized Map<string, IngredientData>
-	ingredientHash: string; // hash of the file contents
-};
-
-const tableSchema: TablesSchema = {
-	files: {
-		version: { type: 'number' },
-		id: { type: 'string' },
-		name: { type: 'string' },
-		accessTime: { type: 'number' },
-		desc: { type: 'string' },
-		rootMixtureId: { type: 'string' },
-		ingredientDb: { type: 'string' }, // serialized Map<string, IngredientData>
-		ingredientHash: { type: 'string' }, // hash of the file contents
-	},
-	stars: {
-		id: { type: 'string' },
-	},
-} as const;
+const tableSchema = {
+	files: fileSchemaV1,
+	sync: fileSyncSchema,
+} as const satisfies TablesSchema;
 
 const valueSchema = {
 	currentDataVersion: { type: 'number', default: currentDataVersion },
 } as const;
 
 export class FilesDb {
-	private store: MergeableStore<[typeof tableSchema, typeof valueSchema]> | null = browser
-		? createMergeableStore().setSchema(tableSchema, valueSchema)
+	private store: Store<[typeof tableSchema, typeof valueSchema]> | null = browser
+		? createStore().setSchema(tableSchema, valueSchema)
 		: null;
-	private remotePersister: RemotePersister<[typeof tableSchema, typeof valueSchema]> | null = null;
 	private localPersister: LocalPersister<[typeof tableSchema, typeof valueSchema]> | null = null;
-	private starsListenerId: string | null = null;
 
 	constructor() {
 		if (browser && this.store) {
 			this.localPersister = createLocalPersister(this.store, 'files-db');
-			this.starsListenerId = this.store.addRowIdsListener('stars', (store) => {
-				const ids = store.getRowIds('stars');
-				starredIds.length = 0;
-				starredIds.push(...ids);
-			});
 		}
 	}
 
@@ -68,58 +47,29 @@ export class FilesDb {
 		await this.localPersister.load();
 		const files = this.store.getRowIds('files');
 		console.log('FilesDb: loaded', files.length, 'files');
-		const initialStars = this.store.getRowIds('stars');
-		starredIds.length = 0;
-		starredIds.push(...initialStars);
 	}
 	/**
 	 * Begin syncing to remote R2 store. Call after user auth is ready.
 	 */
-	async startSync(): Promise<void> {
+	async saveMixtureToCloud(data: DeserializedFileDataV1): Promise<void> {
 		if (!browser || !this.store) return;
-		this.remotePersister ??= createRemotePersister(
-			this.store,
-			'/api/tinybase/load',
-			'/api/tinybase/save',
-			300,
-			(e) => console.error('TinyBase sync error', e),
-		);
-
-		// Begin auto-persist and auto-load loops
-		await this.remotePersister.startAutoPersisting();
+		const row = this.store.getRow('files', data.id);
 	}
 
-	/**
-	 * Stop syncing to remote store (leave local store intact).
-	 */
-	async stopSync(): Promise<void> {
-		if (this.remotePersister) {
-			await this.remotePersister.stopAutoPersisting();
-		}
-	}
 	close(): void {
 		if (this.localPersister) {
 			this.localPersister.stopAutoPersisting();
 			this.localPersister.destroy?.();
 			this.localPersister = null;
 		}
-		if (this.remotePersister) {
-			this.remotePersister.stopAutoPersisting();
-			this.remotePersister.destroy?.();
-			this.remotePersister = null;
-		}
-		if (this.store) {
-			if (this.starsListenerId) this.store.delListener(this.starsListenerId);
-		}
 	}
-	async runJanitor(): Promise<void> {
+	async runJanitor(stars: Set<string>): Promise<void> {
 		const MAX = 100;
 		if (!this.store) return;
 		try {
 			const ids = this.store.getRowIds('files');
-			const stars = new Set(this.store.getRowIds('stars'));
 			for (const id of ids.filter((i) => !stars.has(i)).slice(MAX)) {
-				this.delete(id);
+				await this.delete(id);
 			}
 		} catch (e) {
 			console.error('FilesDb janitor error', e);
@@ -130,11 +80,10 @@ export class FilesDb {
 		return this.store.getRow('files', id) !== undefined;
 	}
 
-	async hasEquivalentItem(item: StoredFileDataV1): Promise<boolean> {
+	async hasEquivalentItem(item: DeserializedFileDataV1): Promise<boolean> {
 		if (!isStorageId(item.id) || !this.store) return false;
-		const target = getIngredientHash(item);
 		for (const e of this.scan().values()) {
-			if (e.ingredientHash === target) return true;
+			if (e._ingredientHash === item._ingredientHash) return true;
 		}
 		return false;
 	}
@@ -147,7 +96,7 @@ export class FilesDb {
 		const row = this.store.getRow('files', id);
 		if (!row) return null;
 		try {
-			return this.tinyRowToData(row as TinyTableRow);
+			return this.deserialize(row as SerializedFileDataV1);
 		} catch (e) {
 			console.warn(`FilesDb: failed to parse JSON for id ${id}`, e);
 			return null;
@@ -156,84 +105,55 @@ export class FilesDb {
 	/**
 	 * Write (upsert) a file record into the TinyBase table.
 	 */
-	async write(item: StoredFileDataV1): Promise<void> {
+	async write(item: DeserializedFileDataV1, syncMeta?: FileSyncMeta): Promise<void> {
 		if (!isStorageId(item.id) || !this.store) return;
-		this.store.setRow('files', item.id, this.dataToTinyRow(item));
-	}
-
-	private dataToTinyRow(item: StoredFileDataV1): TinyTableRow {
-		const ingredientDb = JSON.stringify(item.ingredientDb);
-		return {
-			...item,
-			ingredientDb,
-			ingredientHash: getIngredientHash(item),
-		};
-	}
-
-	private tinyRowToData(item: TinyTableRow): StoredFileDataV1 & { ingredientHash: string } {
-		return {
-			...item,
-			ingredientDb: JSON.parse(item.ingredientDb),
-		};
-	}
-
-	async writeIfNoEquivalentExists(item: StoredFileDataV1, starred = false): Promise<void> {
-		if (!isStorageId(item.id) || !this.store) return;
-		if (!(await this.hasEquivalentItem(item))) {
-			await this.write(item);
-			if (starred) await this.addStar(item.id);
+		this.store.setRow('files', item.id, this.serialize(item));
+		if (syncMeta) {
+			this.store.setRow('sync', item.id, syncMeta);
 		}
 	}
+
+	private serialize(item: DeserializedFileDataV1): SerializedFileDataV1 {
+		const { ingredientDb, ...rest } = item;
+		return {
+			...rest,
+			ingredientJSON: JSON.stringify(ingredientDb),
+		};
+	}
+
+	private deserialize(item: SerializedFileDataV1): DeserializedFileDataV1 {
+		const { ingredientJSON, ...rest } = item;
+		return {
+			...rest,
+			ingredientDb: JSON.parse(ingredientJSON),
+		};
+	}
+
 	async delete(id: StorageId): Promise<void> {
 		if (!isStorageId(id) || !this.store) return;
 		this.store.delRow('files', id);
-		this.store.delRow('stars', id);
-	}
-	async toggleStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id) || !this.store) return;
-		const s = this.store.getRowIds('stars');
-		if (s.includes(id)) await this.removeStar(id);
-		else await this.addStar(id);
-	}
-	async addStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id) || !this.store) return;
-		const s = this.store.getRowIds('stars');
-		if (!s.includes(id)) this.store.setRow('stars', id, {});
-	}
-	async removeStar(id: StorageId): Promise<void> {
-		if (!isStorageId(id) || !this.store) return;
-		const s = this.store.getRowIds('stars');
-		if (s.includes(id)) this.store.delRow('stars', id);
 	}
 	/**
-	 * Retrieve all stored files, ordering starred first, then by sortBy descending.
+	 * Retrieve all stored files, ordering by sortBy descending.
 	 */
-	private scan(sortBy: keyof StoredFileDataV1 = 'accessTime') {
-		const m = new Map<StorageId, ReturnType<FilesDb['tinyRowToData']>>();
-		if (!this.store) return m;
+	private scan(sortBy: keyof SerializedFileDataV1 = 'accessTime', descending = true) {
+		const files = new Map<StorageId, DeserializedFileDataV1>();
+		if (!this.store) return files;
 		// Gather all file IDs
-		const ids = this.store.getRowIds('files');
-		const stars = new Set(this.store.getRowIds('stars'));
+		const ids = this.store.getSortedRowIds('files', sortBy, descending);
 		for (const id of ids) {
 			const row = this.store.getRow('files', id);
 			if (!row) continue;
 			try {
-				m.set(id, this.tinyRowToData(row as TinyTableRow));
+				files.set(id, this.deserialize(row as SerializedFileDataV1));
 			} catch (e) {
 				console.warn(`FilesDb: failed to parse JSON for id ${id}`, e); // Log the error for better debugging
 			}
 		}
-		// Sort: starred first, then by sortBy descending
-		const arr = [...m.values()].sort((a, b) => {
-			const aStar = stars.has(a.id) ? 0 : 1;
-			const bStar = stars.has(b.id) ? 0 : 1;
-			if (aStar !== bStar) return aStar - bStar;
-			return a[sortBy] < b[sortBy] ? 1 : a[sortBy] > b[sortBy] ? -1 : 0;
-		});
-		return new Map(arr.map((i) => [i.id, i]));
+		return files;
 	}
 
-	subscribe(cb: (i: StoredFileDataV1, idx: number) => void): (() => void) | null {
+	subscribe(cb: (i: DeserializedFileDataV1, idx: number) => void): (() => void) | null {
 		if (!browser || !this.store) return null;
 		const emit = () => {
 			let idx = 0;
@@ -241,10 +161,8 @@ export class FilesDb {
 		};
 		emit();
 		const fL = this.store.addTableListener('files', emit);
-		const sL = this.store.addTableListener('stars', emit);
 		return () => {
 			this.store!.delListener(fL);
-			this.store!.delListener(sL);
 		};
 	}
 }

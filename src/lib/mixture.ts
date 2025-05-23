@@ -32,7 +32,7 @@ import {
 	type MixtureAnalysis,
 	type MixtureData,
 } from './mixture-types.js';
-import type { IngredientDbData } from './data-format.js';
+import { getIngredientHash, type IngredientDbData } from './data-format.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -101,6 +101,10 @@ export class Mixture implements CommonComponent {
 
 	get size() {
 		return this.ingredientList.length;
+	}
+
+	getIngredientHash(name: string) {
+		return getIngredientHash({ name, desc: this.describe(), ingredientDb: this.serialize() });
 	}
 
 	getIngredient(id: string) {

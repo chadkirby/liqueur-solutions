@@ -1,8 +1,10 @@
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
-import type { StoredFileDataV0, StoredFileDataV1, V0MixtureData } from '$lib/data-format.js';
+import type { StoredFileDataV0, DeserializedFileDataV1, V0MixtureData } from '$lib/data-format.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 
-export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>): StoredFileDataV1 {
+export function portV0DataToV1(
+	data: Pick<StoredFileDataV0, 'mixture' | 'desc'>,
+): DeserializedFileDataV1 {
 	const { components } = data.mixture.data;
 	const mixture = makeMixture(components);
 	return {
