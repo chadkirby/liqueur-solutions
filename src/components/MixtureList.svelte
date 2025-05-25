@@ -2,7 +2,7 @@
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
-	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
+	import { StarOutline, StarSolid, StarHalfStrokeSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import type { ChangeEventHandler } from 'svelte/elements';
@@ -12,10 +12,8 @@
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	import { getContext } from 'svelte';
-	import type { Writable } from 'svelte/store';
-	import type { Clerk } from '@clerk/clerk-js';
-	import type { UserResource } from '@clerk/types';
-	import { starredIds } from '$lib/starred-ids.svelte.js';
+	import { cloudStoredIds } from '$lib/starred-ids.svelte.js';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -24,10 +22,7 @@
 	let { mixtureStore }: Props = $props();
 
 	// Get Clerk stores from context
-	const clerkStores = getContext<{
-		instance: Writable<Clerk | null>;
-		user: Writable<UserResource | null>;
-	}>('clerk');
+	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
 	const clerkInstance = clerkStores.instance; // Get the store itself
 	const clerkUser = clerkStores.user; // Get the store itself
 
@@ -47,11 +42,19 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let isStarred = $derived(starredIds.includes(storeId));
+	let isStarred = $derived(cloudStoredIds.has(storeId));
+	let isDirty = $derived(
+		cloudStoredIds.has(storeId) &&
+			mixtureStore.ingredientHash !== cloudStoredIds.get(storeId)!.ingredientHash,
+	);
 
-	function handleToggleStar(event?: Event) {
+	async function handleStar(event?: Event) {
 		event?.preventDefault();
-		filesDb.toggleStar(storeId);
+		if (isStarred && isDirty) {
+			await filesDb.saveMixtureToCloud(storeId);
+		} else {
+			await filesDb.toggleStar(storeId);
+		}
 	}
 
 	function handleSignIn() {
@@ -82,8 +85,13 @@
 			mb-2
 			"
 	>
-		<Button onclick={handleToggleStar}>
-			{#if isStarred}
+		<Button onclick={handleStar}>
+			{#if isStarred && isDirty}
+				<Tooltip color="default" offset={6} triggeredBy="#dirty-star">
+					This mixture has unsaved changes
+				</Tooltip>
+				<StarHalfStrokeSolid id="dirty-star" />
+			{:else if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved
 				</Tooltip>
