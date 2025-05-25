@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { deserializeFromStorage, getName } from '$lib/files-db.js';
+	import { filesDb, getName } from '$lib/files-db.js';
 	import { getTotals } from '$lib/utils.js';
 	import MixtureList from '../../../components/MixtureList.svelte';
 	import BottomNav from '../../../components/nav/BottomNav.svelte';
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { Spinner } from 'svelte-5-ui-lib';
-	import { filesDb } from '$lib/files-db.js';
 	import { onDestroy } from 'svelte';
-	import { currentDataVersion } from '$lib/data-format.js';
 	import { page } from '$app/state';
 
 	// UI state
@@ -29,7 +27,7 @@
 
 		(async () => {
 			try {
-				const fetched = await deserializeFromStorage(id);
+				const fetched = await filesDb.deserializeFromStorage(id);
 				if (cancelled) return;
 				if (!fetched.isValid) throw new Error('Invalid mixture data loaded.');
 
@@ -45,18 +43,14 @@
 					name: mixtureName,
 					mixture: fetched,
 					totals,
+					ingredientHash: fetched.getIngredientHash(mixtureName),
 				});
 
 				unsubscribeMixture = mixtureStore.subscribe((upd) => {
 					filesDb.write({
-						version: currentDataVersion,
 						id: upd.storeId,
-						accessTime: Date.now(),
 						name: upd.name,
-						desc: upd.mixture.describe(),
-						rootMixtureId: upd.mixture.id,
-						ingredientDb: upd.mixture.serialize(),
-						_ingredientHash: upd.mixture.getIngredientHash(upd.name),
+						mixture: upd.mixture,
 					});
 				});
 			} catch (err: any) {

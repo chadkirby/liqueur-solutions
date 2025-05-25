@@ -4,6 +4,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
+import type { SerializedFileDataV1 } from '$lib/data-format.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
@@ -61,17 +62,57 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 		throw error(401, 'Unauthorized');
 	}
 
-	const item = await request.json();
-	console.log(`[Push] Received item for id: ${mixtureId}`, item);
+	// get the X-Last-Sync-Time header as a Date
+	const uploadedBefore =
+		request.headers.get('X-Last-Sync-Time') && Number(request.headers.get('X-Last-Sync-Time'))
+			? new Date(Number(request.headers.get('X-Last-Sync-Time')))
+			: new Date();
+
+	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
+
+	const head = await bucket.head(`files/${safeId}/${mixtureId}`);
+	if (head && head.uploaded > uploadedBefore) {
+		// If the file was modified since the last sync, return 412 Precondition Failed
+		console.warn(
+			`[PUT] Precondition failed for id: ${mixtureId}. File was modified since last sync.`,
+			head.uploaded,
+			uploadedBefore,
+		);
+		throw error(
+			412,
+			`This file was modified on the server at ${head.uploaded.toDateString()} ${head.uploaded.toTimeString()}, which is after your last sync at ${uploadedBefore.toDateString()} ${uploadedBefore.toTimeString()}. Do you want to overwrite the newer file on the server?`,
+		);
+	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.put(`files/${safeId}/${mixtureId}`, JSON.stringify(item));
+		const item = (await request.json()) as SerializedFileDataV1;
+		console.log(`[PUT] Received item for id: ${mixtureId}`, item);
+
+		const obj = await bucket.put(`files/${safeId}/${mixtureId}`, JSON.stringify(item), {
+			customMetadata: {
+				ingredientHash: item._ingredientHash,
+				userAgent: request.headers.get('user-agent') || '',
+			},
+		});
+		if (!obj) {
+			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
+			throw error(500, `Failed to put item for id: ${mixtureId}`);
+		}
+		console.log(
+			`[PUT] Successfully put item for id: ${mixtureId}`,
+			obj.uploaded,
+			typeof obj.uploaded,
+			Number(obj.uploaded),
+		);
+		return json({
+			ok: true,
+			lastSyncTime: Number(obj.uploaded) || Date.now(),
+			lastSyncHash: item._ingredientHash,
+		});
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
+		console.error(`[PUT] Error processing push:`, err.message, err);
 		throw error(500, `Failed to process push: ${err.message}`);
 	}
-	return json({ ok: true });
 };
 
 // delete the file with the given id

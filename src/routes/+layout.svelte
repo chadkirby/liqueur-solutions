@@ -9,18 +9,31 @@
 
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
+	import { setCloudStoredIds } from '$lib/starred-ids.svelte.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
 
 	interface Props {
 		children?: Snippet;
+		data: {
+			starredIds: Array<
+				[
+					string,
+					{
+						ingredientHash: string;
+					},
+				]
+			>;
+		};
 	}
 
-	let { children }: Props = $props();
+	let { children, data }: Props = $props();
 	console.log('Clerk layout');
 	// 2) Make them available to all descendants via context
-	setContext('clerk', { instance: clerkInstance, user: clerkUser });
+	setContext<ClerkContext>(CLERK_CONTEXT_KEY, { instance: clerkInstance, user: clerkUser });
+	setCloudStoredIds(data.starredIds);
 
 	onMount(() => {
 		console.log('Clerk mount');
@@ -39,16 +52,16 @@
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
 				clerkUser.set(user ?? null);
 				if (user) {
-					filesDb.startSync();
+					setCloudStoredIds(data.starredIds);
 				} else {
-					filesDb.stopSync();
+					setCloudStoredIds([]);
 				}
 			});
 		});
 
 		// schedule the janitor task to run once
 		const janitor = setTimeout(() => {
-			filesDb.runJanitor();
+			filesDb.runJanitor(new Set(data.starredIds.map(([id]) => id)));
 		}, 2000);
 
 		// 7) Clean up when this layout is unmounted
@@ -57,7 +70,6 @@
 			if (unsubscribeFromClerk) {
 				unsubscribeFromClerk();
 			}
-			filesDb.stopSync();
 		};
 	});
 </script>

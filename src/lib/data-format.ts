@@ -54,31 +54,29 @@ export const fileSchemaV1 = {
 } as const satisfies Record<string, CellSchema> satisfies SchemaForType<SerializedFileDataV1>;
 
 export type FileSyncMeta = {
-	readonly remoteHash: string;
-	readonly remoteAccessTime: number;
-	readonly lastSyncAttempt: number;
+	readonly lastSyncTime: number;
+	readonly lastSyncHash: string;
 };
 
 export const fileSyncSchema = {
-	remoteHash: { type: 'string', default: '' }, // hash of the file contents on the server
-	remoteAccessTime: { type: 'number', default: 0 }, // last access time on the server
-	lastSyncAttempt: { type: 'number', default: 0 }, // last sync attempt time
+	lastSyncTime: { type: 'number', default: 0 }, // last successful sync time
+	lastSyncHash: { type: 'string', default: '' }, // hash of the file contents at last sync
 } as const satisfies Record<string, CellSchema> satisfies SchemaForType<FileSyncMeta>;
 
 export function getIngredientHash(
 	item: Pick<DeserializedFileDataV1, 'name' | 'desc' | 'ingredientDb'>,
 ): string {
 	const h = new SimpleHash().update(item.name).update(item.desc);
-	for (const [_, ing] of item.ingredientDb) {
-		if (isMixtureData(ing)) {
-			for (const { id, name, mass, notes } of ing.ingredients) {
+	for (const [_, ingredient] of item.ingredientDb) {
+		if (isMixtureData(ingredient)) {
+			for (const { id, name, mass, notes } of ingredient.ingredients) {
 				h.update(name)
 					.update(mass.toString())
 					.update(notes || '');
 				if (isSubstanceIid(id)) h.update(id);
 			}
 		} else {
-			h.update(ing.id);
+			h.update(ingredient.id);
 		}
 	}
 	return h.toString();

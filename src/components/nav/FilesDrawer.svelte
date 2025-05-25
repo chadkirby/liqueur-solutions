@@ -10,25 +10,19 @@
 		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { deserializeFromStorage, filesDb } from '$lib/files-db.js';
+	import { filesDb } from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import {
-		currentDataVersion,
-		getIngredientHash,
-		isV0Data,
-		isV1Data,
-		type DeserializedFileDataV1,
-	} from '$lib/data-format.js';
+	import { isV0Data, isV1Data, type DeserializedFileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
-	import { componentId } from '$lib/mixture.js';
+	import { componentId, Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
-	import { starredIds } from '$lib/starred-ids.svelte.js';
+	import { cloudStoredIds } from '$lib/starred-ids.svelte.js';
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
@@ -40,12 +34,12 @@
 	let files = $derived(
 		Array.from(items.values()).filter((f, i) => {
 			if (i === 0) console.log('filtering', items.size);
-			return !onlyStars || starredIds.includes(f.id);
+			return !onlyStars || cloudStoredIds.has(f.id);
 		}),
 	);
 
 	// Subscribe to file changes
-	const unsubscribe = filesDb.subscribe((item, i) => {
+	const unsubscribe = filesDb.subscribeToFiles((item, i) => {
 		if (i === 0) items.clear();
 		items.set(item.id, item);
 	});
@@ -107,7 +101,7 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = await deserializeFromStorage(id);
+			const mixture = await filesDb.deserializeFromStorage(id);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
@@ -120,7 +114,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files.filter((f) => starredIds.includes(f.id));
+		const data = files.filter((f) => cloudStoredIds.has(f.id));
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -132,9 +126,13 @@
 
 	let importFiles: FileList | undefined = $state();
 
-	async function writeUnlessExists(item: DeserializedFileDataV1): Promise<void> {
+	async function writeUnlessExists(item: {
+		id: string;
+		name: string;
+		mixture: Mixture;
+	}): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		if (await filesDb.hasEquivalentItem(item)) return;
+		if (await filesDb.hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
 		await filesDb.write(item);
 	}
 
@@ -147,23 +145,17 @@
 					if ('href' in item && 'name' in item) {
 						const url = new URL(resolveRelativeUrl(item.href));
 						const { mixture } = deserializeFromUrl(url.searchParams);
-						const desc = item.desc || mixture.describe();
-						const ingredientDb = mixture.serialize();
-						const v1Data: DeserializedFileDataV1 = {
-							id: componentId(),
-							name: item.name,
-							accessTime: item.accessTime || Date.now(),
-							version: currentDataVersion,
-							desc,
-							rootMixtureId: mixture.id,
-							ingredientDb,
-							_ingredientHash: getIngredientHash({ name: item.name, desc, ingredientDb }),
-						};
-						writeUnlessExists(v1Data);
+						writeUnlessExists({ id: componentId(), name: item.name, mixture });
 						continue;
 					}
 					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data) writeUnlessExists(v1Data);
+					if (v1Data)
+						writeUnlessExists({
+							id: v1Data.id,
+							name: v1Data.name,
+							mixture: Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb),
+						});
+					else console.warn('Invalid file format', item);
 				}
 			};
 			reader.readAsText(importFiles[0]);
@@ -236,7 +228,7 @@
 					>
 						<div class="flex flex-row items-center gap-2">
 							<Button onclick={() => filesDb.toggleStar(id)}>
-								{#if starredIds.includes(id)}
+								{#if cloudStoredIds.has(id)}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />

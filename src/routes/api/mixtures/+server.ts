@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		throw error(401, 'Unauthorized');
 	}
 
-	// Authenticated user: fetch data from R2, compute patch, and new cookie fingerprint.
+	// Authenticated user: fetch data from R2
 	try {
 		// Only fetch and create patch if the version changed
 		// Sanitize userId for safe inclusion in R2 object keys: only alphanumeric and underscore.
