@@ -151,7 +151,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	serialize(): IngredientDbData {
-		const rootData: [string, MixtureData] = [this.id, this.serializeMixtureData()];
+		const rootData = [this.id, this.serializeMixtureData()] as const;
 		const ingredientData: IngredientDbData = this.ingredientList.flatMap(({ id, item }) => {
 			if (item instanceof Mixture) {
 				return [[id, item.serializeMixtureData()], ...item.serialize()];
@@ -161,7 +161,7 @@ export class Mixture implements CommonComponent {
 			}
 			throw new Error('Invalid ingredient');
 		});
-		return [rootData, ...ingredientData];
+		return [[...rootData], ...ingredientData];
 	}
 
 	analyze(precision = 0): MixtureAnalysis {

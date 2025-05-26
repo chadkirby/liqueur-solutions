@@ -2,7 +2,7 @@ import { isSubstanceIid } from './ingredients/substances.js';
 import { isMixtureData, type IngredientData } from './mixture-types.js';
 import { SimpleHash } from './simple-hash.js';
 import type { StorageId } from './storage-id.js';
-import type { CellSchema } from 'tinybase';
+import { z } from 'zod';
 
 export const currentDataVersion = 1;
 
@@ -18,50 +18,53 @@ export type DeserializedFileDataV1 = {
 	readonly _ingredientHash: string;
 };
 
-export type SerializedFileDataV1 = Omit<DeserializedFileDataV1, 'ingredientDb'> & {
-	readonly ingredientJSON: string;
-};
+export const zodIngredientDbItemSchema = z.record(
+	z.union([
+		z.object({
+			type: z.literal('mixture'),
+			ingredients: z.array(
+				z.object({
+					id: z.string(),
+					name: z.string(),
+					mass: z.number(),
+					notes: z.string().optional(),
+				}),
+			),
+		}),
+		z.object({
+			type: z.literal('substance'),
+			id: z.string(),
+			name: z.string(),
+			mass: z.number(),
+			notes: z.string().optional(),
+		}),
+	]),
+);
 
-// Type to map TypeScript types to schema types
-type TypeToSchemaType<T> = T extends string
-	? 'string'
-	: T extends number
-		? 'number'
-		: T extends boolean
-			? 'boolean'
-			: never;
+export const fileSchemaV1 = z
+	.object({
+		version: z.literal(currentDataVersion),
+		id: z.string(),
+		name: z.string(),
+		accessTime: z.number(),
+		desc: z.string(),
+		rootMixtureId: z.string(),
+		ingredientJSON: z.string(), // serialized Map<string, IngredientData>
+		_ingredientHash: z.string(),
+	})
+	.strict();
 
-// Type to ensure schema matches our data type
-type SchemaForType<T> = {
-	[K in keyof T]: {
-		type: TypeToSchemaType<T[K]>;
-		default?: T[K];
-	};
-};
+export type SerializedFileDataV1 = z.infer<typeof fileSchemaV1>;
 
-/**
- * The schema for the file data as stored in the database.
- */
-export const fileSchemaV1 = {
-	version: { type: 'number', default: currentDataVersion },
-	id: { type: 'string' },
-	name: { type: 'string' },
-	accessTime: { type: 'number' },
-	desc: { type: 'string' },
-	rootMixtureId: { type: 'string' },
-	ingredientJSON: { type: 'string' }, // serialized Map<string, IngredientData>
-	_ingredientHash: { type: 'string' }, // hash of the local file contents
-} as const satisfies Record<string, CellSchema> satisfies SchemaForType<SerializedFileDataV1>;
+export const fileSyncSchema = z
+	.object({
+		id: z.string(), // storage ID of the file
+		lastSyncTime: z.number().default(0), // last successful sync time
+		lastSyncHash: z.string().default(''), // hash of the file contents at last sync
+	})
+	.strict();
 
-export type FileSyncMeta = {
-	readonly lastSyncTime: number;
-	readonly lastSyncHash: string;
-};
-
-export const fileSyncSchema = {
-	lastSyncTime: { type: 'number', default: 0 }, // last successful sync time
-	lastSyncHash: { type: 'string', default: '' }, // hash of the file contents at last sync
-} as const satisfies Record<string, CellSchema> satisfies SchemaForType<FileSyncMeta>;
+export type FileSyncMeta = z.infer<typeof fileSyncSchema>;
 
 export function getIngredientHash(
 	item: Pick<DeserializedFileDataV1, 'name' | 'desc' | 'ingredientDb'>,
@@ -82,8 +85,7 @@ export function getIngredientHash(
 	return h.toString();
 }
 
-// serialized Map<string, IngredientData>
-export type IngredientDbData = Array<[string, IngredientData]>;
+export type IngredientDbData = ReadonlyArray<[StorageId, IngredientData]>;
 
 export function isV1Data(data: unknown): data is DeserializedFileDataV1 {
 	if (typeof data !== 'object' || data === null) {

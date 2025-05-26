@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
 import { componentId, Mixture } from '$lib/mixture.js';
+import { writeTempFile } from '$lib/persistence.svelte.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { redirect } from '@sveltejs/kit';
 
@@ -25,9 +26,7 @@ export async function load(): Promise<never> {
 	} as const;
 
 	if (browser) {
-		const { filesDb } = await import('$lib/files-db.js');
-		await filesDb.init();
-		await filesDb.write(item);
+		await writeTempFile(item);
 	}
 	throw redirect(303, `/edit/${item.id}`);
 }

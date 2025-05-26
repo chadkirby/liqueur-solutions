@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
 	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
@@ -10,53 +9,53 @@
 		StarOutline,
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
-	import { filesDb } from '$lib/files-db.js';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
 	import { isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, type DeserializedFileDataV1 } from '$lib/data-format.js';
+	import { isV0Data, isV1Data } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
-	import { cloudStoredIds } from '$lib/starred-ids.svelte.js';
+	import { SvelteSet } from 'svelte/reactivity';
+	import {
+		TempFiles,
+		SyncMeta,
+		deserialize,
+		deleteTempFile,
+		hasEquivalentItem,
+		writeTempFile,
+		deserializeFromStorage,
+		toggleStar,
+	} from '$lib/persistence.svelte.js';
+
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
+	const tempFiles = $derived(TempFiles?.find({}, { sort: { accessTime: -1 } }).map(deserialize));
+	const fileSyncMeta = $derived(SyncMeta?.find({}, { sort: { lastSyncTime: -1 } }).fetch());
+	let cloudSyncedIds = $derived(new SvelteSet(fileSyncMeta?.map((meta) => meta.id)));
+
 	let { mixtureStore }: Props = $props();
 
 	let onlyStars = $state(false);
-	let items = new SvelteMap<StorageId, DeserializedFileDataV1>();
 	let files = $derived(
-		Array.from(items.values()).filter((f, i) => {
-			if (i === 0) console.log('filtering', items.size);
-			return !onlyStars || cloudStoredIds.has(f.id);
-		}),
+		tempFiles?.filter((f, i) => {
+			if (i === 0) console.log('filtering', tempFiles?.length);
+			return !onlyStars || cloudSyncedIds.has(f.id);
+		}) || [],
 	);
-
-	// Subscribe to file changes
-	const unsubscribe = filesDb.subscribeToFiles((item, i) => {
-		if (i === 0) items.clear();
-		items.set(item.id, item);
-	});
-
-	// Clean up subscription
-	if (import.meta.hot) {
-		import.meta.hot.dispose(() => {
-			if (unsubscribe) unsubscribe();
-		});
-	}
 
 	let drawerStatus = $derived(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
-		filesDb.delete(id);
+		deleteTempFile(id);
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -101,7 +100,7 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = await filesDb.deserializeFromStorage(id);
+			const mixture = await deserializeFromStorage(id);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
@@ -114,7 +113,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files.filter((f) => cloudStoredIds.has(f.id));
+		const data = files?.filter((f) => cloudSyncedIds.has(f.id)) || [];
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -132,8 +131,8 @@
 		mixture: Mixture;
 	}): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		if (await filesDb.hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
-		await filesDb.write(item);
+		if (await hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
+		await writeTempFile(item);
 	}
 
 	$effect(() => {
@@ -227,8 +226,8 @@
 						"
 					>
 						<div class="flex flex-row items-center gap-2">
-							<Button onclick={() => filesDb.toggleStar(id)}>
-								{#if cloudStoredIds.has(id)}
+							<Button onclick={() => toggleStar(id)}>
+								{#if cloudSyncedIds.has(id)}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />
