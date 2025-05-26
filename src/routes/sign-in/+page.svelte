@@ -72,8 +72,7 @@
 </div>
 
 <style>
-	/* Optional: Add styles if needed */
-	.clerk-sign-in-container {
-		/* Add any container-specific styles */
-	}
+	/* Optional: Add styles if needed
+	.clerk-sign-in-container {}
+	*/
 </style>

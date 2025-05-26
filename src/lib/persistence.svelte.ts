@@ -54,17 +54,17 @@ export async function toggleStar(id: StorageId): Promise<boolean> {
 	if (!SyncMeta) return false;
 	const starredResp = await fetch(`../api/mixtures/${id}/star`);
 	if (starredResp.ok) {
-		await delMixtureFromCloud(id);
+		await deleteCloudFile(id);
 		return false; // Unstarred successfully
 	} else if (starredResp.status === 404) {
-		await saveMixtureToCloud(id);
+		await writeCloudFile(id);
 		return true; // Starred successfully
 	} else {
 		throw new Error('FilesDb: Failed to toggle star for id ' + id + ': ' + starredResp.statusText);
 	}
 }
 
-export async function saveMixtureToCloud(id: StorageId): Promise<void> {
+export async function writeCloudFile(id: StorageId): Promise<void> {
 	if (!TempFiles) return;
 	const file = TempFiles.findOne({ id });
 	if (!file) {
@@ -80,7 +80,7 @@ export async function saveMixtureToCloud(id: StorageId): Promise<void> {
 	await putMx(serialized);
 }
 
-async function delMixtureFromCloud(id: StorageId): Promise<void> {
+async function deleteCloudFile(id: StorageId): Promise<void> {
 	if (!SyncMeta) return;
 	const response = await fetch(`../api/mixtures/${id}`, {
 		method: 'DELETE',
@@ -145,7 +145,7 @@ async function putMx(data: SerializedFileDataV1): Promise<void> {
 	}
 }
 
-async function getMx(id: StorageId): Promise<DeserializedFileDataV1 | null> {
+async function readCloudFile(id: StorageId): Promise<DeserializedFileDataV1 | null> {
 	if (!SyncMeta) return null;
 	const response = await fetch(`../api/mixtures/${id}`);
 	if (!response.ok) {
@@ -192,12 +192,6 @@ export async function runJanitor(stars: Set<string>): Promise<void> {
 	} catch (e) {
 		console.error('FilesDb janitor error', e);
 	}
-}
-
-async function hasId(id: StorageId): Promise<boolean> {
-	if (!TempFiles) return false;
-	if (!isStorageId(id)) return false;
-	return TempFiles.findOne({ id }) !== undefined;
 }
 
 export async function hasEquivalentItem(ingredientHash: string): Promise<boolean> {
@@ -257,7 +251,7 @@ export function deleteTempFile(id: StorageId): void {
 	TempFiles.removeOne({ id });
 }
 
-export async function deserializeFromStorage(id: string): Promise<Mixture> {
+export async function readFile(id: string): Promise<Mixture> {
 	if (!isStorageId(id)) throw new Error('Invalid id');
 	const f = await readTempFile(id);
 	if (f) return Mixture.deserialize(f.rootMixtureId, f.ingredientDb);
@@ -265,7 +259,7 @@ export async function deserializeFromStorage(id: string): Promise<Mixture> {
 	if (browser) {
 		// If we didn't find it in the local store, try to fetch it from the cloud
 		console.warn('FilesDb: Mixture not found in local store, fetching from cloud');
-		const mx = await getMx(id);
+		const mx = await readCloudFile(id);
 		if (!mx) {
 			throw new Error(`FilesDb: No row found for id ${id}`);
 		}

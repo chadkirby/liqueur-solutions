@@ -6,7 +6,7 @@
 	import { Spinner } from 'svelte-5-ui-lib';
 	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
-	import { deserializeFromStorage, getName, writeTempFile } from '$lib/persistence.svelte.js';
+	import { readFile, getName, writeTempFile } from '$lib/persistence.svelte.js';
 
 	// UI state
 	let mixtureName = $state<string>('');
@@ -27,7 +27,7 @@
 
 		(async () => {
 			try {
-				const fetched = await deserializeFromStorage(id);
+				const fetched = await readFile(id);
 				if (cancelled) return;
 				if (!fetched.isValid) throw new Error('Invalid mixture data loaded.');
 

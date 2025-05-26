@@ -15,6 +15,7 @@ export function portV0DataToV1(
 		desc: data.desc || mixture.describe(),
 		rootMixtureId: mixture.id,
 		ingredientDb: mixture.serialize(),
+		_ingredientHash: mixture.getIngredientHash(data.mixture.name),
 	};
 }
 

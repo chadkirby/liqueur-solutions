@@ -13,7 +13,7 @@
 	import { getContext } from 'svelte';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { saveMixtureToCloud, SyncMeta, toggleStar } from '$lib/persistence.svelte.js';
+	import { writeCloudFile, SyncMeta, toggleStar } from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -50,7 +50,7 @@
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
 		if (isStarred && isDirty) {
-			await saveMixtureToCloud(storeId);
+			await writeCloudFile(storeId);
 		} else {
 			await toggleStar(storeId);
 		}
