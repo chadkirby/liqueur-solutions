@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { filesDb, getName } from '$lib/files-db.js';
 	import { getTotals } from '$lib/utils.js';
 	import MixtureList from '../../../components/MixtureList.svelte';
 	import BottomNav from '../../../components/nav/BottomNav.svelte';
@@ -7,6 +6,7 @@
 	import { Spinner } from 'svelte-5-ui-lib';
 	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
+	import { deserializeFromStorage, getName, writeTempFile } from '$lib/persistence.svelte.js';
 
 	// UI state
 	let mixtureName = $state<string>('');
@@ -27,7 +27,7 @@
 
 		(async () => {
 			try {
-				const fetched = await filesDb.deserializeFromStorage(id);
+				const fetched = await deserializeFromStorage(id);
 				if (cancelled) return;
 				if (!fetched.isValid) throw new Error('Invalid mixture data loaded.');
 
@@ -47,7 +47,7 @@
 				});
 
 				unsubscribeMixture = mixtureStore.subscribe((upd) => {
-					filesDb.write({
+					writeTempFile({
 						id: upd.storeId,
 						name: upd.name,
 						mixture: upd.mixture,

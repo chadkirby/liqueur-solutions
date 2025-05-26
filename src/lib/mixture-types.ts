@@ -1,6 +1,8 @@
 import type { SubstanceComponent } from './ingredients/substance-component.js';
 import type { SubstanceId } from './ingredients/substances.js';
 import type { Mixture } from './mixture.js';
+import type { StorageId } from './storage-id.js';
+import { z } from 'zod';
 
 /*
  * A SubstanceComponent has no inherent mass. It just provides
@@ -21,7 +23,7 @@ export interface CommonComponent {
 export type IngredientItemComponent = Mixture | SubstanceComponent;
 
 type IngredientItemData = {
-	id: string;
+	id: StorageId;
 	name: string;
 	mass: number;
 	notes?: string; // Optional notes field
@@ -29,7 +31,7 @@ type IngredientItemData = {
 
 // add in-memory item to the data
 export type IngredientItem = IngredientItemData & {
-	// id: string;
+	// id: StorageId;
 	// name: string;
 	// mass: number;
 	// notes?: string;
@@ -37,7 +39,7 @@ export type IngredientItem = IngredientItemData & {
 };
 
 export type IngredientSubstanceItem = IngredientItemData & {
-	// id: string;
+	// id: StorageId;
 	// name: string;
 	// mass: number;
 	item: SubstanceComponent;
@@ -67,9 +69,13 @@ export type DecoratedIngredient = Readonly<{
 // Data types
 
 export type MixtureData = Readonly<{
-	id: string;
-	ingredients: Array<IngredientItemData>;
+	id: StorageId;
+	ingredients: ReadonlyArray<IngredientItemData>;
 }>;
+
+export const substanceItemSchema = z.object({
+	id: z.string(),
+});
 
 export type SubstanceData = Readonly<{
 	id: SubstanceId;

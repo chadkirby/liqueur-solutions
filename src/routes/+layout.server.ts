@@ -1,3 +1,5 @@
+import type { FileSyncMeta } from '$lib/data-format.js';
+import type { StorageId } from '$lib/storage-id.js';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -24,17 +26,16 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			}
 		}
 
-		const starredIds = listed.objects.map((item) => [
-			item.key.split('/').pop()!, // Extract the file name from the key
-			{
-				ingredientHash: item.customMetadata?.ingredientHash || '',
-			},
-		]);
-		console.log(`[Load] Found starred ids for user ${userId}:`, starredIds);
+		const syncMeta: FileSyncMeta[] = listed.objects.map((item) => ({
+			id: item.key.split('/').pop()! as StorageId, // Use the file name as the ID
+			lastSyncHash: item.customMetadata?.ingredientHash || '',
+			lastSyncTime: Number(item.uploaded),
+		}));
+		console.log(`[Load] Found starred ids for user ${userId}:`, syncMeta);
 
-		return { starredIds };
+		return { syncMeta };
 	}
 	return {
-		starredIds: [],
+		syncMeta: [],
 	};
 };

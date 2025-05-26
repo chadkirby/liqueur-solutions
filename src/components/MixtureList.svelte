@@ -7,13 +7,13 @@
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { filesDb } from '$lib/files-db.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	import { getContext } from 'svelte';
-	import { cloudStoredIds } from '$lib/starred-ids.svelte.js';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
+	import { SvelteMap } from 'svelte/reactivity';
+	import { saveMixtureToCloud, SyncMeta, toggleStar } from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -42,18 +42,17 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let isStarred = $derived(cloudStoredIds.has(storeId));
-	let isDirty = $derived(
-		cloudStoredIds.has(storeId) &&
-			mixtureStore.ingredientHash !== cloudStoredIds.get(storeId)!.ingredientHash,
-	);
+	let cloudSyncMeta = $derived(SyncMeta?.findOne({ id: storeId }));
+
+	let isStarred = $derived(Boolean(cloudSyncMeta));
+	let isDirty = $derived(mixtureStore.ingredientHash !== cloudSyncMeta?.lastSyncHash);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
 		if (isStarred && isDirty) {
-			await filesDb.saveMixtureToCloud(storeId);
+			await saveMixtureToCloud(storeId);
 		} else {
-			await filesDb.toggleStar(storeId);
+			await toggleStar(storeId);
 		}
 	}
 

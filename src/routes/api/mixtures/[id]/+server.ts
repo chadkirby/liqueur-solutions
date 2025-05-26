@@ -37,7 +37,12 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		const fileText = await file.text();
 		const fileData = JSON.parse(fileText);
 		console.log(`[Pull] Found file for id: ${mixtureId}`, fileData);
-		return json(fileData);
+		return json(fileData, {
+			headers: {
+				'X-Last-Sync-Time': String(Number(file.uploaded) || Date.now()),
+				'X-Last-Sync-Hash': file.customMetadata?.ingredientHash || '',
+			},
+		});
 	} catch (err: any) {
 		// Explicitly type err
 		console.error(`[Pull] Error processing list:`, err.message, err);
