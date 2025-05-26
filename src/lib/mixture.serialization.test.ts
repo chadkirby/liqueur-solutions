@@ -31,6 +31,7 @@ describe('Storage serialization for notes', () => {
 			desc: 'Test description',
 			rootMixtureId: mixture.id,
 			ingredientDb,
+			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
 		// Deserialize from storage format
@@ -59,6 +60,7 @@ describe('Storage serialization for notes', () => {
 			desc: 'Test description',
 			rootMixtureId: mixture.id,
 			ingredientDb,
+			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
 		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
@@ -84,6 +86,7 @@ describe('Storage serialization for notes', () => {
 			desc: 'Test description',
 			rootMixtureId: mixture.id,
 			ingredientDb,
+			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
 		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
@@ -128,6 +131,7 @@ describe('Storage serialization for notes', () => {
 			desc: 'Test description',
 			rootMixtureId: outerMixture.id,
 			ingredientDb,
+			_ingredientHash: outerMixture.getIngredientHash('Test Nested Mixture'),
 		};
 
 		// Deserialize from storage format

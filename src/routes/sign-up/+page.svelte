@@ -70,8 +70,7 @@
 </div>
 
 <style>
-	/* Optional: Add styles if needed */
-	.clerk-sign-up-container {
-		/* Add any container-specific styles */
-	}
+	/* Optional: Add styles if needed
+	.clerk-sign-up-container {}
+	*/
 </style>

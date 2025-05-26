@@ -28,7 +28,7 @@
 		deleteTempFile,
 		hasEquivalentItem,
 		writeTempFile,
-		deserializeFromStorage,
+		readFile,
 		toggleStar,
 	} from '$lib/persistence.svelte.js';
 
@@ -100,7 +100,7 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = await deserializeFromStorage(id);
+			const mixture = await readFile(id);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
