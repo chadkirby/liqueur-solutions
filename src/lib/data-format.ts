@@ -6,12 +6,15 @@ import { z } from 'zod';
 
 export const currentDataVersion = 1;
 
-// Base type from schema (includes all fields including sync fields)
+/**
+ * Deserialized file data for version 1.
+ */
 export type DeserializedFileDataV1 = {
 	readonly version: 1;
 	readonly id: StorageId;
 	readonly name: string;
-	readonly accessTime: number;
+	/** ISO Date string */
+	readonly accessTime: string;
 	readonly desc: string;
 	readonly rootMixtureId: string;
 	readonly ingredientDb: IngredientDbData;
@@ -46,7 +49,7 @@ export const fileSchemaV1 = z
 		version: z.literal(currentDataVersion),
 		id: z.string(),
 		name: z.string(),
-		accessTime: z.number(),
+		accessTime: z.string(), // ISO date string
 		desc: z.string(),
 		rootMixtureId: z.string(),
 		ingredientJSON: z.string(), // serialized Map<string, IngredientData>
@@ -59,7 +62,7 @@ export type SerializedFileDataV1 = z.infer<typeof fileSchemaV1>;
 export const fileSyncSchema = z
 	.object({
 		id: z.string(), // storage ID of the file
-		lastSyncTime: z.number().default(0), // last successful sync time
+		lastSyncTime: z.string().default(''), // last successful sync time
 		lastSyncHash: z.string().default(''), // hash of the file contents at last sync
 	})
 	.strict();

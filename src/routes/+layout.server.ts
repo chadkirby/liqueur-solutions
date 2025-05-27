@@ -29,7 +29,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		const syncMeta: FileSyncMeta[] = listed.objects.map((item) => ({
 			id: item.key.split('/').pop()! as StorageId, // Use the file name as the ID
 			lastSyncHash: item.customMetadata?.ingredientHash || '',
-			lastSyncTime: Number(item.uploaded),
+			lastSyncTime: item.uploaded.toISOString(),
 		}));
 		console.log(`[Load] Found starred ids for user ${userId}:`, syncMeta);
 

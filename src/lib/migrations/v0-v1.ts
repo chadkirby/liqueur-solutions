@@ -11,7 +11,7 @@ export function portV0DataToV1(
 		version: 1,
 		id: componentId(),
 		name: data.mixture.name,
-		accessTime: Date.now(),
+		accessTime: new Date().toISOString(),
 		desc: data.desc || mixture.describe(),
 		rootMixtureId: mixture.id,
 		ingredientDb: mixture.serialize(),
