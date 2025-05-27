@@ -59,7 +59,7 @@
 
 		// 7) Clean up when this layout is unmounted
 		return () => {
-			if (janitor) clearInterval(janitor);
+			if (janitor) clearTimeout(janitor);
 			if (unsubscribeFromClerk) {
 				unsubscribeFromClerk();
 			}
