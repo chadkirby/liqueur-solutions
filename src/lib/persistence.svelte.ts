@@ -2,11 +2,11 @@ import { Mixture } from './mixture.js';
 import { browser } from '$app/environment';
 import {
 	currentDataVersion,
-	fileSchemaV1,
-	fileSyncSchema,
-	type DeserializedFileDataV1,
+	zFileDataV1,
+	zFileSync,
+	type FileDataV1,
 	type FileSyncMeta,
-	type SerializedFileDataV1,
+	type IngredientDbEntry,
 } from '$lib/data-format.js';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { SchemaCollection } from './schema-collection.js';
@@ -15,37 +15,44 @@ import { isStorageId, type StorageId } from './storage-id.js';
 
 export const TempFiles = browser
 	? new SchemaCollection({
-			schema: fileSchemaV1,
+			schema: zFileDataV1,
 			reactivity: svelteReactivityAdapter,
-			persistence: createIndexedDBAdapter<SerializedFileDataV1, string>('temp-files'),
+			persistence: createIndexedDBAdapter<FileDataV1, string>('temp-files'),
 		})
 	: null;
 
 export const SyncMeta = browser
 	? new SchemaCollection({
-			schema: fileSyncSchema,
+			schema: zFileSync,
 			reactivity: svelteReactivityAdapter,
 			persistence: createIndexedDBAdapter<FileSyncMeta, StorageId>('file-sync-meta'),
 		})
 	: null;
 
-export function deserialize(item: SerializedFileDataV1): DeserializedFileDataV1 {
-	const { ingredientJSON, ...rest } = item;
+export function deserialize(item: FileDataV1): FileDataV1 {
+	// some interim files have ingredientJSON instead of ingredientDb
+	const ingredientDb: IngredientDbEntry[] =
+		'ingredientJSON' in item ? JSON.parse(item.ingredientJSON as string) : item.ingredientDb;
+	// make sure we have a valid ingredientHash (older files might not have it)
+	const _ingredientHash =
+		item._ingredientHash ??
+		Mixture.deserialize(item.rootMixtureId, ingredientDb).getIngredientHash(item.name);
+
+	const copy = { ...item };
+	delete (copy as any).ingredientJSON; // remove old field if it exists
+
 	return {
-		...rest,
-		ingredientDb: JSON.parse(ingredientJSON),
-	};
+		...copy,
+		ingredientDb: [...ingredientDb],
+		_ingredientHash,
+	} as const;
 }
 
-function serialize(item: DeserializedFileDataV1): SerializedFileDataV1 {
+function serialize(item: FileDataV1): FileDataV1 {
 	if (!isStorageId(item.id)) {
 		throw new Error('Invalid item provided for serialization');
 	}
-	const { ingredientDb, ...rest } = item;
-	return {
-		...rest,
-		ingredientJSON: JSON.stringify(ingredientDb),
-	};
+	return item;
 }
 
 const upsert = true;
@@ -65,7 +72,7 @@ export async function toggleStar(id: StorageId): Promise<boolean> {
 }
 
 export async function listCloudFiles(
-	cb: (file: Omit<SerializedFileDataV1, 'ingredientJSON'>) => void,
+	cb: (file: Omit<FileDataV1, 'ingredientJSON'>) => void,
 ): Promise<void> {
 	const filesResp = await fetch('../api/mixtures');
 	if (!filesResp.ok) {
@@ -88,14 +95,14 @@ export async function listCloudFiles(
 			for (const line of lines) {
 				if (line.trim()) {
 					console.log('FilesDb: Processing line:', line);
-					const file = JSON.parse(line) as SerializedFileDataV1;
+					const file = JSON.parse(line) as FileDataV1;
 					cb({ ...file });
 				}
 			}
 		}
 		// Process any remaining data in buffer
 		if (buffer.trim()) {
-			const fileData = JSON.parse(buffer) as Omit<SerializedFileDataV1, 'ingredientJSON'>;
+			const fileData = JSON.parse(buffer) as Omit<FileDataV1, 'ingredientJSON'>;
 			cb(fileData);
 		}
 	} catch (e) {
@@ -134,7 +141,7 @@ async function deleteCloudFile(id: StorageId): Promise<void> {
 	console.log('FilesDb: deleted mixture from cloud and local store for id', id);
 }
 
-async function putMx(data: SerializedFileDataV1): Promise<void> {
+async function putMx(data: FileDataV1): Promise<void> {
 	if (!SyncMeta) return;
 	const sync = await SyncMeta.findOne({ id: data.id });
 	const response = await fetch(`../api/mixtures/${data.id}`, {
@@ -185,7 +192,7 @@ async function putMx(data: SerializedFileDataV1): Promise<void> {
 	}
 }
 
-async function readCloudFile(id: StorageId): Promise<DeserializedFileDataV1 | null> {
+async function readCloudFile(id: StorageId): Promise<FileDataV1 | null> {
 	if (!SyncMeta) return null;
 	const response = await fetch(`../api/mixtures/${id}`);
 	if (!response.ok) {
@@ -196,7 +203,7 @@ async function readCloudFile(id: StorageId): Promise<DeserializedFileDataV1 | nu
 		console.error('FilesDb: Failed to fetch mixture from cloud:', response.statusText);
 		return null; // Other error
 	}
-	const data = (await response.json()) as SerializedFileDataV1;
+	const data = (await response.json()) as FileDataV1;
 	if (!data) {
 		console.warn('FilesDb: No data found for id', id);
 		return null; // No data
@@ -242,7 +249,7 @@ export async function hasEquivalentItem(ingredientHash: string): Promise<boolean
 /**
  * Read a stored file by ID from the TempFiles collection.
  */
-export async function readTempFile(id: StorageId): Promise<DeserializedFileDataV1 | null> {
+export async function readTempFile(id: StorageId): Promise<FileDataV1 | null> {
 	if (!TempFiles) return null;
 	if (!isStorageId(id)) return null;
 	const file = TempFiles.findOne({ id });

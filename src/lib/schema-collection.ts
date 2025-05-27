@@ -1,14 +1,14 @@
 import { Collection } from '@signaldb/core';
 import type { BaseItem, CollectionOptions } from '@signaldb/core';
-import type { ZodSchema, infer as ZodInfer } from 'zod';
+import type { ZodMiniType, infer as ZodInfer } from 'zod/v4-mini';
 
-interface SchemaCollectionOptions<T extends ZodSchema<BaseItem<I>>, I, U = ZodInfer<T>>
+interface SchemaCollectionOptions<T extends ZodMiniType<BaseItem<I>>, I, U = ZodInfer<T>>
 	extends CollectionOptions<ZodInfer<T>, I, U> {
 	schema: T;
 }
 
 export class SchemaCollection<
-	T extends ZodSchema<BaseItem<I>>,
+	T extends ZodMiniType<BaseItem<I>>,
 	I = any,
 	U = ZodInfer<T>,
 > extends Collection<ZodInfer<T>, I, U> {

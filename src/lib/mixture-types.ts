@@ -1,14 +1,14 @@
-import type { SubstanceComponent } from './ingredients/substance-component.js';
-import { isSubstanceId, type SubstanceId } from './ingredients/substances.js';
+import { SubstanceComponent } from './ingredients/substance-component.js';
+import { type SubstanceId } from './ingredients/substances.js';
 import type { Mixture } from './mixture.js';
-import type { StorageId } from './storage-id.js';
-import { z } from 'zod';
+import { z } from 'zod/v4-mini';
 
 /*
  * A SubstanceComponent has no inherent mass. It just provides
  * convenience methods for accessing the underlying substance data.
  *
- * A Mixture is a collection of ingredients particular quantities of particular ingredients. A Mixture has a mass, f
+ * A Mixture is a collection of ingredients particular quantities of
+ * particular ingredients. A Mixture has a mass, f
  */
 
 /** common interface that IngredientItemComponents must implement */
@@ -20,37 +20,30 @@ export interface CommonComponent {
 }
 
 /** Mixture and SubstanceComponent implement CommonComponent */
-export type IngredientItemComponent = Mixture | SubstanceComponent;
+export type IngredientItem = Mixture | SubstanceComponent;
 
-type IngredientItemData = {
-	id: StorageId;
-	name: string;
-	mass: number;
-	notes?: string; // Optional notes field
+export const zIngredientMeta = z.object({
+	id: z.string(),
+	name: z.string(),
+	mass: z.number(),
+	notes: z.optional(z.string()), // Optional notes field
+});
+
+export type IngredientMeta = z.infer<typeof zIngredientMeta>;
+
+export type InMemoryIngredient = IngredientMeta & {
+	item: Mixture | SubstanceComponent;
 };
-
-// add in-memory item to the data
-export type IngredientItem = IngredientItemData & {
-	// id: StorageId;
-	// name: string;
-	// mass: number;
-	// notes?: string;
-	item: IngredientItemComponent; // Mixture | SubstanceComponent;
-};
-
-export type IngredientSubstanceItem = IngredientItemData & {
-	// id: StorageId;
-	// name: string;
-	// mass: number;
+export type InMemorySubstance = IngredientMeta & {
 	item: SubstanceComponent;
 };
+export type InMemoryMixture = IngredientMeta & {
+	item: Mixture;
+};
 
-// make id optional for adding new items
-export type IngredientToAdd = Omit<IngredientItem, 'id'> & {
-	id?: string;
-	// name: string;
-	// mass: number;
-	// item: IngredientItemComponent; // Mixture | SubstanceComponent;
+export type IngredientToAdd = Omit<IngredientMeta, 'id'> & {
+	id?: string; // Optional for new items
+	item: Mixture | SubstanceComponent;
 };
 
 export type DecoratedSubstance = Readonly<{
@@ -62,34 +55,11 @@ export type DecoratedSubstance = Readonly<{
 }>;
 
 export type DecoratedIngredient = Readonly<{
-	ingredient: IngredientItem;
+	ingredient: InMemoryIngredient;
 	mass: number;
 }>;
 
 // Data types
-
-export type MixtureData = Readonly<{
-	id: StorageId;
-	ingredients: ReadonlyArray<IngredientItemData>;
-}>;
-
-export const substanceItemSchema = z.object({
-	id: z.string(),
-});
-
-export type SubstanceData = Readonly<{
-	id: SubstanceId;
-}>;
-
-export function isMixtureData(data: IngredientData): data is MixtureData {
-	return 'ingredients' in data;
-}
-
-export function isSubstanceData(data: IngredientData): data is SubstanceData {
-	return !isMixtureData(data);
-}
-
-export type IngredientData = MixtureData | SubstanceData;
 
 export interface SolverTarget {
 	/** between 0-100 */

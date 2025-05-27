@@ -253,7 +253,7 @@ export function newZeroSyrup(volume: number, desiredBrix = 66.67): Mixture {
 	}
 	// we'll also need to adjust the water mass to keep the volume at 1000
 	// while we're adjusting proportions to hit the desired sweetness
-	const water = [...mx.eachIngredient()].find(({ ingredient }) => isWater(ingredient.item));
+	const water = mx.findIngredient(({ item }) => isWater(item));
 	if (!water) throw new Error('Water not found');
 
 	seek(mx, {

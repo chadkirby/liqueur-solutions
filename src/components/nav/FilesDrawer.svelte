@@ -14,7 +14,7 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, type SerializedFileDataV1 } from '$lib/data-format.js';
+	import { isV0Data, isV1Data, type FileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
@@ -23,7 +23,6 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import {
 		TempFiles,
-		SyncMeta,
 		deserialize,
 		deleteTempFile,
 		hasEquivalentItem,
@@ -37,7 +36,7 @@
 		mixtureStore: MixtureStore;
 	}
 
-	let cloudFiles = $state<Omit<SerializedFileDataV1, 'ingredientJSON'>[] | null>(null);
+	let cloudFiles = $state<FileDataV1[] | null>(null);
 
 	// call listCloudFiles when the drawer is opened
 	$effect(() => {
@@ -121,8 +120,8 @@
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
-					item: mixture,
 					mass: mixture.mass,
+					item: mixture,
 				});
 			}
 		};
@@ -210,14 +209,9 @@
 					</h5>
 					<!-- show all files or only starred files checkbox -->
 					<div class="flex flex-row items-center mb-1 ml-4">
-						<input
-							type="checkbox"
-							bind:checked={showTempFiles}
-							class="mr-2"
-							id="only-stars-checkbox"
-						/>
+						<input type="checkbox" bind:checked={showTempFiles} class="mr-2" id="show-temp-files" />
 						<label
-							for="only-stars-checkbox"
+							for="show-temp-files"
 							class="text-sm text-primary-500 dark:text-primary-400 cursor-pointer"
 							>Show temp files</label
 						>

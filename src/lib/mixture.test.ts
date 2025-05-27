@@ -266,7 +266,7 @@ test('addIngredient preserves notes field', () => {
 		item: SubstanceComponent.new('sucrose'),
 	});
 
-	const ingredient = mixture.ingredients[0];
+	const ingredient = mixture.findIngredient()!;
 	assert.strictEqual(ingredient.notes, 'Special instructions');
 });
 
@@ -285,7 +285,7 @@ describe('Mixture with notes', () => {
 		const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
 		// Check if the notes are preserved
-		const ingredient = deserializedMixture.ingredients[0];
+		const ingredient = deserializedMixture.findIngredient()!;
 		assert.strictEqual(ingredient.notes, 'This is a test note');
 	});
 
@@ -322,7 +322,7 @@ test('updateFrom preserves notes in ingredients', () => {
 	const targetMixture = new Mixture();
 	targetMixture.updateFrom(sourceMixture);
 
-	const ingredient = targetMixture.ingredients[0];
+	const ingredient = targetMixture.findIngredient()!;
 	assert.strictEqual(ingredient.notes, 'Notes from source');
 });
 
@@ -344,7 +344,7 @@ test('replaceIngredient preserves notes when specified', () => {
 	});
 
 	assert.strictEqual(success, true);
-	const replacedIngredient = mixture.ingredients[0];
+	const replacedIngredient = mixture.findIngredient()!;
 	assert.strictEqual(replacedIngredient.notes, 'New notes');
 });
 
@@ -365,7 +365,7 @@ test('replaceIngredient does not add notes when not specified', () => {
 	});
 
 	assert.strictEqual(success, true);
-	const replacedIngredient = mixture.ingredients[0];
+	const replacedIngredient = mixture.findIngredient()!;
 	assert.strictEqual(replacedIngredient.notes, undefined);
 });
 
@@ -381,7 +381,7 @@ test('empty notes field is preserved', () => {
 	const data = mixture.serialize();
 	const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
-	const ingredient = deserializedMixture.ingredients[0];
+	const ingredient = deserializedMixture.findIngredient()!;
 	expect(ingredient.notes).toBe(''); // Should be empty string, not null/undefined
 });
 
@@ -397,6 +397,6 @@ test('undefined notes field is handled correctly', () => {
 	const data = mixture.serialize();
 	const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
-	const ingredient = deserializedMixture.ingredients[0];
+	const ingredient = deserializedMixture.findIngredient()!;
 	expect(ingredient.notes).toBeUndefined();
 });

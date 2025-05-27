@@ -1,10 +1,10 @@
 /**
  * Server-side endpoint for listing a user's files.
  */
-import { error, json } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import type { SerializedFileDataV1 } from '$lib/data-format.js';
+import type { FileDataV1 } from '$lib/data-format.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
@@ -44,9 +44,9 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 								continue; // Skip to the next item if file not found
 							}
 
-							const fileData = (await file.json()) as SerializedFileDataV1;
-							// exclude the ingredientJSON field from the response
-							const { ingredientJSON, ...rest } = fileData;
+							const fileData = (await file.json()) as FileDataV1;
+							// exclude the ingredientJSON (shouldn't exist) and ingredientDb fields from the response
+							const { ingredientJSON, ingredientDb, ...rest } = fileData as any;
 							// Send each object as a complete JSON string followed by newline
 							const jsonLine = JSON.stringify(rest) + '\n';
 							controller.enqueue(new TextEncoder().encode(jsonLine));

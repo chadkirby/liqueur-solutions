@@ -19,20 +19,23 @@ import {
 } from './ingredients/citrus-ids.js';
 import { FancyIterator } from './iterator.js';
 import {
-	isMixtureData,
-	isSubstanceData,
 	type CommonComponent,
 	type DecoratedIngredient,
 	type DecoratedSubstance,
 	type EditableProperty,
 	type IngredientItem,
-	type IngredientItemComponent,
-	type IngredientSubstanceItem,
 	type IngredientToAdd,
+	type InMemoryIngredient,
+	type InMemorySubstance,
 	type MixtureAnalysis,
-	type MixtureData,
 } from './mixture-types.js';
-import { getIngredientHash, type IngredientDbData } from './data-format.js';
+import {
+	getIngredientHash,
+	isMixtureData,
+	isSubstanceData,
+	type IngredientDbEntry,
+	type MixtureData,
+} from './data-format.js';
 
 export type MixtureEditKeys = 'brix' | 'abv' | 'volume' | 'mass' | 'pH';
 
@@ -50,8 +53,8 @@ export type MappedSubstance = {
 };
 
 export class Mixture implements CommonComponent {
-	static deserialize(rootMixtureId: string, ingredientData: IngredientDbData) {
-		const ingredients: IngredientItem[] = [];
+	static deserialize(rootMixtureId: string, ingredientData: IngredientDbEntry[]) {
+		const ingredients: Array<InMemoryIngredient> = [];
 
 		const db = new Map(ingredientData);
 		const mixtureData = db.get(rootMixtureId);
@@ -91,14 +94,14 @@ export class Mixture implements CommonComponent {
 		}
 	}
 
-	private readonly _ingredientList: Array<IngredientItem> = [];
+	private readonly _ingredientList: Array<InMemoryIngredient> = [];
 
 	get size() {
 		return this._ingredientList.length;
 	}
 
 	getIngredientHash(name: string) {
-		return getIngredientHash({ name, desc: this.describe(), mixture: this.serialize() });
+		return getIngredientHash({ name, desc: this.describe(), ingredientDb: this.serialize() });
 	}
 
 	getIngredient(id: string) {
@@ -144,9 +147,9 @@ export class Mixture implements CommonComponent {
 		} as const;
 	}
 
-	serialize(): IngredientDbData {
+	serialize(): IngredientDbEntry[] {
 		const rootData = [this.id, this.serializeMixtureData()] as const;
-		const ingredientData: IngredientDbData = this._ingredientList.flatMap(({ id, item }) => {
+		const ingredientData: IngredientDbEntry[] = this._ingredientList.flatMap(({ id, item }) => {
 			if (item instanceof Mixture) {
 				return [[id, item.serializeMixtureData()], ...item.serialize()];
 			}
@@ -203,7 +206,7 @@ export class Mixture implements CommonComponent {
 			: ingredient.id
 				? ingredient.id
 				: componentId();
-		const ingredientItem: IngredientItem = {
+		const ingredientItem: InMemoryIngredient = {
 			id,
 			name: ingredient.name,
 			item: ingredient.item,
@@ -249,7 +252,7 @@ export class Mixture implements CommonComponent {
 		return true;
 	}
 
-	replaceIngredientComponent(id: string, item: IngredientItemComponent) {
+	replaceIngredientComponent(id: string, item: IngredientItem) {
 		const ingredient = this.getIngredient(id)!;
 		if (ingredient) {
 			ingredient.item = item;
@@ -440,11 +443,11 @@ export class Mixture implements CommonComponent {
 	}
 
 	findIngredient(
-		predicate: (item: IngredientItemComponent, i: number) => boolean,
-	): IngredientItem | undefined {
+		predicate = (item: InMemoryIngredient, i: number) => true,
+	): InMemoryIngredient | undefined {
 		let i = 0;
 		for (const { ingredient } of this.eachIngredient()) {
-			if (predicate(ingredient.item, i++)) return ingredient;
+			if (predicate(ingredient, i++)) return ingredient;
 		}
 		return undefined;
 	}
@@ -786,8 +789,8 @@ export function isSubstance(thing: unknown): thing is SubstanceComponent {
 }
 
 export function isSpirit(thing: Mixture): boolean;
-export function isSpirit(thing: IngredientItemComponent): thing is Mixture;
-export function isSpirit(thing: IngredientItemComponent) {
+export function isSpirit(thing: IngredientItem): thing is Mixture;
+export function isSpirit(thing: IngredientItem) {
 	return (
 		thing instanceof Mixture &&
 		thing.size > 0 &&
@@ -797,74 +800,52 @@ export function isSpirit(thing: IngredientItemComponent) {
 	);
 }
 
-export function isSimpleSpirit(thing: IngredientItemComponent) {
-	return isSpirit(thing) && thing.size === 2 && thing.substances.length === 2;
+export function isSweetenerMixture(mx: Mixture) {
+	return mx.size > 0 && mx.eachSubstance().every((x) => isSweetenerId(x.substanceId));
 }
-
-export function isSweetenerMixture(thing: IngredientItemComponent) {
-	return (
-		isMixture(thing) &&
-		thing.size > 0 &&
-		thing.eachSubstance().every((x) => isSweetenerId(x.substanceId))
-	);
-}
-export function isSweetenerSubstance(thing: IngredientItemComponent) {
+export function isSweetenerSubstance(thing: IngredientItem): thing is SubstanceComponent {
 	return isSubstance(thing) && isSweetenerId(thing.substanceId);
 }
-export function isSweetener(thing: IngredientItemComponent) {
-	return isSweetenerMixture(thing) || isSweetenerSubstance(thing);
+export function isSweetener(thing: IngredientItem) {
+	if (isMixture(thing)) return isSweetenerMixture(thing);
+	return isSweetenerSubstance(thing);
 }
 
-export function isSyrup(thing: IngredientItemComponent) {
+export function isSyrup(mx: Mixture) {
 	return (
-		isMixture(thing) &&
-		thing.eachSubstance().some((x) => x.item.substanceId === 'water') &&
-		thing.eachSubstance().some((x) => isSweetenerId(x.substanceId)) &&
-		thing.eachSubstance().every((x) => x.substanceId === 'water' || isSweetenerId(x.substanceId))
+		mx.eachSubstance().some((x) => x.item.substanceId === 'water') &&
+		mx.eachSubstance().some((x) => isSweetenerId(x.substanceId)) &&
+		mx.eachSubstance().every((x) => x.substanceId === 'water' || isSweetenerId(x.substanceId))
 	);
 }
 
-export function isSimpleSyrup(thing: IngredientItemComponent) {
-	// simple syrup is a mixture of sweetener and water
-	return Boolean(
-		isMixture(thing) && isSyrup(thing) && thing.size === 2 && thing.substances.length === 2,
-	);
+export function isLiqueur(mx: Mixture) {
+	return mx.abv > 0 && mx.brix > 0;
 }
 
-export function isLiqueur(thing: IngredientItemComponent) {
-	return isMixture(thing) && thing.abv > 0 && thing.brix > 0;
+export function isWaterSubstance(substance: SubstanceComponent) {
+	return substance.substanceId === 'water';
+}
+export function isWaterMixture(mx: Mixture) {
+	return mx.size > 0 && mx.eachSubstance().every((x) => isWaterSubstance(x.item));
+}
+export function isWater(thing: IngredientItem) {
+	if (isMixture(thing)) return isWaterMixture(thing);
+	return isWaterSubstance(thing);
 }
 
-export function isWaterSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
-	return isSubstance(thing) && thing.substanceId === 'water';
+export function isAcidSubstance(
+	substance: SubstanceComponent | null,
+): substance is SubstanceComponent {
+	if (!substance) return false;
+	return isAcidId(substance.substanceId);
 }
-export function isWaterMixture(thing: IngredientItemComponent): thing is Mixture {
-	return (
-		isMixture(thing) &&
-		thing.size > 0 &&
-		thing.eachSubstance().every((x) => x.substanceId === 'water')
-	);
-}
-export function isWater(thing: IngredientItemComponent) {
-	return isWaterSubstance(thing) || isWaterMixture(thing);
+export function isAcidicMixture(mx: Mixture) {
+	return mx.eachSubstance().some((x) => x.item.pKa.length > 0);
 }
 
-export function isAcidSubstance(thing: IngredientItemComponent) {
-	return isSubstance(thing) && isAcidId(thing.substanceId);
-}
-export function isAcidicMixture(thing: IngredientItemComponent) {
-	return isMixture(thing) && thing.eachSubstance().some((x) => x.item.pKa.length > 0);
-}
-
-export function isSaltIngredient(thing: IngredientItem): thing is IngredientSubstanceItem {
-	return isSaltSubstance(thing.item);
-}
-export function isSaltSubstance(thing: IngredientItemComponent): thing is SubstanceComponent {
-	return isSubstance(thing) && isSaltId(thing.substanceId);
-}
-
-export function isCitrusMixture(mx: unknown): mx is Mixture & { id: PrefixedId } {
-	return isMixture(mx) && getCitrusPrefix(mx.id) !== null;
+export function isCitrusMixture(mx: Mixture | null) {
+	return mx !== null && getCitrusPrefix(mx.id) !== null;
 }
 
 export function isEmptyMixture(mx: Mixture): boolean {

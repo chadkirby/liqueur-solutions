@@ -4,7 +4,7 @@
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { format as _format } from '$lib/utils.js';
 	import { isSweetenerId } from '$lib/ingredients/substances.js';
-	import type { IngredientItemComponent } from '$lib/mixture-types.js';
+	import type { IngredientItem } from '$lib/mixture-types.js';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	let {
@@ -16,7 +16,7 @@
 		header = 'Volume',
 	}: {
 		ingredientId: string;
-		component: IngredientItemComponent;
+		component: IngredientItem;
 		volume: number;
 		mixtureStore: MixtureStore;
 		header?: string;

@@ -1,8 +1,7 @@
 import { describe, test, expect, assert } from 'vitest';
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import { type FileDataV1 } from './data-format-v2.js';
-import { currentDataVersion } from './data-format-v2.js';
+import { currentDataVersion, type FileDataV1 } from './data-format.js';
 
 // We're not testing the actual storage system, just the
 // serialization/deserialization process that would be used by the
@@ -38,7 +37,7 @@ describe('Storage serialization for notes', () => {
 		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
 
 		// Check if notes were preserved
-		const ingredient = deserializedMixture.eachIngredient().first()!;
+		const ingredient = deserializedMixture.findIngredient()!;
 		expect(ingredient.notes).toBe('Important brewing details here');
 	});
 
@@ -65,7 +64,7 @@ describe('Storage serialization for notes', () => {
 
 		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
 
-		const ingredient = deserializedMixture.eachIngredient().first()!;
+		const ingredient = deserializedMixture.findIngredient()!;
 		expect(ingredient.notes).toBe('');
 	});
 
@@ -91,7 +90,7 @@ describe('Storage serialization for notes', () => {
 
 		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
 
-		const ingredient = deserializedMixture.ingredients[0];
+		const ingredient = deserializedMixture.findIngredient()!;
 		expect(ingredient.notes).toBeUndefined();
 	});
 
@@ -139,9 +138,11 @@ describe('Storage serialization for notes', () => {
 
 		// Get the ingredients
 		const simpleIngredient = deserializedMixture.findIngredient(
-			(i) => i.name === 'Simple Ingredient',
+			(i) => 'name' in i && i.name === 'Simple Ingredient',
 		);
-		const nestedIngredient = deserializedMixture.findIngredient((i) => i.name === 'Nested Mixture');
+		const nestedIngredient = deserializedMixture.findIngredient(
+			(i) => 'name' in i && i.name === 'Nested Mixture',
+		);
 
 		// Check outer mixture notes
 		expect(simpleIngredient?.notes).toBe('Simple notes');
@@ -149,7 +150,7 @@ describe('Storage serialization for notes', () => {
 
 		// Check inner mixture notes
 		if (nestedIngredient?.item instanceof Mixture) {
-			const innerIngredient = nestedIngredient.item.eachIngredient().first()!;
+			const innerIngredient = nestedIngredient.item.findIngredient()!;
 			expect(innerIngredient.notes).toBe('Inner notes');
 		} else {
 			assert.fail('Nested ingredient should be a Mixture');
