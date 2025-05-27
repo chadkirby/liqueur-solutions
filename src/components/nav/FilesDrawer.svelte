@@ -14,7 +14,7 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data } from '$lib/data-format.js';
+	import { isV0Data, isV1Data, type SerializedFileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
@@ -30,25 +30,42 @@
 		writeTempFile,
 		readFile,
 		toggleStar,
+		listCloudFiles,
 	} from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
-	const tempFiles = $derived(TempFiles?.find({}, { sort: { accessTime: -1 } }).map(deserialize));
-	const fileSyncMeta = $derived(SyncMeta?.find({}, { sort: { lastSyncTime: -1 } }).fetch());
-	let cloudSyncedIds = $derived(new SvelteSet(fileSyncMeta?.map((meta) => meta.id)));
+	let cloudFiles = $state<Omit<SerializedFileDataV1, 'ingredientJSON'>[] | null>(null);
+
+	// call listCloudFiles when the drawer is opened
+	$effect(() => {
+		if (filesDrawer.isOpen && !cloudFiles) {
+			listCloudFiles((file) => {
+				console.log('Got cloud file:', file);
+				if (!cloudFiles) {
+					cloudFiles = [];
+				}
+				cloudFiles.push(file);
+			});
+		}
+	});
+
+	const tempFiles = $derived(
+		TempFiles?.find({}, { sort: { accessTime: -1 } })
+			.map(deserialize)
+			.filter((f) => !cloudFiles?.some((cloudFile) => cloudFile.id === f.id)),
+	);
+	let cloudSyncedIds = $derived(new SvelteSet(cloudFiles?.map((file) => file.id)));
 
 	let { mixtureStore }: Props = $props();
 
-	let onlyStars = $state(false);
-	let files = $derived(
-		tempFiles?.filter((f, i) => {
-			if (i === 0) console.log('filtering', tempFiles?.length);
-			return !onlyStars || cloudSyncedIds.has(f.id);
-		}) || [],
-	);
+	let showTempFiles = $state(false);
+	let files = $derived([
+		...(cloudFiles ? cloudFiles : []),
+		...(showTempFiles && tempFiles ? tempFiles : []),
+	]);
 
 	let drawerStatus = $derived(filesDrawer.isOpen);
 	const closeDrawer = () => filesDrawer.close();
@@ -158,7 +175,6 @@
 				}
 			};
 			reader.readAsText(importFiles[0]);
-			onlyStars = false;
 		}
 	});
 </script>
@@ -194,11 +210,16 @@
 					</h5>
 					<!-- show all files or only starred files checkbox -->
 					<div class="flex flex-row items-center mb-1 ml-4">
-						<input type="checkbox" bind:checked={onlyStars} class="mr-2" id="only-stars-checkbox" />
+						<input
+							type="checkbox"
+							bind:checked={showTempFiles}
+							class="mr-2"
+							id="only-stars-checkbox"
+						/>
 						<label
 							for="only-stars-checkbox"
 							class="text-sm text-primary-500 dark:text-primary-400 cursor-pointer"
-							>Only show starred files</label
+							>Show temp files</label
 						>
 					</div>
 				</section>
@@ -206,7 +227,15 @@
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 mt-2">
-			{#each files as { name, id, desc } (id)}
+			{#each files as { name, id, desc, accessTime } (id)}
+				{@const lastAccess = new Date(accessTime).toLocaleDateString(navigator.language, {
+					year: '2-digit',
+					month: 'numeric',
+					day: 'numeric',
+					hour: 'numeric',
+					minute: '2-digit',
+					hour12: true,
+				})}
 				<div
 					class="
 					flex flex-col
@@ -225,7 +254,7 @@
 							text-sm
 						"
 					>
-						<div class="flex flex-row items-center gap-2">
+						<div class="flex flex-row items-center w-full">
 							<Button onclick={() => toggleStar(id)}>
 								{#if cloudSyncedIds.has(id)}
 									<StarSolid size="xs" />
@@ -233,7 +262,10 @@
 									<StarOutline size="xs" />
 								{/if}
 							</Button>
-							<span class="text-primary-800 dark:text-primary-400 font-medium">{name}</span>
+							<span class="text-primary-800 dark:text-primary-400 font-medium ml-2">{name}</span>
+							<span class="text-primary-600 dark:text-primary-600 text-xs ml-auto"
+								>({lastAccess})</span
+							>
 						</div>
 						<span class="text-xs text-primary-800 dark:text-primary-400">{desc}</span>
 					</div>

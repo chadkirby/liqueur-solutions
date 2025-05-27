@@ -64,6 +64,46 @@ export async function toggleStar(id: StorageId): Promise<boolean> {
 	}
 }
 
+export async function listCloudFiles(
+	cb: (file: Omit<SerializedFileDataV1, 'ingredientJSON'>) => void,
+): Promise<void> {
+	const filesResp = await fetch('../api/mixtures');
+	if (!filesResp.ok) {
+		throw new Error('FilesDb: Failed to fetch cloud files: ' + filesResp.statusText);
+	}
+	// call the callback for each file in the streamed response
+	const reader = filesResp.body?.getReader();
+	if (!reader) {
+		throw new Error('FilesDb: Response body is null');
+	}
+	const decoder = new TextDecoder();
+	let buffer = '';
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
+			for (const line of lines) {
+				if (line.trim()) {
+					console.log('FilesDb: Processing line:', line);
+					const file = JSON.parse(line) as SerializedFileDataV1;
+					cb({ ...file });
+				}
+			}
+		}
+		// Process any remaining data in buffer
+		if (buffer.trim()) {
+			const fileData = JSON.parse(buffer) as Omit<SerializedFileDataV1, 'ingredientJSON'>;
+			cb(fileData);
+		}
+	} catch (e) {
+		console.error('FilesDb: Error reading cloud files:', e);
+		throw new Error('FilesDb: Failed to read cloud files');
+	}
+}
+
 export async function writeCloudFile(id: StorageId): Promise<void> {
 	if (!TempFiles) return;
 	const file = TempFiles.findOne({ id });
