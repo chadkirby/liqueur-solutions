@@ -12,7 +12,6 @@
 
 	import { getContext } from 'svelte';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { SvelteMap } from 'svelte/reactivity';
 	import { writeCloudFile, SyncMeta, toggleStar } from '$lib/persistence.svelte.js';
 
 	interface Props {

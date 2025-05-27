@@ -3,22 +3,24 @@ import { MixtureStore, loadingStoreId, type MixtureStoreData } from './mixture-s
 import { Mixture } from './mixture.js';
 import { newSpirit } from './mixture-factories.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import type { IngredientItem, MixtureAnalysis } from './mixture-types.js';
+import type { InMemoryIngredient, InMemoryMixture, MixtureAnalysis } from './mixture-types.js';
 
 function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
 	const item = newSpirit(volume, abv);
 	return {
 		name,
-		item,
 		mass: item.mass,
+		item,
 	};
 }
 
-function ingredientList(data: MixtureStoreData | IngredientItem): ReadonlyArray<IngredientItem> {
+function ingredientList(
+	data: MixtureStoreData | InMemoryMixture,
+): ReadonlyArray<InMemoryIngredient> {
 	return 'mixture' in data
-		? data.mixture.ingredients
-		: 'ingredients' in data.item
-			? data.item.ingredients
+		? Array.from(data.mixture.eachIngredient().map(({ ingredient }) => ingredient))
+		: 'eachIngredient' in data.item
+			? Array.from(data.item.eachIngredient().map(({ ingredient }) => ingredient))
 			: [];
 }
 
@@ -52,8 +54,8 @@ describe('Mixture Store', () => {
 		// Add water to the spirit mixture
 		const waterId = store.addIngredientTo(spiritId, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 100,
+			item: SubstanceComponent.new('water'),
 		});
 
 		state = store.snapshot();
@@ -80,8 +82,8 @@ describe('Mixture Store', () => {
 		// Add a water component
 		store.addIngredientTo(null, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 100,
+			item: SubstanceComponent.new('water'),
 		});
 
 		const state = store.snapshot();
@@ -111,8 +113,8 @@ describe('Mixture Store', () => {
 		// add a water component
 		store.addIngredientTo(null, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 100,
+			item: SubstanceComponent.new('water'),
 		});
 
 		const mx = store.mixture;
@@ -168,8 +170,8 @@ describe('Mixture Store', () => {
 		// Add a water component
 		store.addIngredientTo(null, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 100,
+			item: SubstanceComponent.new('water'),
 		});
 
 		// @ts-expect-error undoRedo is private
@@ -216,8 +218,8 @@ describe('Mixture Store', () => {
 		// Add water
 		store.addIngredientTo(null, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 100,
+			item: SubstanceComponent.new('water'),
 		});
 
 		const state = store.snapshot();
@@ -247,15 +249,15 @@ describe('Mixture Store', () => {
 		// Add first sweetener
 		const sugar1Id = store.addIngredientTo(null, {
 			name: 'sugar1',
-			item: SubstanceComponent.new('sucrose'),
 			mass: 50,
+			item: SubstanceComponent.new('sucrose'),
 		});
 
 		// Add second sweetener
 		store.addIngredientTo(null, {
 			name: 'sugar2',
-			item: SubstanceComponent.new('sucrose'),
 			mass: 50,
+			item: SubstanceComponent.new('sucrose'),
 		});
 
 		// Update first sweetener to fructose
@@ -265,7 +267,7 @@ describe('Mixture Store', () => {
 		expect(store.getSweetenerTypes(sugar1Id)).toEqual(['fructose']);
 
 		// Get all ingredients
-		const sugar2 = store.mixture.findIngredient((i) => i.name === 'sugar2');
+		const sugar2 = store.mixture.findIngredient((i) => 'name' in i && i.name === 'sugar2');
 		expect(sugar2).toBeDefined();
 		if (!sugar2) throw new Error('sugar2 not found');
 
@@ -279,15 +281,15 @@ describe('Mixture Store', () => {
 		// Add first acid
 		const acid1Id = store.addIngredientTo(null, {
 			name: 'citric',
-			item: SubstanceComponent.new('citric-acid'),
 			mass: 50,
+			item: SubstanceComponent.new('citric-acid'),
 		});
 
 		// Add second acid
 		store.addIngredientTo(null, {
 			name: 'citric2',
-			item: SubstanceComponent.new('citric-acid'),
 			mass: 50,
+			item: SubstanceComponent.new('citric-acid'),
 		});
 
 		// Update first acid to tartaric
@@ -300,7 +302,7 @@ describe('Mixture Store', () => {
 		expect((acid1.item as SubstanceComponent).substanceId).toBe('tartaric-acid');
 
 		// Check second acid remained unchanged
-		const acid2 = store.mixture.findIngredient((i) => i.name === 'citric2');
+		const acid2 = store.mixture.findIngredient((i) => 'name' in i && i.name === 'citric2');
 		expect(acid2).toBeDefined();
 		if (!acid2) throw new Error('acid2 not found');
 		expect((acid2.item as SubstanceComponent).substanceId).toBe('citric-acid');
@@ -316,13 +318,13 @@ describe('Mixture store solver', () => {
 		store.addIngredientTo(null, standardSpirit(50, 100));
 		store.addIngredientTo(null, {
 			name: 'water',
-			item: SubstanceComponent.new('water'),
 			mass: 50,
+			item: SubstanceComponent.new('water'),
 		});
 		store.addIngredientTo(null, {
 			name: 'sugar',
-			item: SubstanceComponent.new('sucrose'),
 			mass: 50,
+			item: SubstanceComponent.new('sucrose'),
 		});
 		initialAnalysis = store.mixture.analyze(2);
 	});

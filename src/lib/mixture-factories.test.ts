@@ -38,8 +38,8 @@ describe('newSyrup', () => {
 			syrup
 				.eachIngredient()
 				.map(({ ingredient: { id, item } }) =>
-				item.getWaterVolume(syrup.getIngredientMass(id)).toFixed(2),
-			),
+					item.getWaterVolume(syrup.getIngredientMass(id)).toFixed(2),
+				),
 			'waterVolumes',
 		).toStrictEqual(['0.00', '60.65']);
 	});

@@ -24,8 +24,8 @@ import {
 } from './ingredients/substances.js';
 import type {
 	EditableProperty,
+	InMemoryIngredient,
 	IngredientItem,
-	IngredientItemComponent,
 	IngredientToAdd,
 	MixtureAnalysis,
 	SolverTarget,
@@ -111,7 +111,7 @@ export class MixtureStore {
 	private findIngredient(
 		id: string,
 		mixture = this._data.mixture,
-	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
+	): { ingredient: InMemoryIngredient; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
@@ -776,7 +776,7 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 }
 
 function getIngredientValue(
-	{ item, mass }: { item: IngredientItemComponent; mass: number },
+	{ item, mass }: { item: IngredientItem; mass: number },
 	what:
 		| 'equivalentSugarMass'
 		| 'alcoholMass'

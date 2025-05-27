@@ -4,7 +4,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import type { SerializedFileDataV1 } from '$lib/data-format.js';
+import type { FileDataV1 } from '$lib/data-format.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
@@ -35,8 +35,9 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 			throw error(404, `File not found for id: ${mixtureId}`);
 		}
 		const fileText = await file.text();
-		const fileData = JSON.parse(fileText);
+		const fileData = JSON.parse(fileText) as FileDataV1;
 		console.log(`[Pull] Found file for id: ${mixtureId}`, fileData);
+
 		return json(fileData, {
 			headers: {
 				'X-Last-Sync-Time': file.uploaded.toISOString(),
@@ -88,7 +89,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 	}
 
 	try {
-		const item = (await request.json()) as SerializedFileDataV1;
+		const item = (await request.json()) as FileDataV1;
 		console.log(`[PUT] Received item for id: ${mixtureId}`, item);
 
 		const obj = await bucket.put(`files/${safeId}/${mixtureId}`, JSON.stringify(item), {

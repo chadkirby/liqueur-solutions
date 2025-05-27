@@ -2,7 +2,6 @@
 	import Cal from './displays/Cal.svelte';
 	import Brix from './displays/BrixDetails.svelte';
 	import EquivalentSugar from './displays/EquivalentSugar.svelte';
-	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
 	import Helper from './ui-primitives/Helper.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import MassDetails from './displays/MassDetails.svelte';
@@ -10,6 +9,11 @@
 	import { isMixture, Mixture } from '$lib/mixture.js';
 	import PhDetails from './displays/PHDetails.svelte';
 	import ReadOnlyValue from './ReadOnlyValue.svelte';
+	import type {
+		InMemoryIngredient,
+		InMemoryMixture,
+		InMemorySubstance,
+	} from '$lib/mixture-types.js';
 
 	export {
 		saltDetails,
@@ -47,7 +51,7 @@
 
 {#snippet sweetenerDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryIngredient,
 	mass: number,
 	volume: number,
 )}
@@ -89,7 +93,7 @@
 
 {#snippet defaultDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryIngredient,
 	mass: number,
 	volume: number,
 )}
@@ -129,7 +133,7 @@
 
 {#snippet spiritDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryMixture,
 	mass: number,
 	_volume: number,
 )}
@@ -182,7 +186,7 @@
 
 {#snippet syrupDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryMixture,
 	mass: number,
 	volume: number,
 )}
@@ -224,7 +228,7 @@
 
 {#snippet acidDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientSubstanceItem,
+	ingredient: InMemorySubstance,
 	mass: number,
 	volume: number,
 )}
@@ -260,7 +264,7 @@
 
 {#snippet saltDetails(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientSubstanceItem,
+	ingredient: InMemorySubstance,
 	mass: number,
 	volume: number,
 )}
@@ -297,7 +301,7 @@
 	/>
 {/snippet}
 
-{#snippet citrusDetails(mixtureStore: MixtureStore, ingredient: IngredientItem, mass: number)}
+{#snippet citrusDetails(mixtureStore: MixtureStore, ingredient: InMemoryMixture, mass: number)}
 	{@const id = ingredient.id}
 	{@const component = ingredient.item}
 	<MassDetails
