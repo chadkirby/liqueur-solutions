@@ -101,7 +101,7 @@ async function putMx(data: SerializedFileDataV1): Promise<void> {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json',
-			'X-Last-Sync-Time': sync?.lastSyncTime?.toString() || '0',
+			'X-Last-Sync-Time': sync?.lastSyncTime?.toString() || new Date(0).toISOString(),
 		},
 		body: JSON.stringify(data),
 	});
@@ -114,7 +114,7 @@ async function putMx(data: SerializedFileDataV1): Promise<void> {
 			{ id: data.id },
 			{
 				id: data.id,
-				lastSyncTime: Date.now(),
+				lastSyncTime: new Date().toISOString(),
 				lastSyncHash: data._ingredientHash,
 			},
 			{ upsert },
@@ -135,7 +135,7 @@ async function putMx(data: SerializedFileDataV1): Promise<void> {
 			{ id: data.id },
 			{
 				id: data.id,
-				lastSyncTime: responseData.lastSyncTime,
+				lastSyncTime: new Date(responseData.lastSyncTime).toISOString(),
 				lastSyncHash: responseData.lastSyncHash,
 			},
 			{ upsert },
@@ -169,7 +169,7 @@ async function readCloudFile(id: StorageId): Promise<DeserializedFileDataV1 | nu
 			{ id: data.id },
 			{
 				id: data.id,
-				lastSyncTime: Number(lastSyncTime),
+				lastSyncTime: new Date(lastSyncTime).toISOString(),
 				lastSyncHash: lastSyncHash,
 			},
 			{ upsert },
@@ -181,7 +181,7 @@ async function readCloudFile(id: StorageId): Promise<DeserializedFileDataV1 | nu
 
 export async function runJanitor(stars: Set<string>): Promise<void> {
 	if (!TempFiles) return;
-	const aMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+	const aMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 	try {
 		const files = TempFiles.find({ accessTime: { $lt: aMonthAgo } }, { fields: { id: 1 } });
 		files.forEach(({ id }) => {
@@ -200,7 +200,7 @@ export async function hasEquivalentItem(ingredientHash: string): Promise<boolean
 	return file !== undefined;
 }
 /**
- * Read a stored file by ID from the TinyBase table.
+ * Read a stored file by ID from the TempFiles collection.
  */
 export async function readTempFile(id: StorageId): Promise<DeserializedFileDataV1 | null> {
 	if (!TempFiles) return null;
@@ -218,7 +218,7 @@ export async function readTempFile(id: StorageId): Promise<DeserializedFileDataV
 	}
 }
 /**
- * Write (upsert) a file record into the TinyBase table.
+ * Write (upsert) a file record into the TempFiles collection.
  */
 export async function writeTempFile(item: {
 	id: string;
@@ -233,7 +233,7 @@ export async function writeTempFile(item: {
 			version: currentDataVersion,
 			id: item.id,
 			name: item.name,
-			accessTime: Date.now(),
+			accessTime: new Date().toISOString(),
 			desc: item.mixture.describe(),
 			rootMixtureId: item.mixture.id,
 			ingredientDb: item.mixture.serialize(),

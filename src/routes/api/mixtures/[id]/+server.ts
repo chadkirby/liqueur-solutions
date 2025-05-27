@@ -39,7 +39,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		console.log(`[Pull] Found file for id: ${mixtureId}`, fileData);
 		return json(fileData, {
 			headers: {
-				'X-Last-Sync-Time': String(Number(file.uploaded) || Date.now()),
+				'X-Last-Sync-Time': file.uploaded.toISOString(),
 				'X-Last-Sync-Hash': file.customMetadata?.ingredientHash || '',
 			},
 		});
@@ -68,10 +68,8 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 	}
 
 	// get the X-Last-Sync-Time header as a Date
-	const uploadedBefore =
-		request.headers.get('X-Last-Sync-Time') && Number(request.headers.get('X-Last-Sync-Time'))
-			? new Date(Number(request.headers.get('X-Last-Sync-Time')))
-			: new Date();
+	const lastSync = request.headers.get('X-Last-Sync-Time') || new Date(0).toISOString();
+	const uploadedBefore = new Date(lastSync);
 
 	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
 
@@ -103,15 +101,10 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
 			throw error(500, `Failed to put item for id: ${mixtureId}`);
 		}
-		console.log(
-			`[PUT] Successfully put item for id: ${mixtureId}`,
-			obj.uploaded,
-			typeof obj.uploaded,
-			Number(obj.uploaded),
-		);
+		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
 		return json({
 			ok: true,
-			lastSyncTime: Number(obj.uploaded) || Date.now(),
+			lastSyncTime: obj.uploaded.toISOString(),
 			lastSyncHash: item._ingredientHash,
 		});
 	} catch (err: any) {
