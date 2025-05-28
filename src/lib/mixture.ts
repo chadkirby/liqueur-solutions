@@ -91,24 +91,18 @@ export class Mixture implements CommonComponent {
 		}
 	}
 
-	private readonly ingredientList: Array<IngredientItem> = [];
-	get ingredients() {
-		return new Map(this.ingredientList.map((i) => [i.id, i])) as ReadonlyMap<
-			string,
-			Readonly<IngredientItem>
-		>;
-	}
+	private readonly _ingredientList: Array<IngredientItem> = [];
 
 	get size() {
-		return this.ingredientList.length;
+		return this._ingredientList.length;
 	}
 
 	getIngredientHash(name: string) {
-		return getIngredientHash({ name, desc: this.describe(), ingredientDb: this.serialize() });
+		return getIngredientHash({ name, desc: this.describe(), mixture: this.serialize() });
 	}
 
 	getIngredient(id: string) {
-		return this.ingredientList.find((i) => i.id === id);
+		return this._ingredientList.find((i) => i.id === id);
 	}
 
 	clone(): this {
@@ -124,13 +118,13 @@ export class Mixture implements CommonComponent {
 		// nothing bad happens if we end up updating from the same mixture.
 		const otherIngredientList = [...other.eachIngredient()];
 		// empty the ingredient list
-		this.ingredientList.splice(0, this.ingredientList.length);
+		this._ingredientList.splice(0, this._ingredientList.length);
 		for (const { ingredient } of otherIngredientList) {
 			const newIngredient = {
 				...ingredient,
 				item: ingredient.item.clone(),
 			};
-			this.ingredientList.push(newIngredient);
+			this._ingredientList.push(newIngredient);
 		}
 		return this;
 	}
@@ -141,7 +135,7 @@ export class Mixture implements CommonComponent {
 	private serializeMixtureData(): MixtureData {
 		return {
 			id: this.id,
-			ingredients: this.ingredientList.map(({ id, mass, name, notes }) => ({
+			ingredients: this._ingredientList.map(({ id, mass, name, notes }) => ({
 				id,
 				mass,
 				name,
@@ -152,7 +146,7 @@ export class Mixture implements CommonComponent {
 
 	serialize(): IngredientDbData {
 		const rootData = [this.id, this.serializeMixtureData()] as const;
-		const ingredientData: IngredientDbData = this.ingredientList.flatMap(({ id, item }) => {
+		const ingredientData: IngredientDbData = this._ingredientList.flatMap(({ id, item }) => {
 			if (item instanceof Mixture) {
 				return [[id, item.serializeMixtureData()], ...item.serialize()];
 			}
@@ -216,14 +210,14 @@ export class Mixture implements CommonComponent {
 			mass: ingredient.mass,
 			notes: ingredient.notes,
 		};
-		this.ingredientList.push(ingredientItem);
+		this._ingredientList.push(ingredientItem);
 		return this;
 	}
 
 	removeIngredient(id: string) {
-		const index = this.ingredientList.findIndex((i) => i.id === id);
+		const index = this._ingredientList.findIndex((i) => i.id === id);
 		if (index > -1) {
-			this.ingredientList.splice(index, 1);
+			this._ingredientList.splice(index, 1);
 			return true;
 		}
 		return false;
@@ -234,7 +228,7 @@ export class Mixture implements CommonComponent {
 	 * ingredients list)
 	 */
 	replaceIngredient(id: string, ingredient: IngredientToAdd) {
-		const index = this.ingredientList.findIndex((x) => x.id === id);
+		const index = this._ingredientList.findIndex((x) => x.id === id);
 		if (index === -1) {
 			return false;
 		}
@@ -250,7 +244,7 @@ export class Mixture implements CommonComponent {
 			mass: ingredient.mass,
 			notes: ingredient.notes,
 		};
-		this.ingredientList.splice(index, 1, newIngredient);
+		this._ingredientList.splice(index, 1, newIngredient);
 
 		return true;
 	}
@@ -261,7 +255,7 @@ export class Mixture implements CommonComponent {
 			ingredient.item = item;
 			return true;
 		}
-		for (const ingredient of this.ingredientList) {
+		for (const ingredient of this._ingredientList) {
 			if (ingredient.item instanceof Mixture) {
 				if (ingredient.item.replaceIngredientComponent(id, item)) {
 					return true;
@@ -295,7 +289,7 @@ export class Mixture implements CommonComponent {
 		} else {
 			// we expect that non-zero masses of the ingredients are encoded as negative
 			// numbers, so we'll scale them up to the new mass
-			const nonZeroMixtureMass = this.ingredientList.reduce(
+			const nonZeroMixtureMass = this._ingredientList.reduce(
 				(acc, { mass }) => acc + Math.abs(mass),
 				0,
 			);
@@ -353,12 +347,12 @@ export class Mixture implements CommonComponent {
 	}
 
 	get ingredientIds() {
-		return this.ingredientList.map((i) => i.id);
+		return this._ingredientList.map((i) => i.id);
 	}
 
 	eachIngredient() {
 		function* eachIngredient(this: Mixture): Generator<DecoratedIngredient> {
-			for (const ingredient of this.ingredientList) {
+			for (const ingredient of this._ingredientList) {
 				yield { ingredient, mass: this.getIngredientMass(ingredient.id) };
 			}
 		}
@@ -804,7 +798,7 @@ export function isSpirit(thing: IngredientItemComponent) {
 }
 
 export function isSimpleSpirit(thing: IngredientItemComponent) {
-	return isSpirit(thing) && thing.ingredients.size === 2 && thing.substances.length === 2;
+	return isSpirit(thing) && thing.size === 2 && thing.substances.length === 2;
 }
 
 export function isSweetenerMixture(thing: IngredientItemComponent) {
@@ -833,10 +827,7 @@ export function isSyrup(thing: IngredientItemComponent) {
 export function isSimpleSyrup(thing: IngredientItemComponent) {
 	// simple syrup is a mixture of sweetener and water
 	return Boolean(
-		isMixture(thing) &&
-			isSyrup(thing) &&
-			thing.ingredients.size === 2 &&
-			thing.substances.length === 2,
+		isMixture(thing) && isSyrup(thing) && thing.size === 2 && thing.substances.length === 2,
 	);
 }
 
