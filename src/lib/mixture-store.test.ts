@@ -14,11 +14,11 @@ function standardSpirit(volume = 100, abv = 40, name = 'spirit') {
 	};
 }
 
-function ingredientList(data: MixtureStoreData | IngredientItem): IngredientItem[] {
+function ingredientList(data: MixtureStoreData | IngredientItem): ReadonlyArray<IngredientItem> {
 	return 'mixture' in data
-		? Array.from(data.mixture.ingredients.values())
+		? data.mixture.ingredients
 		: 'ingredients' in data.item
-			? Array.from(data.item.ingredients.values())
+			? data.item.ingredients
 			: [];
 }
 
@@ -47,7 +47,7 @@ describe('Mixture Store', () => {
 		const spiritId = store.addIngredientTo(null, standardSpirit());
 
 		let state = store.snapshot();
-		expect(state.mixture.ingredients.size).toBe(1);
+		expect(state.mixture.size).toBe(1);
 
 		// Add water to the spirit mixture
 		const waterId = store.addIngredientTo(spiritId, {
@@ -57,21 +57,21 @@ describe('Mixture Store', () => {
 		});
 
 		state = store.snapshot();
-		const spirit = state.mixture.ingredients.get(spiritId)!;
+		const spirit = state.mixture.getIngredient(spiritId)!;
 		expect(spirit.item instanceof Mixture).toBe(true);
 		if (!(spirit.item instanceof Mixture)) {
 			throw new Error('Expected spirit component to be a mixture');
 		}
 
-		expect(spirit.item.ingredients.size).toBe(3);
-		expect((spirit.item.ingredients.get(waterId)!.item as SubstanceComponent).substanceId).toBe(
+		expect(spirit.item.size).toBe(3);
+		expect((spirit.item.getIngredient(waterId)!.item as SubstanceComponent).substanceId).toBe(
 			'water',
 		);
 		// Remove the water component
 		store.removeIngredient(waterId);
 
 		state = store.snapshot();
-		expect((state.mixture.ingredients.get(spiritId)!.item as Mixture).ingredients.size).toBe(2);
+		expect((state.mixture.getIngredient(spiritId)!.item as Mixture).size).toBe(2);
 	});
 
 	it('should handle volume changes', () => {
@@ -205,7 +205,7 @@ describe('Mixture Store', () => {
 		// Undo back to start
 		store.undo();
 		store.undo();
-		expect(store.mixture.ingredients.size).toBe(0);
+		expect(store.mixture.size).toBe(0);
 		expect(store.undoCount).toBe(0);
 		expect(store.redoCount).toBe(2);
 	});
@@ -265,8 +265,7 @@ describe('Mixture Store', () => {
 		expect(store.getSweetenerTypes(sugar1Id)).toEqual(['fructose']);
 
 		// Get all ingredients
-		const ingredients = Array.from(store.mixture.ingredients.values());
-		const sugar2 = ingredients.find((i) => i.name === 'sugar2');
+		const sugar2 = store.mixture.findIngredient((i) => i.name === 'sugar2');
 		expect(sugar2).toBeDefined();
 		if (!sugar2) throw new Error('sugar2 not found');
 
@@ -294,17 +293,14 @@ describe('Mixture Store', () => {
 		// Update first acid to tartaric
 		store.updateAcidType(acid1Id, 'tartaric-acid');
 
-		// Get all ingredients
-		const ingredients = Array.from(store.mixture.ingredients.values());
-
 		// Check first acid was updated
-		const acid1 = ingredients.find((i) => i.id === acid1Id);
+		const acid1 = store.mixture.findIngredient((i) => i.id === acid1Id);
 		expect(acid1).toBeDefined();
 		if (!acid1) throw new Error('acid1 not found');
 		expect((acid1.item as SubstanceComponent).substanceId).toBe('tartaric-acid');
 
 		// Check second acid remained unchanged
-		const acid2 = ingredients.find((i) => i.name === 'citric2');
+		const acid2 = store.mixture.findIngredient((i) => i.name === 'citric2');
 		expect(acid2).toBeDefined();
 		if (!acid2) throw new Error('acid2 not found');
 		expect((acid2.item as SubstanceComponent).substanceId).toBe('citric-acid');

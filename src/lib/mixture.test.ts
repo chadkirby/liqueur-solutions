@@ -5,7 +5,7 @@ import { SubstanceComponent } from './ingredients/substance-component.js';
 describe('mixture works', () => {
 	test('empty mixture', () => {
 		const mx = new Mixture();
-		assert.equal(mx.ingredients.size, 0, 'no ingredients');
+		assert.equal(mx.size, 0, 'no ingredients');
 		assert.equal(mx.getDensity(), 0, 'density');
 		assert.equal(mx.volume, 0, 'volume');
 		assert.equal(mx.mass, 0, 'mass');
@@ -23,7 +23,7 @@ describe('mixture works', () => {
 			item: SubstanceComponent.new('water'),
 		});
 		assert.deepEqual(mx.makeSubstanceMap().get('water')?.mass, 100, 'water substance');
-		assert.equal(mx.ingredients.size, 1, 'one ingredient');
+		assert.equal(mx.size, 1, 'one ingredient');
 		assert.equal(mx.getDensity(), 1, 'density');
 		assert.equal(mx.volume, 100, 'volume');
 		assert.equal(mx.mass, 100, 'mass');
@@ -48,7 +48,7 @@ describe('mixture works', () => {
 
 		assert.deepEqual(mx.makeSubstanceMap().get('water')!.mass, 200, 'water substance map');
 		assert.deepEqual(mx.waterMass, 200, 'water ingredient mass');
-		assert.equal(mx.ingredients.size, 2, 'two ingredients');
+		assert.equal(mx.size, 2, 'two ingredients');
 	});
 
 	test('can add sub-mixtures', () => {
@@ -70,7 +70,7 @@ describe('mixture works', () => {
 
 		assert.equal(mx.makeSubstanceMap().get('water')!.mass, 20, 'water substance map');
 		assert.equal(mx.waterMass, 20, 'water ingredient mass');
-		assert.equal(mx.ingredients.size, 2, 'two ingredients');
+		assert.equal(mx.size, 2, 'two ingredients');
 	});
 
 	test('can remove ingredient', () => {
@@ -88,12 +88,12 @@ describe('mixture works', () => {
 
 		let mass = 200;
 		let ingredientCount = 2;
-		assert.equal(mx.ingredients.size, ingredientCount, 'two ingredients');
+		assert.equal(mx.size, ingredientCount, 'two ingredients');
 		for (const id of mx.ingredientIds) {
 			mx.removeIngredient(id);
 			ingredientCount--;
 			mass -= 100;
-			assert.equal(mx.ingredients.size, ingredientCount, `${ingredientCount} ingredients`);
+			assert.equal(mx.size, ingredientCount, `${ingredientCount} ingredients`);
 			assert.equal(mx.mass, mass, 'water ingredient mass');
 		}
 	});
@@ -266,7 +266,7 @@ test('addIngredient preserves notes field', () => {
 		item: SubstanceComponent.new('sucrose'),
 	});
 
-	const ingredient = [...mixture.ingredients.values()][0];
+	const ingredient = mixture.ingredients[0];
 	assert.strictEqual(ingredient.notes, 'Special instructions');
 });
 
@@ -285,7 +285,7 @@ describe('Mixture with notes', () => {
 		const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
 		// Check if the notes are preserved
-		const ingredient = [...deserializedMixture.ingredients.values()][0];
+		const ingredient = deserializedMixture.ingredients[0];
 		assert.strictEqual(ingredient.notes, 'This is a test note');
 	});
 
@@ -322,7 +322,7 @@ test('updateFrom preserves notes in ingredients', () => {
 	const targetMixture = new Mixture();
 	targetMixture.updateFrom(sourceMixture);
 
-	const ingredient = [...targetMixture.ingredients.values()][0];
+	const ingredient = targetMixture.ingredients[0];
 	assert.strictEqual(ingredient.notes, 'Notes from source');
 });
 
@@ -344,7 +344,7 @@ test('replaceIngredient preserves notes when specified', () => {
 	});
 
 	assert.strictEqual(success, true);
-	const replacedIngredient = [...mixture.ingredients.values()][0];
+	const replacedIngredient = mixture.ingredients[0];
 	assert.strictEqual(replacedIngredient.notes, 'New notes');
 });
 
@@ -365,7 +365,7 @@ test('replaceIngredient does not add notes when not specified', () => {
 	});
 
 	assert.strictEqual(success, true);
-	const replacedIngredient = [...mixture.ingredients.values()][0];
+	const replacedIngredient = mixture.ingredients[0];
 	assert.strictEqual(replacedIngredient.notes, undefined);
 });
 
@@ -381,7 +381,7 @@ test('empty notes field is preserved', () => {
 	const data = mixture.serialize();
 	const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
-	const ingredient = [...deserializedMixture.ingredients.values()][0];
+	const ingredient = deserializedMixture.ingredients[0];
 	expect(ingredient.notes).toBe(''); // Should be empty string, not null/undefined
 });
 
@@ -397,6 +397,6 @@ test('undefined notes field is handled correctly', () => {
 	const data = mixture.serialize();
 	const deserializedMixture = Mixture.deserialize(data[0][0], data);
 
-	const ingredient = [...deserializedMixture.ingredients.values()][0];
+	const ingredient = deserializedMixture.ingredients[0];
 	expect(ingredient.notes).toBeUndefined();
 });

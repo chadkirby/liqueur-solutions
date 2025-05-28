@@ -1,5 +1,5 @@
 import type { SubstanceComponent } from './ingredients/substance-component.js';
-import type { SubstanceId } from './ingredients/substances.js';
+import { isSubstanceId, type SubstanceId } from './ingredients/substances.js';
 import type { Mixture } from './mixture.js';
 import type { StorageId } from './storage-id.js';
 import { z } from 'zod';

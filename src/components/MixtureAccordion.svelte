@@ -99,7 +99,7 @@
 				{mixtureStore}
 				componentId={parentId}
 				callback={(addedId) => {
-					const newIngredient = mixture?.ingredients.get(addedId);
+					const newIngredient = mixture?.getIngredient(addedId);
 					if (newIngredient && isMixture(newIngredient.item) && newIngredient.item.size === 0) {
 						editedSubmixture = {
 							id: addedId,
