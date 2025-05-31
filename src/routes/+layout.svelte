@@ -9,8 +9,7 @@
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import type { FileSyncMeta } from '$lib/data-format.js';
-	import { setSyncMeta, runJanitor } from '$lib/persistence.svelte.js';
+	import { runJanitor, type CloudFileData, setCloudFiles } from '$lib/persistence.svelte.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
@@ -18,7 +17,7 @@
 	interface Props {
 		children?: Snippet;
 		data: {
-			syncMeta: FileSyncMeta[];
+			cloudFiles: CloudFileData[];
 		};
 	}
 
@@ -26,7 +25,7 @@
 	console.log('Clerk layout');
 	// 2) Make them available to all descendants via context
 	setContext<ClerkContext>(CLERK_CONTEXT_KEY, { instance: clerkInstance, user: clerkUser });
-	setSyncMeta(data.syncMeta);
+	setCloudFiles(data.cloudFiles);
 
 	onMount(() => {
 		console.log('Clerk mount');
@@ -45,16 +44,16 @@
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
 				clerkUser.set(user ?? null);
 				if (user) {
-					setSyncMeta(data.syncMeta);
+					setCloudFiles(data.cloudFiles);
 				} else {
-					setSyncMeta([]);
+					setCloudFiles([]);
 				}
 			});
 		});
 
 		// schedule the janitor task to run once
 		const janitor = setTimeout(() => {
-			runJanitor(new Set(data.syncMeta.map((item) => item.id)));
+			runJanitor(new Set(data.cloudFiles.map((item) => item.id)));
 		}, 2000);
 
 		// 7) Clean up when this layout is unmounted

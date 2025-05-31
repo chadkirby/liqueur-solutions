@@ -62,14 +62,6 @@ export const zFileDataV1 = z.strictObject({
 
 export type FileDataV1 = z.infer<typeof zFileDataV1>;
 
-export const zFileSync = z.strictObject({
-	id: z.string(), // storage ID of the file
-	lastSyncTime: z.string(), // last successful sync time
-	lastSyncHash: z.string(), // hash of the file contents at last sync
-});
-
-export type FileSyncMeta = z.infer<typeof zFileSync>;
-
 export function getIngredientHash(
 	item: Pick<FileDataV1, 'name' | 'desc' | 'ingredientDb'>,
 ): string {
