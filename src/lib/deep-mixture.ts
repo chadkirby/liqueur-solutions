@@ -1,10 +1,9 @@
-import type { IngredientToAdd } from './mixture-types.js';
 import { Mixture } from './mixture.js';
 
 export function deepGet(getter: (mx: Mixture) => number | false, mixture: Mixture): number | false {
 	const value = getter(mixture);
 	if (value !== false) return value;
-	for (const ingredient of mixture.ingredients.values()) {
+	for (const { ingredient } of mixture.eachIngredient()) {
 		if (ingredient.item instanceof Mixture) {
 			const value = deepGet(getter, ingredient.item);
 			if (value !== false) return value;
@@ -16,7 +15,7 @@ export function deepGet(getter: (mx: Mixture) => number | false, mixture: Mixtur
 export function deepSet<T>(setter: (mx: Mixture) => boolean, mixture: Mixture): boolean {
 	const wasSet = setter(mixture);
 	if (wasSet) return true;
-	for (const ingredient of mixture.ingredients.values()) {
+	for (const { ingredient } of mixture.eachIngredient()) {
 		if (ingredient.item instanceof Mixture) {
 			const wasSet = deepSet(setter, ingredient.item);
 			if (wasSet) return true;

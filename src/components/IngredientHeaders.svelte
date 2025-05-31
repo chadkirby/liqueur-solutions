@@ -1,7 +1,11 @@
 <script lang="ts" module>
 	import SweetenerDropdown from './displays/SweetenerDropdown.svelte';
 	import TextInput from './ui-primitives/TextInput.svelte';
-	import type { IngredientItem, IngredientSubstanceItem } from '$lib/mixture-types.js';
+	import type {
+		InMemoryIngredient,
+		InMemoryMixture,
+		InMemorySubstance,
+	} from '$lib/mixture-types.js';
 	import CitrusDropdown from './displays/CitrusDropdown.svelte';
 	import AcidDropdown from './displays/AcidDropdown.svelte';
 	import SaltDropdown from './displays/SaltDropdown.svelte';
@@ -28,7 +32,7 @@
 	const secondaryInputBase = 'w-18 shrink-0'; // Fixed width for consistency
 </script>
 
-{#snippet nameInput(mixtureStore: MixtureStore, ingredient: IngredientItem)}
+{#snippet nameInput(mixtureStore: MixtureStore, ingredient: InMemoryIngredient)}
 	<TextInput
 		type="text"
 		value={ingredient.name}
@@ -48,13 +52,13 @@
 	/>
 {/snippet}
 
-{#snippet defaultHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
+{#snippet defaultHeader(mixtureStore: MixtureStore, ingredient: InMemoryIngredient, volume: number)}
 	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 
 	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
-{#snippet sweetenerHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, mass: number)}
+{#snippet sweetenerHeader(mixtureStore: MixtureStore, ingredient: InMemoryIngredient, mass: number)}
 	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<SweetenerDropdown
 		{mixtureStore}
@@ -68,7 +72,7 @@
 
 {#snippet simpleSyrupHeader(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryIngredient,
 	volume: number,
 	brix: number,
 )}
@@ -97,7 +101,7 @@
 
 {#snippet spiritHeader(
 	mixtureStore: MixtureStore,
-	ingredient: IngredientItem,
+	ingredient: InMemoryIngredient,
 	volume: number,
 	abv: number,
 )}
@@ -115,7 +119,7 @@
 	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
-{#snippet citrusHeader(mixtureStore: MixtureStore, ingredient: IngredientItem, volume: number)}
+{#snippet citrusHeader(mixtureStore: MixtureStore, ingredient: InMemoryIngredient, volume: number)}
 	<VolumeSpinner {mixtureStore} class={numericBase} {volume} ingredientId={ingredient.id} />
 	<CitrusDropdown
 		{mixtureStore}
@@ -127,7 +131,7 @@
 	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
-{#snippet acidHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
+{#snippet acidHeader(mixtureStore: MixtureStore, ingredient: InMemorySubstance, mass: number)}
 	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<AcidDropdown
 		{mixtureStore}
@@ -139,7 +143,7 @@
 	{@render nameInput(mixtureStore, ingredient)}
 {/snippet}
 
-{#snippet saltHeader(mixtureStore: MixtureStore, ingredient: IngredientSubstanceItem, mass: number)}
+{#snippet saltHeader(mixtureStore: MixtureStore, ingredient: InMemorySubstance, mass: number)}
 	<MassSpinner {mixtureStore} class={numericBase} {mass} ingredientId={ingredient.id} />
 	<SaltDropdown
 		{mixtureStore}

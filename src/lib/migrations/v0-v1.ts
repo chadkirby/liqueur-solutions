@@ -1,18 +1,19 @@
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
-import type { StoredFileDataV0, StoredFileDataV1, V0MixtureData } from '$lib/data-format.js';
+import type { StoredFileDataV0, FileDataV1, V0MixtureData } from '$lib/data-format.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 
-export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>): StoredFileDataV1 {
+export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>): FileDataV1 {
 	const { components } = data.mixture.data;
 	const mixture = makeMixture(components);
 	return {
 		version: 1,
 		id: componentId(),
 		name: data.mixture.name,
-		accessTime: Date.now(),
+		accessTime: new Date().toISOString(),
 		desc: data.desc || mixture.describe(),
 		rootMixtureId: mixture.id,
 		ingredientDb: mixture.serialize(),
+		_ingredientHash: mixture.getIngredientHash(data.mixture.name),
 	};
 }
 

@@ -247,7 +247,7 @@ export function solver(mixture: Mixture, otargets: SolverTarget) {
 			const acidGroups = getAcidGroups(provisionalMixture.substances);
 			const needs = getNeeds(state.deviations, acidGroups);
 			for (const id of ingredientIds) {
-				const ingredient = provisionalMixture.ingredients.get(id)!;
+				const ingredient = provisionalMixture.getIngredient(id)!;
 				const currentMass = provisionalMixture.getIngredientMass(id);
 				const provides =
 					ingredient.item instanceof Mixture

@@ -1,7 +1,7 @@
 import { Mixture } from '$lib/mixture.js';
 import { strToU8, strFromU8, compressSync } from 'fflate';
 import * as fflate from 'fflate';
-import { isV0Data, isV1Data, type StoredFileDataV1 } from '$lib/data-format.js';
+import { isV0Data, type FileDataV1 } from '$lib/data-format.js';
 import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 
 /**
@@ -50,7 +50,7 @@ function decompress(qs: URLSearchParams, name: string): Mixture {
 	}
 	const buf = fflate.decompressSync(fflate.strToU8(atob(gz), true));
 	const data = JSON.parse(fflate.strFromU8(buf, true));
-	const v1Data: StoredFileDataV1 = isV0Data({ mixture: { name, data } })
+	const v1Data: FileDataV1 = isV0Data({ mixture: { name, data } })
 		? portV0DataToV1({ mixture: { name, data }, desc: '' })
 		: data;
 	if (!v1Data) {

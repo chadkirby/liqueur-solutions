@@ -56,6 +56,13 @@ export class FancyIterator<T> implements Iterable<T> {
 		return false;
 	}
 
+	first(): T | undefined {
+		for (const item of this) {
+			return item;
+		}
+		return undefined;
+	}
+
 	[Symbol.iterator](): Iterator<T> {
 		return {
 			next: () => this.iterableIterator.next(),

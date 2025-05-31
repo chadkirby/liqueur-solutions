@@ -6,7 +6,7 @@ import { getCitrusPrefix } from './ingredients/citrus-ids.js';
 describe('newSpirit', () => {
 	it('should work', () => {
 		const spirit = newSpirit(100, 47.41192);
-		expect(spirit.ingredients.size, 'two ingredients').toBe(2);
+		expect(spirit.size, 'two ingredients').toBe(2);
 		expect(spirit.volume, 'volume').toBeCloseTo(100);
 		// 47.41192% ABV spirit has a weight percentage of 0.4, so we expect
 		// the density to be 0.9352, which we have in the experimental
@@ -22,26 +22,30 @@ describe('newSyrup', () => {
 	it('should work', () => {
 		// 100ml of 50 brix syrup should have 60.65g of sugar and 39.35g of water
 		const syrup = newSyrup(100, 50);
-		expect(syrup.ingredients.size, 'two ingredients').toBe(2);
+		expect(syrup.size, 'two ingredients').toBe(2);
 		expect(syrup.volume, 'volume').toBeCloseTo(100);
 		expect(syrup.mass, 'mass').toBeCloseTo(121.3);
 		expect(syrup.equivalentSugarMass, 'mass').toBeCloseTo(60.65, 1);
 		expect(syrup.abv).toBe(0);
 		expect(syrup.brix).toBe(50);
 		expect(
-			[...syrup.ingredients].map((i) => syrup.getIngredientMass(i[0]).toFixed(2)),
+			syrup
+				.eachIngredient()
+				.map(({ ingredient }) => syrup.getIngredientMass(ingredient.id).toFixed(2)),
 			'masses',
 		).toStrictEqual(['60.65', '60.65']);
 		expect(
-			[...syrup.ingredients].map(([, { id, item }]) =>
-				item.getWaterVolume(syrup.getIngredientMass(id)).toFixed(2),
-			),
+			syrup
+				.eachIngredient()
+				.map(({ ingredient: { id, item } }) =>
+					item.getWaterVolume(syrup.getIngredientMass(id)).toFixed(2),
+				),
 			'waterVolumes',
 		).toStrictEqual(['0.00', '60.65']);
 	});
 	it('should add ingredients properly', () => {
 		const syrup = newSyrup(100, 50);
-		expect(syrup.ingredients.size, 'two ingredients').toBe(2);
+		expect(syrup.size, 'two ingredients').toBe(2);
 		expect(syrup.mass, 'mass').toBeCloseTo(121.3);
 		expect(syrup.equivalentSugarMass, 'mass').toBeCloseTo(60.65, 1);
 		expect(syrup.volume, 'volume').toBe(100);
@@ -52,9 +56,11 @@ describe('newSyrup', () => {
 			mass: 60.65,
 			item: SubstanceComponent.new('water'),
 		});
-		expect(syrup.ingredients.size, 'three ingredients').toBe(3);
+		expect(syrup.size, 'three ingredients').toBe(3);
 		expect(
-			[...syrup.ingredients].map((i) => syrup.getIngredientMass(i[0]).toFixed(2)),
+			syrup
+				.eachIngredient()
+				.map(({ ingredient }) => syrup.getIngredientMass(ingredient.id).toFixed(2)),
 			'masses',
 		).toStrictEqual(['60.65', '60.65', '60.65']);
 		expect(syrup.equivalentSugarMass, 'mass').toBeCloseTo(60.65, 1);

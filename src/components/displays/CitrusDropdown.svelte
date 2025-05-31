@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Dropdown from './Dropdown.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import type { IngredientItemComponent } from '$lib/mixture-types.js';
+	import type { IngredientItem } from '$lib/mixture-types.js';
 	import {
 		citrusJuiceNames,
 		getCitrusPrefix,
@@ -12,7 +12,7 @@
 
 	interface Props {
 		componentId: string;
-		component: IngredientItemComponent;
+		component: IngredientItem;
 		mixtureStore: MixtureStore;
 		class?: string | string[];
 		basis?: string;

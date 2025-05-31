@@ -5,6 +5,7 @@
 	import type { Clerk } from '@clerk/clerk-js';
 	import type { UserResource } from '@clerk/types'; // Keep if needed, maybe not here
 	import { browser } from '$app/environment';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function
@@ -14,10 +15,7 @@
 	let { data }: Props = $props();
 
 	// Get Clerk instance store from context
-	const clerkStores = getContext<{
-		instance: Writable<Clerk | null>;
-		user: Writable<UserResource | null>;
-	}>('clerk');
+	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
 	const clerkInstance = clerkStores.instance;
 
 	let signInContainer: HTMLDivElement;
@@ -74,8 +72,7 @@
 </div>
 
 <style>
-	/* Optional: Add styles if needed */
-	.clerk-sign-in-container {
-		/* Add any container-specific styles */
-	}
+	/* Optional: Add styles if needed
+	.clerk-sign-in-container {}
+	*/
 </style>
