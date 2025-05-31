@@ -12,7 +12,7 @@
 
 	import { getContext } from 'svelte';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { writeCloudFile, SyncMeta, toggleStar } from '$lib/persistence.svelte.js';
+	import { writeCloudFile, toggleStar, CloudFiles } from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -41,10 +41,10 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let cloudSyncMeta = $derived(SyncMeta?.findOne({ id: storeId }));
+	let cloudSyncMeta = $derived(CloudFiles?.findOne({ id: storeId }));
 
 	let isStarred = $derived(Boolean(cloudSyncMeta));
-	let isDirty = $derived(mixtureStore.ingredientHash !== cloudSyncMeta?.lastSyncHash);
+	let isDirty = $derived(mixtureStore.ingredientHash !== cloudSyncMeta?._ingredientHash);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();

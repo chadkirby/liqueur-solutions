@@ -29,39 +29,27 @@
 		writeTempFile,
 		readFile,
 		toggleStar,
-		listCloudFiles,
+		CloudFiles,
+		type CloudFileData,
 	} from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
-	let cloudFiles = $state<FileDataV1[] | null>(null);
-
-	// call listCloudFiles when the drawer is opened
-	$effect(() => {
-		if (filesDrawer.isOpen && !cloudFiles) {
-			listCloudFiles((file) => {
-				console.log('Got cloud file:', file);
-				if (!cloudFiles) {
-					cloudFiles = [];
-				}
-				cloudFiles.push(file);
-			});
-		}
-	});
+	let cloudFiles = $derived(CloudFiles?.find({}, { sort: { accessTime: -1 } }).fetch());
 
 	const tempFiles = $derived(
 		TempFiles?.find({}, { sort: { accessTime: -1 } })
 			.map(deserialize)
-			.filter((f) => !cloudFiles?.some((cloudFile) => cloudFile.id === f.id)),
+			.filter((f) => !CloudFiles?.findOne({ id: f.id })),
 	);
 	let cloudSyncedIds = $derived(new SvelteSet(cloudFiles?.map((file) => file.id)));
 
 	let { mixtureStore }: Props = $props();
 
 	let showTempFiles = $state(false);
-	let files = $derived([
+	let files: CloudFileData[] = $derived([
 		...(cloudFiles ? cloudFiles : []),
 		...(showTempFiles && tempFiles ? tempFiles : []),
 	]);

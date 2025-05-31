@@ -3,15 +3,14 @@ import { browser } from '$app/environment';
 import {
 	currentDataVersion,
 	zFileDataV1,
-	zFileSync,
 	type FileDataV1,
-	type FileSyncMeta,
 	type IngredientDbEntry,
 } from '$lib/data-format.js';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import { SchemaCollection } from './schema-collection.js';
 import createIndexedDBAdapter from '@signaldb/indexeddb';
 import { isStorageId, type StorageId } from './storage-id.js';
+import { z } from 'zod/v4-mini';
 
 export const TempFiles = browser
 	? new SchemaCollection({
@@ -21,13 +20,38 @@ export const TempFiles = browser
 		})
 	: null;
 
-export const SyncMeta = browser
+export type CloudFileData = Pick<
+	FileDataV1,
+	'name' | 'id' | 'desc' | 'accessTime' | '_ingredientHash'
+>;
+export const CloudFiles = browser
 	? new SchemaCollection({
-			schema: zFileSync,
+			schema: z.pick(zFileDataV1, {
+				name: true,
+				id: true,
+				desc: true,
+				accessTime: true,
+				_ingredientHash: true,
+			}),
 			reactivity: svelteReactivityAdapter,
-			persistence: createIndexedDBAdapter<FileSyncMeta, StorageId>('file-sync-meta'),
 		})
 	: null;
+
+function toCloudData(fileDate: FileDataV1): CloudFileData {
+	return {
+		name: fileDate.name,
+		id: fileDate.id,
+		desc: fileDate.desc,
+		accessTime: fileDate.accessTime,
+		_ingredientHash: fileDate._ingredientHash,
+	};
+}
+
+export function setCloudFiles(data: CloudFileData[]): void {
+	if (!CloudFiles) return;
+	CloudFiles.removeMany({});
+	CloudFiles.insertMany(data);
+}
 
 export function deserialize(item: FileDataV1): FileDataV1 {
 	// some interim files have ingredientJSON instead of ingredientDb
@@ -58,7 +82,7 @@ function serialize(item: FileDataV1): FileDataV1 {
 const upsert = true;
 
 export async function toggleStar(id: StorageId): Promise<boolean> {
-	if (!SyncMeta) return false;
+	if (!CloudFiles) return false;
 	const starredResp = await fetch(`../api/mixtures/${id}/star`);
 	if (starredResp.ok) {
 		await deleteCloudFile(id);
@@ -68,46 +92,6 @@ export async function toggleStar(id: StorageId): Promise<boolean> {
 		return true; // Starred successfully
 	} else {
 		throw new Error('FilesDb: Failed to toggle star for id ' + id + ': ' + starredResp.statusText);
-	}
-}
-
-export async function listCloudFiles(
-	cb: (file: Omit<FileDataV1, 'ingredientJSON'>) => void,
-): Promise<void> {
-	const filesResp = await fetch('../api/mixtures');
-	if (!filesResp.ok) {
-		throw new Error('FilesDb: Failed to fetch cloud files: ' + filesResp.statusText);
-	}
-	// call the callback for each file in the streamed response
-	const reader = filesResp.body?.getReader();
-	if (!reader) {
-		throw new Error('FilesDb: Response body is null');
-	}
-	const decoder = new TextDecoder();
-	let buffer = '';
-	try {
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			buffer += decoder.decode(value, { stream: true });
-			const lines = buffer.split('\n');
-			buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
-			for (const line of lines) {
-				if (line.trim()) {
-					console.log('FilesDb: Processing line:', line);
-					const file = JSON.parse(line) as FileDataV1;
-					cb({ ...file });
-				}
-			}
-		}
-		// Process any remaining data in buffer
-		if (buffer.trim()) {
-			const fileData = JSON.parse(buffer) as Omit<FileDataV1, 'ingredientJSON'>;
-			cb(fileData);
-		}
-	} catch (e) {
-		console.error('FilesDb: Error reading cloud files:', e);
-		throw new Error('FilesDb: Failed to read cloud files');
 	}
 }
 
@@ -128,7 +112,7 @@ export async function writeCloudFile(id: StorageId): Promise<void> {
 }
 
 async function deleteCloudFile(id: StorageId): Promise<void> {
-	if (!SyncMeta) return;
+	if (!CloudFiles) return;
 	const response = await fetch(`../api/mixtures/${id}`, {
 		method: 'DELETE',
 	});
@@ -137,18 +121,18 @@ async function deleteCloudFile(id: StorageId): Promise<void> {
 		return;
 	}
 
-	SyncMeta.removeOne({ id }); // Remove sync meta for this id
+	CloudFiles.removeOne({ id }); // Remove from cloud files collection
 	console.log('FilesDb: deleted mixture from cloud and local store for id', id);
 }
 
 async function putMx(data: FileDataV1): Promise<void> {
-	if (!SyncMeta) return;
-	const sync = await SyncMeta.findOne({ id: data.id });
+	if (!CloudFiles) return;
+	const sync = await CloudFiles.findOne({ id: data.id });
 	const response = await fetch(`../api/mixtures/${data.id}`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json',
-			'X-Last-Sync-Time': sync?.lastSyncTime?.toString() || new Date(0).toISOString(),
+			'X-Last-Sync-Time': sync?.accessTime?.toString() || new Date(0).toISOString(),
 		},
 		body: JSON.stringify(data),
 	});
@@ -157,13 +141,9 @@ async function putMx(data: FileDataV1): Promise<void> {
 		// User confirmed to overwrite
 		console.log('User confirmed to overwrite the mixture');
 		// update the lastSyncTime to now
-		SyncMeta.replaceOne(
+		CloudFiles.replaceOne(
 			{ id: data.id },
-			{
-				id: data.id,
-				lastSyncTime: new Date().toISOString(),
-				lastSyncHash: data._ingredientHash,
-			},
+			toCloudData({ ...data, accessTime: new Date().toISOString() }),
 			{ upsert },
 		);
 		// Retry the PUT request
@@ -178,13 +158,9 @@ async function putMx(data: FileDataV1): Promise<void> {
 			throw new Error('PUT Response missing lastSyncTime or lastSyncHash');
 		}
 		// If the response contains a lastSyncTime, update the local store
-		SyncMeta.replaceOne(
+		CloudFiles.replaceOne(
 			{ id: data.id },
-			{
-				id: data.id,
-				lastSyncTime: new Date(responseData.lastSyncTime).toISOString(),
-				lastSyncHash: responseData.lastSyncHash,
-			},
+			toCloudData({ ...data, accessTime: new Date(responseData.lastSyncTime).toISOString() }),
 			{ upsert },
 		);
 	} else {
@@ -193,7 +169,7 @@ async function putMx(data: FileDataV1): Promise<void> {
 }
 
 async function readCloudFile(id: StorageId): Promise<FileDataV1 | null> {
-	if (!SyncMeta) return null;
+	if (!CloudFiles) return null;
 	const response = await fetch(`../api/mixtures/${id}`);
 	if (!response.ok) {
 		if (response.status === 404) {
@@ -210,20 +186,17 @@ async function readCloudFile(id: StorageId): Promise<FileDataV1 | null> {
 	}
 
 	const lastSyncTime = response.headers.get('X-Last-Sync-Time');
-	const lastSyncHash = response.headers.get('X-Last-Sync-Hash');
-	if (lastSyncTime && lastSyncHash) {
-		SyncMeta.replaceOne(
-			{ id: data.id },
-			{
-				id: data.id,
-				lastSyncTime: new Date(lastSyncTime).toISOString(),
-				lastSyncHash: lastSyncHash,
-			},
-			{ upsert },
-		);
-	}
 
-	return deserialize(data);
+	const deserialized = deserialize(data);
+	CloudFiles.replaceOne(
+		{ id: deserialized.id },
+		toCloudData({
+			...deserialized,
+			accessTime: lastSyncTime ? new Date(lastSyncTime).toISOString() : new Date().toISOString(),
+		}),
+		{ upsert },
+	);
+	return deserialized;
 }
 
 export async function runJanitor(stars: Set<string>): Promise<void> {
@@ -321,12 +294,6 @@ export async function readFile(id: string): Promise<Mixture> {
 	}
 
 	throw new Error(`No mixture found for id ${id}`);
-}
-
-export function setSyncMeta(meta: FileSyncMeta[]): void {
-	if (!SyncMeta) return;
-	SyncMeta.removeMany({}); // Clear existing sync meta
-	SyncMeta.insertMany(meta);
 }
 
 export async function getName(id: StorageId): Promise<string> {
