@@ -1,9 +1,9 @@
 <script lang="ts">
 	// Import context tools and types
 	import { getContext, onMount, onDestroy } from 'svelte';
-	import type { Writable } from 'svelte/store';
 	import type { Clerk } from '@clerk/clerk-js';
 	import { browser } from '$app/environment';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 
 	interface Props {
 		// This prop is populated with the returned data from the load function
@@ -13,9 +13,7 @@
 	let { data }: Props = $props();
 
 	// Get Clerk instance store from context
-	const clerkStores = getContext<{ instance: Writable<Clerk | null>; user: Writable<any | null> }>(
-		'clerk',
-	); // User type might not be needed
+	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY); // User type might not be needed
 	const clerkInstance = clerkStores.instance;
 
 	let signUpContainer: HTMLDivElement;
@@ -72,8 +70,7 @@
 </div>
 
 <style>
-	/* Optional: Add styles if needed */
-	.clerk-sign-up-container {
-		/* Add any container-specific styles */
-	}
+	/* Optional: Add styles if needed
+	.clerk-sign-up-container {}
+	*/
 </style>

@@ -466,7 +466,7 @@ export type SubstanceId = (typeof Substances)[number]['id'];
 
 export const SubstanceIds = Object.freeze(Substances.map((s) => s.id));
 
-export function isSubstanceIid(id: string): id is SubstanceId {
+export function isSubstanceId(id: string): id is SubstanceId {
 	return SubstanceIds.includes(id as SubstanceId);
 }
 

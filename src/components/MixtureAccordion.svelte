@@ -8,13 +8,13 @@
 	import { serializeToUrl } from '$lib/url-serialization.js';
 	import {
 		isMixture,
-		isSimpleSpirit,
-		isSimpleSyrup,
 		isSweetener,
 		isWater,
-		isCitrusMixture,
-		isAcidSubstance,
-		isSaltIngredient,
+		isCitrusMixture as _isCitrusMixture,
+		isAcidSubstance as _isAcidSubstance,
+		isSpirit,
+		isSyrup,
+		isSubstance,
 	} from '$lib/mixture.js';
 	import {
 		defaultHeader,
@@ -34,9 +34,14 @@
 		acidDetails,
 		citrusDetails,
 	} from './IngredientDetails.svelte';
-	import type { IngredientSubstanceItem } from '$lib/mixture-types.js';
+	import type {
+		InMemoryIngredient,
+		InMemoryMixture,
+		InMemorySubstance,
+	} from '$lib/mixture-types.js';
 	import Helper from './ui-primitives/Helper.svelte';
 	import { ingredientTotals, mixtureTotals } from './MixtureTotals.svelte';
+	import { isSaltId } from '$lib/ingredients/substances.js';
 
 	let {
 		mixtureStore,
@@ -71,6 +76,30 @@
 	let editMixtureDialog: HTMLDialogElement | null = $state(null);
 	let editedSubmixture = $state({ id: '', name: '' });
 	let displayName = $derived(mixtureName || mixture?.describe() || 'never');
+
+	function isSimpleSpirit(thing: InMemoryIngredient): thing is InMemoryMixture {
+		return isSpirit(thing.item) && thing.item.size === 2 && thing.item.substances.length === 2;
+	}
+
+	function isSimpleSyrup(thing: InMemoryIngredient): thing is InMemoryMixture {
+		// simple syrup is a mixture of sweetener and water
+		return Boolean(
+			isMixture(thing.item) &&
+				isSyrup(thing.item) &&
+				thing.item.size === 2 &&
+				thing.item.substances.length === 2,
+		);
+	}
+
+	function isAcidSubstance(thing: InMemoryIngredient): thing is InMemorySubstance {
+		return isSubstance(thing.item) && _isAcidSubstance(thing.item);
+	}
+	function isCitrusMixture(thing: InMemoryIngredient): thing is InMemoryMixture {
+		return isMixture(thing.item) && _isCitrusMixture(thing.item);
+	}
+	function isSaltIngredient(thing: InMemoryIngredient): thing is InMemorySubstance {
+		return isSubstance(thing) && isSaltId(thing.substanceId);
+	}
 </script>
 
 <div>
@@ -99,7 +128,7 @@
 				{mixtureStore}
 				componentId={parentId}
 				callback={(addedId) => {
-					const newIngredient = mixture?.ingredients.get(addedId);
+					const newIngredient = mixture?.getIngredient(addedId);
 					if (newIngredient && isMixture(newIngredient.item) && newIngredient.item.size === 0) {
 						editedSubmixture = {
 							id: addedId,
@@ -116,7 +145,6 @@
 		<Accordion flush={false} isSingle={false} class="mt-1">
 			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id)}
 				{@const id = ingredient.id}
-				{@const component = ingredient.item}
 				{@const ingredientVolume = mixture.getIngredientVolume(id)}
 				<AccordionItem
 					class="py-2 pl-1 pr-2"
@@ -128,7 +156,7 @@
 							class="relative pt-2.5 flex flex-row items-center gap-x-1.5 w-full"
 							data-testid="mixture-ingredient-accordion-header"
 						>
-							<div class="absolute txt-xxs text-primary-500">{component.describe()}</div>
+							<div class="absolute txt-xxs text-primary-500">{ingredient.item.describe()}</div>
 							{#if editMode}
 								<RemoveButton
 									{mixtureStore}
@@ -138,26 +166,26 @@
 								/>
 							{/if}
 
-							{#if isSweetener(component)}
+							{#if isSweetener(ingredient.item)}
 								{@render sweetenerHeader(mixtureStore, ingredient, mass)}
-							{:else if isSimpleSpirit(component)}
+							{:else if isSimpleSpirit(ingredient)}
 								{@render spiritHeader(
 									mixtureStore,
 									ingredient,
 									ingredientVolume,
 									mixture.getIngredientAbv(id),
 								)}
-							{:else if isSimpleSyrup(component)}
+							{:else if isSimpleSyrup(ingredient)}
 								{@render simpleSyrupHeader(
 									mixtureStore,
 									ingredient,
 									ingredientVolume,
 									mixture.getIngredientBrix(id),
 								)}
-							{:else if isCitrusMixture(component)}
+							{:else if isCitrusMixture(ingredient)}
 								{@render citrusHeader(mixtureStore, ingredient, ingredientVolume)}
-							{:else if isAcidSubstance(component)}
-								{@render acidHeader(mixtureStore, ingredient as IngredientSubstanceItem, mass)}
+							{:else if isAcidSubstance(ingredient)}
+								{@render acidHeader(mixtureStore, ingredient, mass)}
 							{:else if isSaltIngredient(ingredient)}
 								{@render saltHeader(mixtureStore, ingredient, mass)}
 							{:else}
@@ -182,22 +210,27 @@
 								'border-primary-400',
 							]}
 						></span>
-						{#if isSweetener(component)}
+						{#if isSweetener(ingredient.item)}
 							{@render sweetenerDetails(mixtureStore, ingredient, mass, ingredientVolume)}
-						{:else if isWater(component)}
+						{:else if isWater(ingredient.item)}
 							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
-						{:else if isSimpleSpirit(component)}
+						{:else if isSimpleSpirit(ingredient)}
 							{@render spiritDetails(mixtureStore, ingredient, mass, ingredientVolume)}
-						{:else if isSimpleSyrup(component)}
+						{:else if isSimpleSyrup(ingredient)}
 							{@render syrupDetails(mixtureStore, ingredient, mass, ingredientVolume)}
-						{:else if isCitrusMixture(component)}
+						{:else if isCitrusMixture(ingredient)}
 							{@render citrusDetails(mixtureStore, ingredient, mass)}
-						{:else if isMixture(component)}
-							{@render ingredientTotals(mixtureStore, component, parentId, 'min-w-16 max-w-24')}
-						{:else if isAcidSubstance(component)}
+						{:else if isMixture(ingredient.item)}
+							{@render ingredientTotals(
+								mixtureStore,
+								ingredient.item,
+								parentId,
+								'min-w-16 max-w-24',
+							)}
+						{:else if isAcidSubstance(ingredient)}
 							{@render acidDetails(
 								mixtureStore,
-								ingredient as IngredientSubstanceItem,
+								ingredient as InMemorySubstance,
 								mass,
 								ingredientVolume,
 							)}
@@ -206,13 +239,16 @@
 						{:else}
 							{@render defaultDetails(mixtureStore, ingredient, mass, ingredientVolume)}
 						{/if}
-						{#if isMixture(component)}
+						{#if isMixture(ingredient.item)}
 							<div class="min-w-16 max-w-24">
 								<!-- need a dummy helper to align the button with other items in totals -->
 								<Helper>{'\u00A0'}</Helper>
 								<Button
 									onclick={() => {
-										editedSubmixture = { id, name: ingredient.name || ingredient.item.describe() };
+										editedSubmixture = {
+											id,
+											name: ingredient.name || ingredient.item.describe(),
+										};
 										editMixtureDialog?.showModal();
 									}}
 									class="w-full"

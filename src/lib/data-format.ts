@@ -1,26 +1,86 @@
-import type { IngredientDbData } from './mixture-types.js';
+import { isSubstanceId } from './ingredients/substances.js';
+import { zIngredientMeta } from './mixture-types.js';
+import { SimpleHash } from './simple-hash.js';
+import { z } from 'zod/v4-mini';
 
 export const currentDataVersion = 1;
 
-/**
- * FileItem represents a stored mixture file. All types must be
- * compatible with Replicache's ReadonlyJSONValue.
- */
-export type StoredFileDataV1 = {
-	version: typeof currentDataVersion;
-	id: string;
-	name: string;
-	accessTime: number;
-	desc: string;
-	rootMixtureId: string;
-	ingredientDb: IngredientDbData;
+const zMixtureData = z.object({
+	id: z.string(),
+	// ids, and other data for this sub-mixture's ingredients
+	ingredients: z.array(zIngredientMeta),
+});
+export type MixtureData = z.infer<typeof zMixtureData>;
+
+export const isMixtureItem = (item: unknown): item is MixtureData => {
+	return zMixtureData.safeParse(item).success;
 };
 
-export function isV1Data(data: unknown): data is StoredFileDataV1 {
-	if (typeof data !== 'object' || data === null) {
-		return false;
+const zSubstanceData = z.object({
+	id: z.string().check(
+		z.refine(isSubstanceId, {
+			message: 'Invalid substance ID',
+		}),
+	),
+});
+
+export type SubstanceData = z.infer<typeof zSubstanceData>;
+
+export type IngredientData = MixtureData | SubstanceData;
+
+export function isMixtureData(data: IngredientData): data is MixtureData {
+	return zMixtureData.safeParse(data).success;
+}
+
+export function isSubstanceData(data: IngredientData): data is SubstanceData {
+	return zSubstanceData.safeParse(data).success;
+}
+
+export type SubstanceItem = z.infer<typeof zSubstanceData>;
+
+export const isSubstanceItem = (item: unknown): item is z.infer<typeof zSubstanceData> => {
+	return zSubstanceData.safeParse(item).success;
+};
+
+// prettier-ignore
+const zIngredientDbEntry = z.tuple([
+	z.string(),
+	z.union([zMixtureData, zSubstanceData])
+]);
+export type IngredientDbEntry = z.infer<typeof zIngredientDbEntry>;
+
+export const zFileDataV1 = z.strictObject({
+	version: z.literal(currentDataVersion),
+	id: z.string(),
+	name: z.string(),
+	accessTime: z.iso.datetime(), // ISO date string
+	desc: z.string(), // denormalized mixture.describe() string
+	rootMixtureId: z.string(), // pointer to the root mixture in the ingredientDb
+	ingredientDb: z.array(zIngredientDbEntry),
+	_ingredientHash: z.string(),
+});
+
+export type FileDataV1 = z.infer<typeof zFileDataV1>;
+
+export function getIngredientHash(
+	item: Pick<FileDataV1, 'name' | 'desc' | 'ingredientDb'>,
+): string {
+	const h = new SimpleHash().update(item.name).update(item.desc);
+	for (const [_, ingredient] of item.ingredientDb) {
+		if ('ingredients' in ingredient) {
+			for (const item of ingredient.ingredients) {
+				h.update(item.name)
+					.update(item.mass.toString())
+					.update(item.notes || '');
+				if (isSubstanceId(item.id)) h.update(item.id);
+			}
+		}
 	}
-	return 'version' in data && data.version === 1;
+	return h.toString();
+}
+
+export function isV1Data(data: unknown): data is FileDataV1 {
+	return zFileDataV1.safeParse(data).success;
 }
 
 export interface V0MixtureData {

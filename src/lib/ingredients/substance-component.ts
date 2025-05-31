@@ -1,4 +1,5 @@
-import { isSubstanceData, type CommonComponent, type SubstanceData } from '../mixture-types.js';
+import { isSubstanceItem, type SubstanceData } from '$lib/data-format.js';
+import { type CommonComponent } from '../mixture-types.js';
 import {
 	Substances,
 	type SubstanceId,
@@ -28,7 +29,7 @@ export class SubstanceComponent implements CommonComponent {
 
 	readonly substance: Substance;
 	constructor(readonly data: SubstanceData) {
-		if (!isSubstanceData(data)) throw new Error('Invalid substance data');
+		if (!isSubstanceItem(data)) throw new Error('Invalid substance data');
 		const substance = Substances.find((s) => s.id === data.id);
 		if (!substance) throw new Error(`Unknown substance: ${data.id}`);
 		this.substance = substance;

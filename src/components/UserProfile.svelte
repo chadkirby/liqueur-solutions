@@ -4,12 +4,10 @@
 	import type { Clerk } from '@clerk/clerk-js';
 	import type { UserResource } from '@clerk/types';
 	import { browser } from '$app/environment';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 
 	// Get Clerk stores from context
-	const clerkStores = getContext<{
-		instance: Writable<Clerk | null>;
-		user: Writable<UserResource | null>;
-	}>('clerk');
+	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
 	const clerkInstance = clerkStores.instance;
 	const clerkUser = clerkStores.user;
 

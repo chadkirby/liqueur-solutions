@@ -1,12 +1,12 @@
 import { browser } from '$app/environment';
-import { currentDataVersion, type StoredFileDataV1 } from '$lib/data-format.js';
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 import { newSpirit } from '$lib/mixture-factories.js';
 import { componentId, Mixture } from '$lib/mixture.js';
+import { writeTempFile } from '$lib/persistence.svelte.js';
 import { generateStorageId } from '$lib/storage-id.js';
 import { redirect } from '@sveltejs/kit';
 
-export async function load(args: { url: URL; params: { liqueur: string } }): Promise<never> {
+export async function load(): Promise<never> {
 	const adjectives = ['Untitled', 'New', 'Delicious', 'Refreshing', 'Tasty', 'Boozy'];
 	const nouns = ['Mixture', 'Solution', 'Blend', 'Beverage', 'Drink', 'Mix'];
 
@@ -19,19 +19,14 @@ export async function load(args: { url: URL; params: { liqueur: string } }): Pro
 		{ name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
 	]);
 
-	const item: StoredFileDataV1 = {
-		version: currentDataVersion,
+	const item = {
 		id: generateStorageId(),
-		accessTime: Date.now(),
 		name,
-		desc: mixture.describe(),
-		rootMixtureId: mixture.id,
-		ingredientDb: mixture.serialize(),
-	};
+		mixture,
+	} as const;
 
 	if (browser) {
-		const { filesDb } = await import('$lib/files-db.js');
-		await filesDb.write(item);
+		await writeTempFile(item);
 	}
 	throw redirect(303, `/edit/${item.id}`);
 }

@@ -2,20 +2,17 @@
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
-	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
+	import { StarOutline, StarSolid, StarHalfStrokeSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import type { ChangeEventHandler } from 'svelte/elements';
 	import MixtureAccordion from './MixtureAccordion.svelte';
-	import { filesDb } from '$lib/files-db.js';
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	import { getContext } from 'svelte';
-	import type { Writable } from 'svelte/store';
-	import type { Clerk } from '@clerk/clerk-js';
-	import type { UserResource } from '@clerk/types';
-	import { starredIds } from '$lib/starred-ids.svelte.js';
+	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
+	import { writeCloudFile, toggleStar, CloudFiles } from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -24,10 +21,7 @@
 	let { mixtureStore }: Props = $props();
 
 	// Get Clerk stores from context
-	const clerkStores = getContext<{
-		instance: Writable<Clerk | null>;
-		user: Writable<UserResource | null>;
-	}>('clerk');
+	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
 	const clerkInstance = clerkStores.instance; // Get the store itself
 	const clerkUser = clerkStores.user; // Get the store itself
 
@@ -47,11 +41,18 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let isStarred = $derived(starredIds.includes(storeId));
+	let cloudSyncMeta = $derived(CloudFiles?.findOne({ id: storeId }));
 
-	function handleToggleStar(event?: Event) {
+	let isStarred = $derived(Boolean(cloudSyncMeta));
+	let isDirty = $derived(mixtureStore.ingredientHash !== cloudSyncMeta?._ingredientHash);
+
+	async function handleStar(event?: Event) {
 		event?.preventDefault();
-		filesDb.toggleStar(storeId);
+		if (isStarred && isDirty) {
+			await writeCloudFile(storeId);
+		} else {
+			await toggleStar(storeId);
+		}
 	}
 
 	function handleSignIn() {
@@ -71,6 +72,17 @@
 		// Provide afterSignOutUrl, defaults to current URL if not specified
 		$clerkInstance?.signOut({ redirectUrl: window.location.href });
 	}
+
+	// User dropdown state
+	let isUserDropdownOpen = $state(false);
+
+	function toggleUserDropdown() {
+		isUserDropdownOpen = !isUserDropdownOpen;
+	}
+
+	function closeUserDropdown() {
+		isUserDropdownOpen = false;
+	}
 </script>
 
 <main class="flex flex-col gap-x-2 gap-y-2 mt-4 mb-20" data-testid="mixture-list">
@@ -82,8 +94,13 @@
 			mb-2
 			"
 	>
-		<Button onclick={handleToggleStar}>
-			{#if isStarred}
+		<Button onclick={handleStar}>
+			{#if isStarred && isDirty}
+				<Tooltip color="default" offset={6} triggeredBy="#dirty-star">
+					This mixture has unsaved changes
+				</Tooltip>
+				<StarHalfStrokeSolid id="dirty-star" />
+			{:else if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved
 				</Tooltip>
@@ -106,12 +123,12 @@
 		</div>
 
 		{#if $clerkUser}
-			<div class="flex items-center gap-x-2">
-				<!-- User Button Replacement -->
+			<div class="flex items-center gap-x-2 relative">
+				<!-- User Button with Dropdown -->
 				<button
-					onclick={handleOpenUserProfile}
+					onclick={toggleUserDropdown}
 					class="rounded-full w-8 h-8 overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-					aria-label="Open user profile"
+					aria-label="User menu"
 				>
 					{#if $clerkUser.imageUrl}
 						<img src={$clerkUser.imageUrl} alt="User profile" class="w-full h-full object-cover" />
@@ -124,6 +141,41 @@
 						</span>
 					{/if}
 				</button>
+
+				<!-- Dropdown Menu -->
+				{#if isUserDropdownOpen}
+					<!-- Backdrop to close dropdown when clicking outside -->
+					<div
+						class="fixed inset-0 z-10"
+						onclick={closeUserDropdown}
+						onkeydown={(e) => e.key === 'Escape' && closeUserDropdown()}
+						role="button"
+						tabindex="-1"
+						aria-label="Close user menu"
+					></div>
+
+					<!-- Dropdown Panel -->
+					<div
+						class="absolute right-0 top-10 z-20 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1"
+						role="menu"
+						aria-orientation="vertical"
+					>
+						<button
+							onclick={handleOpenUserProfile}
+							class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+							role="menuitem"
+						>
+							Show Profile
+						</button>
+						<button
+							onclick={handleSignOut}
+							class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+							role="menuitem"
+						>
+							Sign Out
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else}
 			<!-- User is signed out -->

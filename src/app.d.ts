@@ -8,6 +8,7 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			userId?: string;
+			bucket?: R2Bucket;
 		}
 		// interface PageData {}
 

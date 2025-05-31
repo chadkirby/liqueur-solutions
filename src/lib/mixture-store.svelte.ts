@@ -24,8 +24,8 @@ import {
 } from './ingredients/substances.js';
 import type {
 	EditableProperty,
+	InMemoryIngredient,
 	IngredientItem,
-	IngredientItemComponent,
 	IngredientToAdd,
 	MixtureAnalysis,
 	SolverTarget,
@@ -45,6 +45,7 @@ export type MixtureStoreData = {
 	name: string;
 	mixture: Mixture;
 	totals: MixtureAnalysis;
+	ingredientHash: string;
 };
 
 export const loadingStoreId = '/loading' as StorageId;
@@ -56,6 +57,7 @@ function newData(): MixtureStoreData {
 		name: '',
 		mixture: mx,
 		totals: getTotals(mx),
+		ingredientHash: mx.getIngredientHash(''),
 	};
 }
 
@@ -84,6 +86,10 @@ export class MixtureStore {
 		return this._data.totals;
 	}
 
+	get ingredientHash() {
+		return this._data.ingredientHash;
+	}
+
 	private _store: Writable<MixtureStoreData> = writable(this._data);
 	readonly subscribe = this._store.subscribe;
 
@@ -105,7 +111,7 @@ export class MixtureStore {
 	private findIngredient(
 		id: string,
 		mixture = this._data.mixture,
-	): { ingredient: IngredientItem; parentId: string } | { ingredient: null; parentId: null } {
+	): { ingredient: InMemoryIngredient; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
@@ -159,6 +165,7 @@ export class MixtureStore {
 		const newData = updater(snapshot);
 		if (newData.mixture.isValid) {
 			newData.totals = getTotals(newData.mixture);
+			newData.ingredientHash = newData.mixture.getIngredientHash(newData.name);
 		}
 		this._save(newData);
 		return newData;
@@ -694,11 +701,13 @@ export class MixtureStore {
 		let newData = undoItem.pop()!(data);
 		if (newData.mixture.isValid) {
 			newData.totals = getTotals(newData.mixture);
+			newData.ingredientHash = newData.mixture.getIngredientHash(newData.name);
 		}
 		while (undoItem.length) {
 			newData = undoItem.pop()!(data);
 			if (newData.mixture.isValid) {
 				newData.totals = getTotals(newData.mixture);
+				newData.ingredientHash = newData.mixture.getIngredientHash(newData.name);
 			}
 		}
 		this._save(newData);
@@ -711,11 +720,13 @@ export class MixtureStore {
 		let newData = redoItem.shift()!(data);
 		if (newData.mixture.isValid) {
 			newData.totals = getTotals(newData.mixture);
+			newData.ingredientHash = newData.mixture.getIngredientHash(newData.name);
 		}
 		while (redoItem.length) {
 			newData = redoItem.shift()!(data);
 			if (newData.mixture.isValid) {
 				newData.totals = getTotals(newData.mixture);
+				newData.ingredientHash = newData.mixture.getIngredientHash(newData.name);
 			}
 		}
 		this._save(newData);
@@ -765,7 +776,7 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 }
 
 function getIngredientValue(
-	{ item, mass }: { item: IngredientItemComponent; mass: number },
+	{ item, mass }: { item: IngredientItem; mass: number },
 	what:
 		| 'equivalentSugarMass'
 		| 'alcoholMass'
