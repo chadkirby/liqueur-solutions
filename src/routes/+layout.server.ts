@@ -1,4 +1,5 @@
 import type { FileDataV1 } from '$lib/data-format.js';
+import { Mixture } from '$lib/mixture.js';
 import type { CloudFileData } from '$lib/persistence.svelte.js';
 import type { LayoutServerLoad } from './$types';
 
@@ -42,7 +43,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 					name: fileData.name,
 					accessTime: file.uploaded.toISOString(),
 					desc: fileData.desc,
-					_ingredientHash: fileData._ingredientHash,
+					_ingredientHash: ensureIngredientHash(fileData),
 				});
 			} catch (fileErr) {
 				// Log error for this specific file but continue processing others
@@ -62,3 +63,14 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		cloudFiles: [],
 	};
 };
+
+function ensureIngredientHash(data: FileDataV1): string {
+	if (data._ingredientHash) return data._ingredientHash;
+	// If _ingredientHash is not present, calculate it from the mixture
+	// (which should have an ingredientDb array, but there are a few files
+	// out there with ingredientJSON instead from a brief period when we
+	// were using tinybase)
+	const db = data.ingredientDb ?? JSON.parse((data as any).ingredientJSON);
+	const mixture = Mixture.deserialize(data.rootMixtureId, db);
+	return mixture.getIngredientHash(data.name);
+}
