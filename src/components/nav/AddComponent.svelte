@@ -13,11 +13,19 @@
 		componentId,
 		callback,
 		mixtureStore,
-	}: { componentId: string | null; mixtureStore: MixtureStore; callback?: (newId: string) => void } = $props();
+	}: {
+		componentId: string | null;
+		mixtureStore: MixtureStore;
+		callback?: (newId: string) => void;
+	} = $props();
 
 	function addSpirit() {
 		const spirit = newSpirit(100, 40);
-		const newId = mixtureStore.addIngredientTo(componentId, { name: '', item: spirit, mass: spirit.mass });
+		const newId = mixtureStore.addIngredientTo(componentId, {
+			name: '',
+			item: spirit,
+			mass: spirit.mass,
+		});
 		if (callback) callback(newId);
 	}
 	function addWater() {
@@ -47,7 +55,11 @@
 	}
 
 	function addEmpty() {
-		const newId = mixtureStore.addIngredientTo(componentId, { name: '', item: new Mixture(), mass: 100 });
+		const newId = mixtureStore.addIngredientTo(componentId, {
+			name: '',
+			item: new Mixture(),
+			mass: 100,
+		});
 		if (callback) callback(newId);
 	}
 
@@ -107,8 +119,8 @@
 	</Button>
 
 	<Button class="p-1" onclick={addEmpty}>
-			<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
-		</Button>
+		<CirclePlusSolid size="sm" /><span class="mr-1">empty mixture</span>
+	</Button>
 
 	<Button class="p-1" onclick={openFilesDrawer} data-testid="add-button-saved">
 		<CirclePlusSolid size="sm" /><span class="mr-1">saved mixture</span>

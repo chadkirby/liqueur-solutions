@@ -23,6 +23,11 @@
 <Tooltip color="default" offset={6} triggeredBy={`#componentId-${componentId}-remove`}
 	>Remove {name}</Tooltip
 >
-<button class="h-4" id={`componentId-${componentId}-remove`} onclick={removeComponent} data-testid="remove-button">
+<button
+	class="h-4"
+	id={`componentId-${componentId}-remove`}
+	onclick={removeComponent}
+	data-testid="remove-button"
+>
 	<CircleMinusSolid size="sm" />
 </button>

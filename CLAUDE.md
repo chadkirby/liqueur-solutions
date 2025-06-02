@@ -1,6 +1,7 @@
 # Liqueur Solutions - Dev Guidelines
 
 ## Build & Test Commands
+
 - `yarn dev` - Start development server
 - `yarn build` - Build for production
 - `yarn lint` - Run ESLint and Prettier checks
@@ -12,6 +13,7 @@
 - `yarn check:all` - Run type check, unit tests, and e2e tests
 
 ## Code Style Guidelines
+
 - **Typescript**: Use strict type checking and proper interfaces
 - **Formatting**: Use tabs, single quotes, 100 max line width
 - **Imports**: Group by external/internal, sort alphabetically
