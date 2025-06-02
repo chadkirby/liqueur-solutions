@@ -4,19 +4,13 @@ import { solveMassForVolume, solver } from './solver.js';
 import { brixToSyrupProportion, capitalize, format, round } from './utils.js';
 import {
 	isAcidId,
-	isSaltId,
 	isSweetenerId,
 	type SubstanceId,
 	sweetenerIds,
 	Sweeteners,
 } from './ingredients/substances.js';
 import { getMixturePh } from './ph-solver.js';
-import {
-	citrusJuiceNames,
-	getCitrusPrefix,
-	getIdPrefix,
-	type PrefixedId,
-} from './ingredients/citrus-ids.js';
+import { citrusJuiceNames, getCitrusPrefix, getIdPrefix } from './ingredients/citrus-ids.js';
 import { FancyIterator } from './iterator.js';
 import {
 	type CommonComponent,
@@ -26,7 +20,6 @@ import {
 	type IngredientItem,
 	type IngredientToAdd,
 	type InMemoryIngredient,
-	type InMemorySubstance,
 	type MixtureAnalysis,
 } from './mixture-types.js';
 import {
