@@ -37,20 +37,20 @@ export const CloudFiles = browser
 		})
 	: null;
 
-function toCloudData(fileDate: FileDataV1): CloudFileData {
+function toCloudData(data: FileDataV1): CloudFileData {
 	return {
-		name: fileDate.name,
-		id: fileDate.id,
-		desc: fileDate.desc,
-		accessTime: fileDate.accessTime,
-		_ingredientHash: fileDate._ingredientHash,
+		name: data.name,
+		id: data.id,
+		desc: data.desc,
+		accessTime: new Date(data.accessTime).toISOString(),
+		_ingredientHash: data._ingredientHash,
 	};
 }
 
-export function setCloudFiles(data: CloudFileData[]): void {
+export function initCloudFile(data: CloudFileData | FileDataV1): void {
 	if (!CloudFiles) return;
-	CloudFiles.removeMany({});
-	CloudFiles.insertMany(data);
+	const cloudData = toCloudData(data as FileDataV1);
+	CloudFiles.replaceOne({ id: cloudData.id }, cloudData, { upsert: true });
 }
 
 export function deserialize(item: FileDataV1): FileDataV1 {
@@ -62,11 +62,15 @@ export function deserialize(item: FileDataV1): FileDataV1 {
 		item._ingredientHash ??
 		Mixture.deserialize(item.rootMixtureId, ingredientDb).getIngredientHash(item.name);
 
+	// Ensure accessTime is a valid ISO string
+	const accessTime = new Date(item.accessTime).toISOString();
+
 	const copy = { ...item };
 	delete (copy as any).ingredientJSON; // remove old field if it exists
 
 	return {
 		...copy,
+		accessTime,
 		ingredientDb: [...ingredientDb],
 		_ingredientHash,
 	} as const;
@@ -192,7 +196,7 @@ async function readCloudFile(id: StorageId): Promise<FileDataV1 | null> {
 		{ id: deserialized.id },
 		toCloudData({
 			...deserialized,
-			accessTime: lastSyncTime ? new Date(lastSyncTime).toISOString() : new Date().toISOString(),
+			accessTime: lastSyncTime ? new Date(lastSyncTime).toISOString() : deserialized.accessTime,
 		}),
 		{ upsert },
 	);
