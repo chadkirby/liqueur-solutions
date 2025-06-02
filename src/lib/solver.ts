@@ -1,7 +1,7 @@
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
 import { AnnealingSolver } from 'abstract-sim-anneal';
-import { bufferPairs, isAcidId, isSweetenerId } from './ingredients/substances.js';
+import { rollbar } from '$lib/rollbar';
 import type { SolverTarget } from './mixture-types.js';
 import { getAcidGroups, type AcidGroups } from './ph-solver.js';
 import { FancyIterator } from './iterator.js';
@@ -287,6 +287,12 @@ export function solver(mixture: Mixture, otargets: SolverTarget) {
 	const finalState = bestState?.error < result.state.error ? bestState : result.state;
 
 	if (finalState.error > tolerance * 10) {
+		rollbar.error('Solver failed to converge', {
+			targets: otargets,
+			finalError: finalState.error,
+			finalState: finalState,
+			mixture: mixture.serialize(),
+		});
 		throw new Error('Failed to converge');
 	}
 	return finalState.mixture;
