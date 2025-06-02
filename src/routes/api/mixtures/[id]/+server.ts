@@ -30,9 +30,9 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		// get the requested file for this authenticated user from R2.
 		const file = await bucket.get(`files/${safeId}/${mixtureId}`);
 		if (!file) {
-			console.log(`[Pull] No file found for id: ${mixtureId}`);
+			console.log(`[Pull] No file found: files/${safeId}/${mixtureId}`);
 			// return 404
-			throw error(404, `File not found for id: ${mixtureId}`);
+			throw error(404, `File not found for id: files/${safeId}/${mixtureId}`);
 		}
 		const fileText = await file.text();
 		const fileData = JSON.parse(fileText) as FileDataV1;

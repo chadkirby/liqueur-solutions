@@ -5,6 +5,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
 import type { FileDataV1 } from '$lib/data-format.js';
+import { Mixture } from '$lib/mixture.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
@@ -46,10 +47,20 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 
 							const fileData = (await file.json()) as FileDataV1;
 							// exclude the ingredientJSON (shouldn't exist) and ingredientDb fields from the response
-							const { ingredientJSON, ingredientDb, ...rest } = fileData as any;
+							const { ingredientJSON, ingredientDb, accessTime, _ingredientHash, ...rest } =
+								fileData as FileDataV1 & { ingredientJSON?: string };
+
 							// Send each object as a complete JSON string followed by newline
-							const jsonLine = JSON.stringify(rest) + '\n';
-							controller.enqueue(new TextEncoder().encode(jsonLine));
+							const jsonLine = JSON.stringify({
+								...rest,
+								accessTime: new Date(accessTime).toISOString(),
+								_ingredientHash:
+									_ingredientHash ??
+									Mixture.deserialize(rest.rootMixtureId, ingredientDb).getIngredientHash(
+										rest.name,
+									),
+							});
+							controller.enqueue(new TextEncoder().encode(jsonLine + '\n'));
 						} catch (fileErr) {
 							// Log error for this specific file but continue processing others
 							console.error(`[Mixtures] Error processing file ${item.key}:`, fileErr);
