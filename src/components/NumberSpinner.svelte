@@ -174,7 +174,6 @@
 		}
 		return value;
 	}
-
 </script>
 
 <div id={divId} class="flex items-center whitespace-nowrap font-mono leading-[18px] {classProp}">

@@ -4,7 +4,7 @@ const config = {
 	content: [
 		'./src/**/*.{html,js,svelte,ts}',
 		'./node_modules/svelte-5-ui-lib/**/*.{html,js,svelte,ts}',
-		'./node_modules/flowbite-svelte-icons/**/*.{html,js,svelte,ts}'
+		'./node_modules/flowbite-svelte-icons/**/*.{html,js,svelte,ts}',
 	],
 	darkMode: 'selector',
 	theme: {
@@ -12,10 +12,10 @@ const config = {
 			colors: {
 				primary: colors.slate,
 
-				secondary: colors.stone
-			}
-		}
-	}
+				secondary: colors.stone,
+			},
+		},
+	},
 };
 
 export default config;

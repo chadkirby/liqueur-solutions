@@ -7,7 +7,7 @@ interface DrawerState {
 
 const state = $state<DrawerState>({
 	isOpen: false,
-	parentId: null
+	parentId: null,
 });
 
 export const filesDrawer = {
@@ -27,5 +27,5 @@ export const filesDrawer = {
 	},
 	close() {
 		state.isOpen = false;
-	}
+	},
 };

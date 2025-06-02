@@ -8,7 +8,7 @@
 	let { ingredientItem: component, class: classProp, mass }: DisplayProps = $props();
 
 	let esm = $derived(component.getEquivalentSugarMass(mass));
-	const sucrose = Sweeteners.find(s => s.id === 'sucrose')!;
+	const sucrose = Sweeteners.find((s) => s.id === 'sucrose')!;
 	let equivCal = $derived(esm * sucrose.kcal);
 </script>
 

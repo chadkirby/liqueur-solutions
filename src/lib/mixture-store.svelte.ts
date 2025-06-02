@@ -25,7 +25,6 @@ import {
 import type {
 	EditableProperty,
 	InMemoryIngredient,
-	IngredientItem,
 	IngredientToAdd,
 	MixtureAnalysis,
 	SolverTarget,
@@ -38,6 +37,7 @@ import {
 	type CitrusJuiceIdPrefix,
 	type CitrusJuiceName,
 } from './ingredients/citrus-ids.js';
+import { rollbar } from './rollbar.js';
 
 // exported for testing
 export type MixtureStoreData = {
@@ -761,51 +761,17 @@ function solveTotal(mixture: Mixture, key: keyof SolverTarget, targetValue: numb
 		default:
 			key satisfies never;
 	}
-	if (!working) {
-		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
-	}
 	// test that the solution is valid
 	if (!working.isValid) {
 		throw new Error(`Invalid solution for ${key} = ${targetValue}`);
 	}
 	if (working[key].toFixed() !== targetValue.toFixed()) {
+		rollbar.error(
+			`Solver did not return expected value for ${key}: expected ${targetValue}, got ${working[key]}`,
+			mixture.serialize(),
+		);
 		throw new Error(`Unable to solve for ${key} = ${targetValue}`);
 	}
 
 	return working;
-}
-
-function getIngredientValue(
-	{ item, mass }: { item: IngredientItem; mass: number },
-	what:
-		| 'equivalentSugarMass'
-		| 'alcoholMass'
-		| 'waterVolume'
-		| 'mass'
-		| 'abv'
-		| 'brix'
-		| 'volume'
-		| 'pH',
-): number {
-	switch (what) {
-		case 'equivalentSugarMass':
-			return item.getEquivalentSugarMass(mass);
-		case 'alcoholMass':
-			return item.getAlcoholMass(mass);
-		case 'waterVolume':
-			return item.getWaterVolume(mass);
-		case 'mass':
-			return mass;
-		case 'abv':
-			return item.getAbv();
-		case 'brix':
-			return item.getBrix();
-		case 'volume':
-			return item.getVolume(mass);
-		case 'pH':
-			return isMixture(item) ? item.getPH() : NaN;
-		default:
-			what satisfies never;
-			throw new Error('Invalid property');
-	}
 }
