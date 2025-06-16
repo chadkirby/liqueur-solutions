@@ -104,6 +104,6 @@ export function calculateAbvProportions(targetAbv: number, targetVolume = 100) {
 
 	return {
 		ethanolMass: ethanolMass / totalMass,
-		waterMass: waterMass / totalMass
+		waterMass: waterMass / totalMass,
 	};
 }

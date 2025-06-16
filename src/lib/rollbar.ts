@@ -18,10 +18,10 @@ export const rollbar = new Rollbar({
 		client: {
 			javascript: {
 				source_map_enabled: true,
-				code_version: '1.0.0'
-			}
-		}
-	}
+				code_version: '1.0.0',
+			},
+		},
+	},
 });
 
 // Utility function for tracking calculation events
@@ -36,11 +36,11 @@ export function trackCalculation(input: {
 	if (input.success) {
 		rollbar.info('Calculation completed', {
 			abv: input.abv,
-			sweetness: input.sweetness
+			sweetness: input.sweetness,
 		});
 	} else {
 		rollbar.warning('Calculation failed', {
-			error: input.error
+			error: input.error,
 		});
 	}
 }

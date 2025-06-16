@@ -62,7 +62,6 @@ describe('Mixture', () => {
 	});
 
 	it('should solve for abv', () => {
-		// Act
 		const result = solver(mixture, {
 			volume: initialAnalysis.volume,
 			pH: initialAnalysis.pH,
@@ -70,14 +69,25 @@ describe('Mixture', () => {
 			brix: initialAnalysis.brix,
 		}).setVolume(initialAnalysis.volume);
 
-		// Assert
 		expect(result.volume, 'volume').toBeCloseTo(initialAnalysis.volume, 1);
 		expect(result.abv, 'abv').toBeCloseTo(50, 1);
 		expect(result.brix, 'brix').toBeCloseTo(initialAnalysis.brix, 1);
+
+		{
+			const result = solver(mixture, {
+				volume: initialAnalysis.volume,
+				pH: initialAnalysis.pH,
+				abv: 25,
+				brix: initialAnalysis.brix,
+			}).setVolume(initialAnalysis.volume);
+
+			expect(result.volume, 'volume').toBeCloseTo(initialAnalysis.volume, 1);
+			expect(result.abv, 'abv').toBeCloseTo(25, 1);
+			expect(result.brix, 'brix').toBeCloseTo(initialAnalysis.brix, 1);
+		}
 	});
 
 	it('should solve for brix', () => {
-		// Act
 		const result = solver(mixture, {
 			volume: initialAnalysis.volume,
 			pH: initialAnalysis.pH,

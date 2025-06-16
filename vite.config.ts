@@ -8,21 +8,20 @@ import { svelteTesting } from '@testing-library/svelte/vite';
  * @see https://vitest.dev/config
  */
 export default defineConfig({
-	// @ts-expect-error plugin types are messed up
 	plugins: [sveltekit(), svelteTesting()],
 	build: {
 		// Required: tells Vite to create source maps
-		sourcemap: true
+		sourcemap: true,
 	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}', 'src/**/*.{test,spec}.svelte.{js,ts}'],
 		environment: 'jsdom',
-		setupFiles: ['./vitest-setup.js']
+		setupFiles: ['./vitest-setup.js'],
 	},
 	// Tell Vitest to use the `browser` entry points in `package.json` files, even though it's running in Node
 	resolve: process.env.VITEST
 		? {
-				conditions: ['browser']
+				conditions: ['browser'],
 			}
-		: undefined
+		: undefined,
 });

@@ -32,15 +32,7 @@
 	{id}
 	{placeholder}
 	autocomplete="off"
-	class={[
-    'block',
-		'ls-rounded-box',
-    'w-full',
-    'rtl:text-right',
-    'px-1',
-    'py-1',
-    classProp
-	]}
+	class={['block', 'ls-rounded-box', 'w-full', 'rtl:text-right', 'px-1', 'py-1', classProp]}
 	{...handlers}
 />
 

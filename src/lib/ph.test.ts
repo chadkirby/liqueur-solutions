@@ -287,4 +287,3 @@ describe('zeroCal', () => {
 		assert.approximately(zeroCal.pH, 3.4, 0.125, 'buffered pH!');
 	});
 });
-

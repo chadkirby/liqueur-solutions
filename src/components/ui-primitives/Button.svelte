@@ -15,17 +15,17 @@
 	{id}
 	{...handlers}
 	class={[
-    'text-center',
-    'ls-rounded-box',
-    'font-medium',
-    'items-center',
-    'justify-center',
-    'flex',
-    'flex-row',
-    'gap-1',
-    isActive && '!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600',
-    classProp
-    ]}
+		'text-center',
+		'ls-rounded-box',
+		'font-medium',
+		'items-center',
+		'justify-center',
+		'flex',
+		'flex-row',
+		'gap-1',
+		isActive && '!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600',
+		classProp,
+	]}
 >
 	{@render children()}
 </button>

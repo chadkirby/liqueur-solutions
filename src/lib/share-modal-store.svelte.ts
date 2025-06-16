@@ -15,5 +15,5 @@ export const shareModal = {
 	},
 	toggle() {
 		isOpen = !isOpen;
-	}
+	},
 };

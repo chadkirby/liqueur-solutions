@@ -9,7 +9,7 @@ describe('UndoRedo', () => {
 		undoRedo.push(
 			'increment',
 			(v) => v - 1, // undo
-			(v) => v + 1 // redo
+			(v) => v + 1, // redo
 		);
 		value++;
 
@@ -32,14 +32,14 @@ describe('UndoRedo', () => {
 		undoRedo.push(
 			'batch operation',
 			(v) => v - 1,
-			(v) => v + 1
+			(v) => v + 1,
 		);
 		value++;
 
 		undoRedo.push(
 			'batch operation',
 			(v) => v - 2,
-			(v) => v + 2
+			(v) => v + 2,
 		);
 		value += 2;
 
@@ -67,7 +67,7 @@ describe('UndoRedo', () => {
 		undoRedo.push(
 			'first',
 			(v) => v - 1,
-			(v) => v + 1
+			(v) => v + 1,
 		);
 		value++;
 
@@ -80,7 +80,7 @@ describe('UndoRedo', () => {
 		undoRedo.push(
 			'second',
 			(v) => v - 2,
-			(v) => v + 2
+			(v) => v + 2,
 		);
 		value += 2;
 
@@ -98,7 +98,7 @@ describe('UndoRedo', () => {
 			undoRedo.push(
 				`op${i}`,
 				(v) => v - 1,
-				(v) => v + 1
+				(v) => v + 1,
 			);
 			value++;
 		}
