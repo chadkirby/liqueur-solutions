@@ -12,7 +12,7 @@ class Collector<T> {
 	private pending: UndoItem<T>;
 	constructor(
 		desc: string,
-		private readonly committer: (item: UndoItem<T>) => void
+		private readonly committer: (item: UndoItem<T>) => void,
 	) {
 		this.pending = new UndoItem(desc);
 	}

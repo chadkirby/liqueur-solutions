@@ -118,7 +118,6 @@ describe('Mixture Store', () => {
 		});
 
 		const mx = store.mixture;
-		console.log('mixture', mx);
 
 		// Set ABV
 		store.setAbv(mx.id, 30);
@@ -137,11 +136,13 @@ describe('Mixture Store', () => {
 		const store = new MixtureStore();
 
 		// Add a spirit mixture
-		const spiritId = store.addIngredientTo(null, standardSpirit());
+		const spiritId = store.addIngredientTo(null, standardSpirit(100, 60));
+		expect(store.mixture.getVolume(), 'initial volume').toBeCloseTo(100, 0.01);
 
 		// Set ABV
-		store.setAbv(spiritId, 30);
-		expect(store.mixture.getAbv()).toBeCloseTo(30, 0.01);
+		store.setAbv(spiritId, 20);
+		expect(store.mixture.getAbv()).toBeCloseTo(20, 0.01);
+		expect(store.mixture.getVolume(), 'volume after ABV change').toBeCloseTo(100, 0.01);
 
 		// Set invalid ABV (over 100)
 		try {
@@ -149,7 +150,7 @@ describe('Mixture Store', () => {
 		} catch (error) {
 			expect(error).toBeDefined();
 		}
-		expect(store.get('abv')).toBeCloseTo(30, 0.01); // should be clamped to 100
+		expect(store.get('abv')).toBeCloseTo(20, 0.01); // should be clamped to 100
 	});
 
 	it('should handle name changes', () => {
