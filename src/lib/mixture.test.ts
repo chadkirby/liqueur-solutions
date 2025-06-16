@@ -175,6 +175,24 @@ test('can set ingredient mass', () => {
 	assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 100, 'ingredient 2 mass');
 	assert.equal(mx.mass, 600, 'mass');
 });
+test('can scale ingredient mass', () => {
+	const mx = new Mixture()
+		.addIngredient({
+			name: 'water',
+			mass: 100,
+			item: SubstanceComponent.new('water'),
+		})
+		.addIngredient({
+			name: 'water',
+			mass: 100,
+			item: SubstanceComponent.new('water'),
+		});
+
+	mx.scaleIngredientMass(mx.ingredientIds[0], 5);
+	assert.equal(mx.getIngredientMass(mx.ingredientIds[0]), 500, 'ingredient 1 mass');
+	assert.equal(mx.getIngredientMass(mx.ingredientIds[1]), 100, 'ingredient 2 mass');
+	assert.equal(mx.mass, 600, 'mass');
+});
 
 test('can update from other mixture', () => {
 	const mx0 = new Mixture()
