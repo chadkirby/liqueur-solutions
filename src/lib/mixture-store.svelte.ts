@@ -110,23 +110,23 @@ export class MixtureStore {
 
 	private findIngredient(
 		id: string,
-		mixture = this._data.mixture,
+		rootMx = this._data.mixture,
 	): { ingredient: InMemoryIngredient; parentId: string } | { ingredient: null; parentId: null } {
 		if (id === 'totals') {
 			throw new Error("Don't use 'totals'");
 		}
-		if (id === mixture.id) {
+		if (id === rootMx.id) {
 			return {
-				ingredient: { id, name: 'totals', mass: 1, item: mixture },
-				parentId: mixture.id,
+				ingredient: { id, name: 'totals', mass: 1, item: rootMx },
+				parentId: rootMx.id,
 			};
 		}
-		for (const { ingredient } of mixture.eachIngredient()) {
+		for (const { ingredient } of rootMx.eachIngredient()) {
 			if (ingredient.id === id) {
-				return { ingredient, parentId: mixture.id };
+				return { ingredient, parentId: rootMx.id };
 			}
 		}
-		for (const { ingredient } of mixture.eachIngredient()) {
+		for (const { ingredient } of rootMx.eachIngredient()) {
 			if (ingredient.item instanceof Mixture) {
 				const found = this.findIngredient(id, ingredient.item);
 				if (found.ingredient) return found;
@@ -135,12 +135,11 @@ export class MixtureStore {
 		return { ingredient: null, parentId: null };
 	}
 
-	findMixture(id: string) {
-		const mx = this._data.mixture;
-		if (id === mx.id) {
-			return mx;
+	findMixture(id: string, rootMx = this._data.mixture) {
+		if (id === rootMx.id) {
+			return rootMx;
 		}
-		const { ingredient } = this.findIngredient(id);
+		const { ingredient } = this.findIngredient(id, rootMx);
 		if (ingredient && ingredient.item instanceof Mixture) {
 			return ingredient.item;
 		}
@@ -224,15 +223,15 @@ export class MixtureStore {
 		return newId;
 	}
 
-	removeIngredient(id: string, undoKey = `removeIngredient-${id}`) {
-		const { ingredient: targetIngredient, parentId } = this.findIngredient(id);
+	removeIngredient(id: string, undoKey = `removeIngredient-${id}`, rootMx = this._data.mixture) {
+		const { ingredient: targetIngredient, parentId } = this.findIngredient(id, rootMx);
 		if (!targetIngredient || !parentId) {
 			throw new Error(`Unable to find component ${id}`);
 		}
 
 		const ingredientToAdd: IngredientToAdd = {
 			name: targetIngredient.name,
-			mass: deepGet((mx) => mx.getIngredientMass(id), this._data.mixture) || -1,
+			mass: deepGet((mx) => mx.getIngredientMass(id), rootMx) || -1,
 			item: targetIngredient.item,
 		};
 
@@ -243,7 +242,7 @@ export class MixtureStore {
 				return data;
 			},
 			undoer: (data) => {
-				const parentMx = this.findMixture(parentId);
+				const parentMx = this.findMixture(parentId, data.mixture);
 				if (!parentMx) {
 					throw new Error(`Unable to find parent component ${parentId}`);
 				}
@@ -408,24 +407,23 @@ export class MixtureStore {
 				if (!(ingredient.item instanceof Mixture)) {
 					throw new Error(`Unable to set abv of substance ${id}`);
 				}
-				const mx = ingredient.item;
-				if (!mx.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
+				if (!ingredient.item.eachSubstance().some((s) => s.item.substanceId === 'ethanol')) {
 					throw new Error(`Mixture has no ethanol ${id}`);
 				}
-				if (!isClose(targetAbv, mx.abv, 0.001)) {
+				if (!isClose(targetAbv, ingredient.item.abv, 0.001)) {
 					try {
-						const originalMass = mx.mass;
-						const working = solver(mx, {
-							volume: mx.volume,
+						const originalMass = ingredient.item.mass;
+						const working = solver(ingredient.item, {
+							volume: ingredient.item.volume,
 							abv: targetAbv,
-							brix: mx.brix,
-							pH: mx.pH,
+							brix: ingredient.item.brix,
+							pH: ingredient.item.pH,
 						});
-						mx.updateFrom(working);
+						ingredient.item.updateFrom(working);
 						// the ingredient has the correct proportions now, but we
 						// need to update its mass in its parent mixture
-						const massFactor = originalMass / mx.mass;
-						const parentMx = this.findMixture(parentId);
+						const massFactor = ingredient.item.mass / originalMass;
+						const parentMx = this.findMixture(parentId, data.mixture);
 						if (!parentMx) {
 							throw new Error(`Unable to find parent component ${parentId}`);
 						}
@@ -682,11 +680,16 @@ export class MixtureStore {
 		this.update({ undoKey, updater: makeUpdater(newName), undoer: makeUpdater(originalName) });
 	}
 
-	solveTotal(key: keyof SolverTarget, newValue: number, undoKey = `solveTotal-${key}`): void {
+	solveTotal(
+		key: keyof SolverTarget,
+		newValue: number,
+		undoKey = `solveTotal-${key}`,
+		rootMx = this._data.mixture,
+	): void {
 		const originalValue = this._data.totals[key];
 		const makeUpdater = (targetValue: number) => {
 			return (data: MixtureStoreData) => {
-				const working = solveTotal(data.mixture, key, targetValue);
+				const working = solveTotal(rootMx, key, targetValue);
 				data.mixture.updateFrom(working);
 				return data;
 			};

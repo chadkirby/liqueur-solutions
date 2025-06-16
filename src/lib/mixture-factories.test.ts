@@ -16,6 +16,14 @@ describe('newSpirit', () => {
 		expect(spirit.brix).toBe(0);
 		expect(spirit.pH).toBe(7);
 	});
+
+	it('should maintain volume when ABV changes', () => {
+		const spirit = newSpirit(100, 47.41192);
+		expect(spirit.volume, 'initial volume').toBeCloseTo(100);
+		spirit.setAbv(40);
+		expect(spirit.volume, 'volume after ABV change').toBeCloseTo(100);
+		expect(spirit.abv, 'abv after change').toBeCloseTo(40);
+	});
 });
 
 describe('newSyrup', () => {
