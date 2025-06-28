@@ -121,11 +121,6 @@
     "@babel/helper-string-parser" "^7.27.1"
     "@babel/helper-validator-identifier" "^7.27.1"
 
-"@badrap/valita@^0.3.0":
-  version "0.3.16"
-  resolved "https://registry.yarnpkg.com/@badrap/valita/-/valita-0.3.16.tgz#09e1be6671551a6496b1af4cda9f8037ee678e74"
-  integrity sha512-slP2blSd6A+xUBgGf+wW6adGd72ojBLxemU0jXQ0fXQcsZWYQ70wTLTJggs6+oxcAqN/bvYA3Ops8SqR2Imyaw==
-
 "@castlenine/svelte-qrcode@^2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@castlenine/svelte-qrcode/-/svelte-qrcode-2.3.0.tgz#9a8385f002531244636cb489d613edfa2cad0a93"
@@ -1140,23 +1135,6 @@
   version "1.0.0-next.28"
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.28.tgz#d45e01c4a56f143ee69c54dd6b12eade9e270a73"
   integrity sha512-8LduaNlMZGwdZ6qWrKlfa+2M4gahzFkprZiAt2TF8uS0qQgBizKXpXURqvTJ4WtmupWxaLqjRb2UCTe72mu+Aw==
-
-"@rocicorp/lock@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@rocicorp/lock/-/lock-1.0.4.tgz#d9f4b6fb0161955e1d5a1499d5a4998f252f1bb6"
-  integrity sha512-FavTiO8ETXFXDVfA87IThGduTTTR8iqzBnr/c60gUUmbk7knGEXPmf2B+yiNuluJD0ku0fL2V2r62UXnsLXl6w==
-  dependencies:
-    "@rocicorp/resolver" "^1.0.2"
-
-"@rocicorp/logger@^5.2.2":
-  version "5.3.0"
-  resolved "https://registry.yarnpkg.com/@rocicorp/logger/-/logger-5.3.0.tgz#15870281450d7aa26191f99a52ace7f7977d1a6c"
-  integrity sha512-j5WYYkzpGxkemS9cUEzGvWJFOdrKRSbTXKC6P032oXMnVb5VLr/aN/7RT7jczAwmQgkY2ds+/93CEiua4rCY1A==
-
-"@rocicorp/resolver@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@rocicorp/resolver/-/resolver-1.0.2.tgz#8b64e12ec448e74009f2c7cf5b5959bd99b21365"
-  integrity sha512-TfjMTQp9cNNqNtHFfa+XHEGdA7NnmDRu+ZJH4YF3dso0Xk/b9DMhg/sl+b6CR4ThFZArXXDsG1j8Mwl34wcOZQ==
 
 "@rollup/rollup-android-arm-eabi@4.43.0":
   version "4.43.0"
@@ -3582,16 +3560,6 @@ regexparam@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/regexparam/-/regexparam-3.0.0.tgz#1673e09d41cb7fd41eaafd4040a6aa90daa0a21a"
   integrity sha512-RSYAtP31mvYLkAHrOlh25pCNQ5hWnT106VukGaaFfuJrZFkGRX5GhUAdPqpSDXxOhA2c4akmRuplv1mRqnBn6Q==
-
-replicache@^15.0.1:
-  version "15.0.1"
-  resolved "https://registry.yarnpkg.com/replicache/-/replicache-15.0.1.tgz#430696965a3a98b5fb77ba1d2a62d0cec58bc910"
-  integrity sha512-I7HK6h2eT2QNxO4mwQFDqbuxhvCQgSlU4QuwfN9dqA6EKnO73VYiKB676r36N3q5W7L+htLgAcrSsrX+JPsRlQ==
-  dependencies:
-    "@badrap/valita" "^0.3.0"
-    "@rocicorp/lock" "^1.0.4"
-    "@rocicorp/logger" "^5.2.2"
-    "@rocicorp/resolver" "^1.0.2"
 
 request-ip@~3.3.0:
   version "3.3.0"
