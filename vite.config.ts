@@ -24,4 +24,8 @@ export default defineConfig({
 				conditions: ['browser'],
 			}
 		: undefined,
+
+	server: {
+		allowedHosts: ['ck.lion-solfege.ts.net'],
+	},
 });

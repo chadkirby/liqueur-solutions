@@ -3,7 +3,7 @@
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 	import { newSpirit } from '$lib/mixture-factories.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
-	import { writeTempFile } from '$lib/persistence.svelte.js';
+	import { insertFile } from '$lib/persistence.svelte.js';
 	import { generateStorageId } from '$lib/storage-id.js';
 	import { onMount } from 'svelte';
 
@@ -26,7 +26,7 @@
             mixture,
         } as const;
 
-        await writeTempFile(item);
+        await insertFile(item);
         goto(`/edit/${item.id}`);
     });
 </script>

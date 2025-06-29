@@ -6,7 +6,7 @@
 	import { Spinner } from 'svelte-5-ui-lib';
 	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
-	import { readFile, getName, writeTempFile } from '$lib/persistence.svelte.js';
+	import { loadMixture, getName, insertFile } from '$lib/persistence.svelte.js';
 
 	// UI state
 	let mixtureName = $state<string>('');
@@ -27,9 +27,9 @@
 
 		(async () => {
 			try {
-				const fetched = await readFile(id);
+				const fetched = await loadMixture(id);
 				if (cancelled) return;
-				if (!fetched.isValid) throw new Error('Invalid mixture data loaded.');
+				if (!fetched?.isValid) throw new Error('Invalid mixture data loaded.');
 
 				const name = await getName(id);
 				if (cancelled) return;
@@ -47,7 +47,7 @@
 				});
 
 				unsubscribeMixture = mixtureStore.subscribe((upd) => {
-					writeTempFile({
+					insertFile({
 						id: upd.storeId,
 						name: upd.name,
 						mixture: upd.mixture,

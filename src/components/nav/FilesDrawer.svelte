@@ -22,35 +22,38 @@
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { SvelteSet } from 'svelte/reactivity';
 	import {
-		TempFiles,
-		deserialize,
-		deleteTempFile,
+		MixtureFiles,
+		Stars,
+		deleteFile,
 		hasEquivalentItem,
-		writeTempFile,
-		readFile,
+		insertFile,
+		loadMixture,
 		toggleStar,
-		CloudFiles,
-		type CloudFileData,
 	} from '$lib/persistence.svelte.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
-	let cloudFiles = $derived(CloudFiles?.find({}, { sort: { accessTime: -1 } }).fetch());
-
-	const tempFiles = $derived(
-		TempFiles?.find({}, { sort: { accessTime: -1 } })
-			.map(deserialize)
-			.filter((f) => !CloudFiles?.findOne({ id: f.id })),
+	const starredIds = $derived(
+		new SvelteSet(Stars?.find({}, { fields: { id: 1 } }).map((s) => s.id) || []),
 	);
-	let cloudSyncedIds = $derived(new SvelteSet(cloudFiles?.map((file) => file.id)));
 
-	let { mixtureStore }: Props = $props();
+	const mixtureFiles = $derived(
+		MixtureFiles?.find({}, { sort: { accessTime: -1 } }).map((f) => ({
+			...f,
+			starred: starredIds.has(f.id),
+		})),
+	);
+
+	const tempFiles = $derived(mixtureFiles?.filter((f) => f.starred === false));
+	const starredFiles = $derived(mixtureFiles?.filter((f) => f.starred === true));
+
+	const { mixtureStore }: Props = $props();
 
 	let showTempFiles = $state(false);
-	let files: CloudFileData[] = $derived([
-		...(cloudFiles ? cloudFiles : []),
+	const files = $derived([
+		...(starredFiles ? starredFiles : []),
 		...(showTempFiles && tempFiles ? tempFiles : []),
 	]);
 
@@ -59,7 +62,7 @@
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
-		deleteTempFile(id);
+		deleteFile(id);
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -104,7 +107,7 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = await readFile(id);
+			const mixture = loadMixture(id);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
@@ -117,7 +120,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files?.filter((f) => cloudSyncedIds.has(f.id)) || [];
+		const data = files?.filter((f) => starredIds.has(f.id)) || [];
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -135,8 +138,8 @@
 		mixture: Mixture;
 	}): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		if (await hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
-		await writeTempFile(item);
+		if (hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
+		await insertFile(item);
 	}
 
 	$effect(() => {
@@ -238,7 +241,7 @@
 					>
 						<div class="flex flex-row items-center w-full">
 							<Button onclick={() => toggleStar(id)}>
-								{#if cloudSyncedIds.has(id)}
+								{#if starredIds.has(id)}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />

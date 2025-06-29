@@ -12,7 +12,7 @@
 
 	import { getContext } from 'svelte';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { writeCloudFile, toggleStar, CloudFiles } from '$lib/persistence.svelte.js';
+	import { toggleStar, MixtureFiles, Stars } from '$lib/persistence.svelte.js';
 	import AuthButtons from './AuthButtons.svelte';
 
 	interface Props {
@@ -23,8 +23,6 @@
 
 	// Get Clerk stores from context
 	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
-	const clerkInstance = clerkStores.instance; // Get the store itself
-	const clerkUser = clerkStores.user; // Get the store itself
 
 	let storeId = $derived(mixtureStore.storeId);
 
@@ -42,15 +40,15 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let cloudSyncMeta = $derived(CloudFiles?.findOne({ id: storeId }));
+	let mxFile = $derived(MixtureFiles?.findOne({ id: storeId }));
+	let isStarred = $derived(Stars?.findOne({ id: storeId }));
 
-	let isStarred = $derived(Boolean(cloudSyncMeta));
-	let isDirty = $derived(mixtureStore.ingredientHash !== cloudSyncMeta?._ingredientHash);
+	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?._ingredientHash);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
 		if (isStarred && isDirty) {
-			await writeCloudFile(storeId);
+			// await writeCloudFile(storeId);
 		} else {
 			await toggleStar(storeId);
 		}

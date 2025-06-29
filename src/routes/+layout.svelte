@@ -9,12 +9,7 @@
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import {
-		runJanitor,
-		type CloudFileData,
-		CloudFiles,
-		initCloudFile,
-	} from '$lib/persistence.svelte.js';
+	import { pauseSync, startSync } from '$lib/sync-manager.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
@@ -22,6 +17,7 @@
 	interface Props {
 		children?: Snippet;
 	}
+
 
 	let { children }: Props = $props();
 	console.log('Clerk layout');
@@ -45,19 +41,10 @@
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
 				clerkUser.set(user ?? null);
 				if (user) {
-					if (CloudFiles?.find({}).count() === 0) {
-						console.log('FilesDb: No cloud files found, inserting from API');
-						// If no cloud files exist, fetch them from the API
-						// and insert them into the CloudFiles collection
-						insertCloudFiles().then(() => {
-							const cloudIds =
-								CloudFiles?.find({}, { fields: { id: 1 } }).map((item) => item.id) || [];
-							console.log('FilesDb: Found cloud files:', cloudIds);
-							runJanitor(new Set(cloudIds));
-						});
-					}
+					startSync();
+
 				} else {
-					CloudFiles?.removeMany({});
+					pauseSync();
 				}
 			});
 		});
@@ -69,51 +56,6 @@
 			}
 		};
 	});
-
-	async function insertCloudFiles(): Promise<void> {
-		const filesResp = await fetch('../api/mixtures');
-		if (!filesResp.ok) {
-			throw new Error('FilesDb: Failed to fetch cloud files: ' + filesResp.statusText);
-		}
-		// call the callback for each file in the streamed response
-		const reader = filesResp.body?.getReader();
-		if (!reader) {
-			throw new Error('FilesDb: Response body is null');
-		}
-		const decoder = new TextDecoder();
-		let buffer = '';
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
-				for (const line of lines) {
-					if (line.trim()) {
-						const file = JSON.parse(line) as CloudFileData;
-						try {
-							initCloudFile(file);
-						} catch (error) {
-							console.error('FilesDb: Error inserting file:', error);
-						}
-					}
-				}
-			}
-			// Process any remaining data in buffer
-			if (buffer.trim()) {
-				const fileData = JSON.parse(buffer) as CloudFileData;
-				try {
-					CloudFiles?.insert(fileData);
-				} catch (error) {
-					console.error('FilesDb: Error inserting last file:', error);
-				}
-			}
-		} catch (e) {
-			console.error('FilesDb: Error reading cloud files:', e);
-			throw new Error('FilesDb: Failed to read cloud files');
-		}
-	}
 </script>
 
 {@render children?.()}

@@ -25,15 +25,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
 
 	try {
-		const item = (await request.json()) as FileDataV1;
-		console.log(`[PUT] Received item for id: ${mixtureId}`, item);
-
-		const obj = await bucket.put(`files/${safeId}/${mixtureId}`, JSON.stringify(item), {
-			customMetadata: {
-				ingredientHash: item._ingredientHash,
-				userAgent: request.headers.get('user-agent') || '',
-			},
-		});
+		const obj = await bucket.put(`stars/${safeId}/${mixtureId}`, JSON.stringify(true));
 		if (!obj) {
 			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
 			throw error(500, `Failed to put item for id: ${mixtureId}`);
@@ -64,7 +56,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 
 	try {
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.delete(`files/${safeId}/${mixtureId}`);
+		await bucket.delete(`stars/${safeId}/${mixtureId}`);
 	} catch (err: any) {
 		console.error(`[Push] Error processing push:`, err.message, err);
 		throw error(500, `Failed to process push: ${err.message}`);
