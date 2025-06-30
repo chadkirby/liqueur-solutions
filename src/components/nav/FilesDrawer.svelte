@@ -145,6 +145,7 @@
 		const hash = item.mixture.getIngredientHash(item.name);
 		if (persistenceContext.mixtureFiles.findOne({ _ingredientHash: hash })) return;
 		await persistenceContext.upsertFile(item);
+		await persistenceContext.toggleStar(item.id);
 	}
 
 	$effect(() => {

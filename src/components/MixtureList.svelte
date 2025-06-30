@@ -51,7 +51,7 @@
 				mixture: mixtureStore.mixture,
 			});
 		} else {
-			await persistenceContext.toggleStar(storeId);
+			persistenceContext.toggleStar(storeId);
 		}
 	}
 </script>

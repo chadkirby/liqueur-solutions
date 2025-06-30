@@ -69,10 +69,7 @@
 
 	setContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY, persistenceContext);
 
-	if (
-		persistenceContext.mixtureFiles &&
-		persistenceContext.stars
-	) {
+	if (persistenceContext.mixtureFiles && persistenceContext.stars) {
 		syncManager.addCollection(persistenceContext.mixtureFiles, {
 			name: 'mixtureFiles',
 			apiPath: '/api/mixtures',
@@ -112,6 +109,24 @@
 				}
 			});
 		});
+
+		if (persistenceContext.mixtureFiles && persistenceContext.stars) {
+			const aMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+			try {
+				const stars = new Set(persistenceContext.stars.find({}).map(({ id }) => id));
+				const files = persistenceContext.mixtureFiles.find(
+					{ accessTime: { $lt: aMonthAgo } },
+					{ fields: { id: 1 } },
+				);
+				files.forEach(({ id }) => {
+					if (!stars.has(id)) {
+						persistenceContext.mixtureFiles?.removeOne({ id });
+					}
+				});
+			} catch (e) {
+				console.error('FilesDb janitor error', e);
+			}
+		}
 
 		// 7) Clean up when this layout is unmounted
 		return () => {

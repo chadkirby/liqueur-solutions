@@ -23,18 +23,3 @@ export function deserialize(item: FileDataV1): FileDataV1 {
 		_ingredientHash,
 	} as const;
 }
-
-export async function runJanitor(stars: Set<string>): Promise<void> {
-	if (!MixtureFiles) return;
-	const aMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-	try {
-		const files = MixtureFiles.find({ accessTime: { $lt: aMonthAgo } }, { fields: { id: 1 } });
-		files.forEach(({ id }) => {
-			if (!stars.has(id)) {
-				MixtureFiles.removeOne({ id });
-			}
-		});
-	} catch (e) {
-		console.error('FilesDb janitor error', e);
-	}
-}
