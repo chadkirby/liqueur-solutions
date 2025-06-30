@@ -1,11 +1,11 @@
 /**
  * Server-side endpoint for listing a user's files.
  */
-import { error } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import type { FileDataV1 } from '$lib/data-format.js';
-import { Mixture } from '$lib/mixture.js';
+import { zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+import { readMixtureObject } from './r2-mx-utils.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
@@ -28,62 +28,42 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		// Sanitize userId for safe inclusion in R2 object keys: only alphanumeric and underscore.
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
 
-		// List all file objects for this authenticated user from R2 and stream them back to the client as we get them.
-		const stream = new ReadableStream({
-			async start(controller) {
-				try {
-					// First get the complete list of files
-					const files = await bucket.list({ prefix: `files/${safeId}/` });
-					console.log(`[Mixtures] Found ${files.objects.length} files for user ${userId}`);
-
-					// Then process each file one by one
-					for (const item of files.objects) {
-						try {
-							const file = await bucket.get(item.key);
-							if (!file) {
-								console.log(`[Mixtures] No file found for id: ${item.key}`);
-								continue; // Skip to the next item if file not found
-							}
-
-							const fileData = (await file.json()) as FileDataV1;
-							// exclude the ingredientJSON (shouldn't exist) and ingredientDb fields from the response
-							const { ingredientJSON, ingredientDb, accessTime, _ingredientHash, ...rest } =
-								fileData as FileDataV1 & { ingredientJSON?: string };
-
-							// Send each object as a complete JSON string followed by newline
-							const jsonLine = JSON.stringify({
-								...rest,
-								accessTime: new Date(accessTime).toISOString(),
-								_ingredientHash:
-									_ingredientHash ??
-									Mixture.deserialize(rest.rootMixtureId, ingredientDb).getIngredientHash(
-										rest.name,
-									),
-							});
-							controller.enqueue(new TextEncoder().encode(jsonLine + '\n'));
-						} catch (fileErr) {
-							// Log error for this specific file but continue processing others
-							console.error(`[Mixtures] Error processing file ${item.key}:`, fileErr);
-							// Don't rethrow - we want to continue with other files
-						}
-					}
-
-					// Only close the controller after processing all files
-					controller.close();
-				} catch (err) {
-					console.error(`[Mixtures] Error listing files:`, err);
-					controller.error(
-						new Error(`Failed to list files: ${err instanceof Error ? err.message : String(err)}`),
-					);
-				}
-			},
+		// List all file objects for this authenticated user from R2 and return as array
+		const prefix = `files/${safeId}/`;
+		const listedFiles = await bucket.list({
+			prefix,
+			include: ['customMetadata'],
 		});
 
-		return new Response(stream, {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		let truncated = listedFiles.truncated;
+		let cursor = listedFiles.truncated ? listedFiles.cursor : undefined;
+
+		while (truncated) {
+			const next = await bucket.list({
+				prefix,
+				cursor,
+				include: ['customMetadata'],
+			});
+			listedFiles.objects.push(...next.objects);
+
+			truncated = next.truncated;
+			cursor = next.truncated ? next.cursor : undefined;
+		}
+
+		console.log(`[Mixtures] Found ${listedFiles.objects.length} files for user ${userId}`);
+
+		const result: FileDataV1[] = [];
+
+		for (const item of listedFiles.objects) {
+			const data = await readMixtureObject(bucket, item.key);
+			if (!data) {
+				continue;
+			}
+
+			result.push(data);
+		}
+
+		return json(result);
 	} catch (err: any) {
 		// Explicitly type err
 		console.error(`[Mixtures] Error processing list:`, err.message, err);

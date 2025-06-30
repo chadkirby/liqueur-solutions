@@ -5,22 +5,79 @@
 	import { experimental__simple } from '@clerk/themes';
 	import { writable } from 'svelte/store';
 	import { setContext } from 'svelte';
+	import {
+		type PersistenceContext,
+		createMixturesCollection,
+		createStarsCollection,
+		PERSISTENCE_CONTEXT_KEY,
+	} from '$lib/contexts.js';
+	import { browser } from '$app/environment';
 
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import {
-		runJanitor,
-		type CloudFileData,
-		CloudFiles,
-		initCloudFile,
-	} from '$lib/persistence.svelte.js';
+	import { syncManager } from '$lib/sync-manager.js';
+	import { currentDataVersion } from '$lib/data-format.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
 
 	interface Props {
 		children?: Snippet;
+	}
+
+	const persistenceContext: PersistenceContext = browser
+		? {
+				mixtureFiles: createMixturesCollection(),
+				stars: createStarsCollection(),
+				upsertFile: (item: { id: string; name: string; mixture: any }) => {
+					if (!persistenceContext.mixtureFiles) return;
+					const accessTime = new Date().toISOString();
+					persistenceContext.mixtureFiles.replaceOne(
+						{ id: item.id },
+						{
+							version: currentDataVersion,
+							id: item.id,
+							name: item.name,
+							accessTime,
+							desc: item.mixture.describe(),
+							rootMixtureId: item.mixture.id,
+							ingredientDb: item.mixture.serialize(),
+							_ingredientHash: item.mixture.getIngredientHash(item.name),
+						},
+						{ upsert: true },
+					);
+				},
+				toggleStar: (id: string) => {
+					if (!persistenceContext.stars) return false;
+					const existing = persistenceContext.stars.findOne({ id });
+					if (existing) {
+						persistenceContext.stars.removeOne({ id });
+						return false;
+					} else {
+						persistenceContext.stars.insert({ id });
+						return true;
+					}
+				},
+			}
+		: {
+				mixtureFiles: null,
+				stars: null,
+				upsertFile: () => {},
+				toggleStar: () => false,
+			};
+
+	setContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY, persistenceContext);
+
+	if (persistenceContext.mixtureFiles && persistenceContext.stars) {
+		syncManager.addCollection(persistenceContext.mixtureFiles, {
+			name: 'mixtureFiles',
+			apiPath: '/api/mixtures',
+		});
+		syncManager.addCollection(persistenceContext.stars, {
+			name: 'stars',
+			apiPath: '/api/stars',
+		});
 	}
 
 	let { children }: Props = $props();
@@ -45,75 +102,40 @@
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
 				clerkUser.set(user ?? null);
 				if (user) {
-					if (CloudFiles?.find({}).count() === 0) {
-						console.log('FilesDb: No cloud files found, inserting from API');
-						// If no cloud files exist, fetch them from the API
-						// and insert them into the CloudFiles collection
-						insertCloudFiles().then(() => {
-							const cloudIds =
-								CloudFiles?.find({}, { fields: { id: 1 } }).map((item) => item.id) || [];
-							console.log('FilesDb: Found cloud files:', cloudIds);
-							runJanitor(new Set(cloudIds));
-						});
-					}
+					console.log('User signed in:', user.id);
+					syncManager.startAll();
 				} else {
-					CloudFiles?.removeMany({});
+					syncManager.pauseAll();
 				}
 			});
 		});
+
+		if (persistenceContext.mixtureFiles && persistenceContext.stars) {
+			const aMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+			try {
+				const stars = new Set(persistenceContext.stars.find({}).map(({ id }) => id));
+				const files = persistenceContext.mixtureFiles.find(
+					{ accessTime: { $lt: aMonthAgo } },
+					{ fields: { id: 1 } },
+				);
+				files.forEach(({ id }) => {
+					if (!stars.has(id)) {
+						persistenceContext.mixtureFiles?.removeOne({ id });
+					}
+				});
+			} catch (e) {
+				console.error('FilesDb janitor error', e);
+			}
+		}
 
 		// 7) Clean up when this layout is unmounted
 		return () => {
 			if (unsubscribeFromClerk) {
 				unsubscribeFromClerk();
 			}
+			syncManager.dispose();
 		};
 	});
-
-	async function insertCloudFiles(): Promise<void> {
-		const filesResp = await fetch('../api/mixtures');
-		if (!filesResp.ok) {
-			throw new Error('FilesDb: Failed to fetch cloud files: ' + filesResp.statusText);
-		}
-		// call the callback for each file in the streamed response
-		const reader = filesResp.body?.getReader();
-		if (!reader) {
-			throw new Error('FilesDb: Response body is null');
-		}
-		const decoder = new TextDecoder();
-		let buffer = '';
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
-				for (const line of lines) {
-					if (line.trim()) {
-						const file = JSON.parse(line) as CloudFileData;
-						try {
-							initCloudFile(file);
-						} catch (error) {
-							console.error('FilesDb: Error inserting file:', error);
-						}
-					}
-				}
-			}
-			// Process any remaining data in buffer
-			if (buffer.trim()) {
-				const fileData = JSON.parse(buffer) as CloudFileData;
-				try {
-					CloudFiles?.insert(fileData);
-				} catch (error) {
-					console.error('FilesDb: Error inserting last file:', error);
-				}
-			}
-		} catch (e) {
-			console.error('FilesDb: Error reading cloud files:', e);
-			throw new Error('FilesDb: Failed to read cloud files');
-		}
-	}
 </script>
 
 {@render children?.()}

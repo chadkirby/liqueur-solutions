@@ -14,43 +14,38 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, type FileDataV1 } from '$lib/data-format.js';
+	import { isV0Data, isV1Data, zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { SvelteSet } from 'svelte/reactivity';
-	import {
-		TempFiles,
-		deserialize,
-		deleteTempFile,
-		hasEquivalentItem,
-		writeTempFile,
-		readFile,
-		toggleStar,
-		CloudFiles,
-		type CloudFileData,
-	} from '$lib/persistence.svelte.js';
+
+	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { getContext } from 'svelte';
+	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
-	let cloudFiles = $derived(CloudFiles?.find({}, { sort: { accessTime: -1 } }).fetch());
-
-	const tempFiles = $derived(
-		TempFiles?.find({}, { sort: { accessTime: -1 } })
-			.map(deserialize)
-			.filter((f) => !CloudFiles?.findOne({ id: f.id })),
+	const starredIds = $derived(
+		new SvelteSet(persistenceContext.stars?.find({}).map((s) => s.id) || []),
 	);
-	let cloudSyncedIds = $derived(new SvelteSet(cloudFiles?.map((file) => file.id)));
 
-	let { mixtureStore }: Props = $props();
+	const mixtureFiles = $derived(
+		persistenceContext.mixtureFiles?.find({}, { sort: { accessTime: -1 } }).fetch(),
+	);
+
+	const tempFiles = $derived(mixtureFiles?.filter((f) => !starredIds.has(f.id)));
+	const starredFiles = $derived(mixtureFiles?.filter((f) => starredIds.has(f.id)));
+
+	const { mixtureStore }: Props = $props();
 
 	let showTempFiles = $state(false);
-	let files: CloudFileData[] = $derived([
-		...(cloudFiles ? cloudFiles : []),
+	const files = $derived([
+		...(starredFiles ? starredFiles : []),
 		...(showTempFiles && tempFiles ? tempFiles : []),
 	]);
 
@@ -59,7 +54,8 @@
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
-		deleteTempFile(id);
+		persistenceContext.mixtureFiles?.removeOne({ id });
+		persistenceContext.stars?.removeOne({ id });
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -104,7 +100,17 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = await readFile(id);
+					const resp = await fetch(`/api/mixtures/${id}`);
+			if (!resp.ok) {
+				console.error('Failed to load mixture', await resp.text());
+				return;
+			}
+			const mxData = zFileDataV1.safeParse(await resp.json());
+			if (!mxData.success) {
+				console.error('Failed to parse mixture data', mxData.error);
+				return;
+			}
+			const mixture = Mixture.deserialize(mxData.data.rootMixtureId, mxData.data.ingredientDb);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
@@ -117,7 +123,7 @@
 
 	function handleExport() {
 		// download a json file with all the starred files
-		const data = files?.filter((f) => cloudSyncedIds.has(f.id)) || [];
+		const data = files?.filter((f) => starredIds.has(f.id)) || [];
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -135,8 +141,11 @@
 		mixture: Mixture;
 	}): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		if (await hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
-		await writeTempFile(item);
+		if (!persistenceContext.mixtureFiles) return;
+		const hash = item.mixture.getIngredientHash(item.name);
+		if (persistenceContext.mixtureFiles.findOne({ _ingredientHash: hash })) return;
+		await persistenceContext.upsertFile(item);
+		await persistenceContext.toggleStar(item.id);
 	}
 
 	$effect(() => {
@@ -237,8 +246,8 @@
 						"
 					>
 						<div class="flex flex-row items-center w-full">
-							<Button onclick={() => toggleStar(id)}>
-								{#if cloudSyncedIds.has(id)}
+							<Button onclick={() => persistenceContext.toggleStar(id)}>
+								{#if starredIds.has(id)}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />

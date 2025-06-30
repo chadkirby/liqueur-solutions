@@ -7,7 +7,11 @@ import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 /**
  * Serializes a mixture into a compressed URL-safe string.
  */
-export function serializeToUrl(name = 'mixture', mixture: Mixture): URL {
+export function serializeToUrl(
+	name = 'mixture',
+	mixture: Mixture,
+	pathname: '/view' | '/edit' = '/view',
+): URL {
 	const ingredientDb = mixture.serialize();
 	const rootMixtureId = ingredientDb[0][0];
 	const buf = strToU8(JSON.stringify({ rootMixtureId, ingredientDb }), true);
@@ -21,7 +25,7 @@ export function serializeToUrl(name = 'mixture', mixture: Mixture): URL {
 	}
 
 	const url = new URL(window.location.origin);
-	url.pathname = '/view';
+	url.pathname = pathname;
 	url.search = params.toString();
 
 	return url;

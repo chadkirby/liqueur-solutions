@@ -3,80 +3,53 @@
 	import MixtureList from '../../../components/MixtureList.svelte';
 	import BottomNav from '../../../components/nav/BottomNav.svelte';
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import { Spinner } from 'svelte-5-ui-lib';
-	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
-	import { readFile, getName, writeTempFile } from '$lib/persistence.svelte.js';
 
+	import { getContext, onDestroy, untrack } from 'svelte';
+	import { Mixture } from '$lib/mixture.js';
+	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+
+	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
+	let error = $state<string | null>(null);
 	// UI state
 	let mixtureName = $state<string>('');
-	let isLoading = $state<boolean>(true);
-	let error = $state<string | null>(null);
-	let mixtureStore = $state<MixtureStore | null>(null);
 	let unsubscribeMixture: (() => void) | null = null;
-	let cancelCurrent: (() => void) | null = null;
 
-	function startFetch() {
+	const mixtureStore = $derived.by(() => {
 		const id = page.params.id;
-		let cancelled = false;
-		isLoading = true;
-		error = null;
-		mixtureName = '';
-		mixtureStore = null;
-		console.log('fetching mixture', id);
-
-		(async () => {
-			try {
-				const fetched = await readFile(id);
-				if (cancelled) return;
-				if (!fetched.isValid) throw new Error('Invalid mixture data loaded.');
-
-				const name = await getName(id);
-				if (cancelled) return;
-
-				const totals = getTotals(fetched);
-				if (cancelled) return;
-
-				mixtureName = name || 'mixture';
-				mixtureStore = new MixtureStore({
+		const mxData = persistenceContext.mixtureFiles?.findOne({ id });
+		if (!mxData) return null;
+		try {
+			return untrack(() => {
+				const { name, rootMixtureId, ingredientDb, _ingredientHash } = mxData;
+				mixtureName = name;
+				const mixture = Mixture.deserialize(rootMixtureId, ingredientDb);
+				const store = new MixtureStore({
 					storeId: id,
-					name: mixtureName,
-					mixture: fetched,
-					totals,
-					ingredientHash: fetched.getIngredientHash(mixtureName),
+					name,
+					mixture,
+					totals: getTotals(mixture),
+					ingredientHash: _ingredientHash,
 				});
-
-				unsubscribeMixture = mixtureStore.subscribe((upd) => {
-					writeTempFile({
+				console.log('Initialized mixture store for ID', id, store);
+				unsubscribeMixture = store.subscribe((upd) => {
+					persistenceContext.upsertFile({
 						id: upd.storeId,
 						name: upd.name,
 						mixture: upd.mixture,
 					});
 				});
-			} catch (err: any) {
-				if (cancelled) return;
-				console.error(`Error loading mixture ${id}:`, err);
-				error = `Failed to load mixture: ${err.message}`;
-			} finally {
-				isLoading = false;
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}
-
-	$effect(() => {
-		const currentStoreId = mixtureStore ? mixtureStore.storeId : null;
-		// refetch if the URL changes
-		if (page.params.id !== currentStoreId) {
-			cancelCurrent = startFetch();
+				return store;
+			});
+		} catch (err) {
+			console.error('Error initializing mixture store:', err);
+			error = (err as Error).message;
+			return null;
 		}
 	});
 
+	$inspect(mixtureStore?.name, page.params.id, mixtureStore?.mixture.id);
 	onDestroy(() => {
-		cancelCurrent?.();
 		unsubscribeMixture?.();
 	});
 </script>
@@ -86,11 +59,7 @@
 </svelte:head>
 
 <div class="p-2 max-w-2xl mx-auto font-sans">
-	{#if isLoading}
-		<div class="flex h-full items-center justify-center p-10">
-			<Spinner size="16" /> Loading Mixture…
-		</div>
-	{:else if error}
+	{#if error}
 		<div class="p-4 text-red-600">Error: {error}</div>
 	{:else if mixtureStore}
 		<MixtureList {mixtureStore} />
