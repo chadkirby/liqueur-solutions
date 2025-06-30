@@ -5,7 +5,7 @@
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { page } from '$app/state';
 
-	import { getContext, untrack } from 'svelte';
+	import { getContext, onDestroy, untrack } from 'svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
 
@@ -13,6 +13,7 @@
 	let error = $state<string | null>(null);
 	// UI state
 	let mixtureName = $state<string>('');
+	let unsubscribeMixture: (() => void) | null = null;
 
 	const mixtureStore = $derived.by(() => {
 		const id = page.params.id;
@@ -31,6 +32,13 @@
 					ingredientHash: _ingredientHash,
 				});
 				console.log('Initialized mixture store for ID', id, store);
+				unsubscribeMixture = store.subscribe((upd) => {
+					persistenceContext.upsertFile({
+						id: upd.storeId,
+						name: upd.name,
+						mixture: upd.mixture,
+					});
+				});
 				return store;
 			});
 		} catch (err) {
@@ -38,6 +46,11 @@
 			error = (err as Error).message;
 			return null;
 		}
+	});
+
+	$inspect(mixtureStore?.name, page.params.id, mixtureStore?.mixture.id);
+	onDestroy(() => {
+		unsubscribeMixture?.();
 	});
 </script>
 

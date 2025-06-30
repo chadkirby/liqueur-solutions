@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
-	import { currentDataVersion } from '$lib/data-format.js';
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 	import { newSpirit } from '$lib/mixture-factories.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
@@ -24,24 +23,13 @@
 		]);
 
 		const id = generateStorageId();
-        await persistenceContext.mixtureFiles?.isReady();
-		persistenceContext.mixtureFiles?.replaceOne(
-			{ id },
-			{
-				version: currentDataVersion,
-				id,
-				name: name,
-				accessTime: new Date().toISOString(),
-				desc: mixture.describe(),
-				rootMixtureId: mixture.id,
-				ingredientDb: mixture.serialize(),
-				_ingredientHash: mixture.getIngredientHash(name),
-			},
-			{
-				upsert: true,
-			},
-		);
-		goto(`/edit/${id}`);
+		await persistenceContext.mixtureFiles?.isReady();
+		persistenceContext.upsertFile({
+			id,
+			name,
+			mixture,
+		});
+		goto(`/edit/${id}`, { replaceState: true });
 	});
 </script>
 

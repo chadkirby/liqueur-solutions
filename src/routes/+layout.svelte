@@ -32,13 +32,14 @@
 				stars: createStarsCollection(),
 				upsertFile: (item: { id: string; name: string; mixture: any }) => {
 					if (!persistenceContext.mixtureFiles) return;
+					const accessTime = new Date().toISOString();
 					persistenceContext.mixtureFiles.replaceOne(
 						{ id: item.id },
 						{
 							version: currentDataVersion,
 							id: item.id,
 							name: item.name,
-							accessTime: new Date().toISOString(),
+							accessTime,
 							desc: item.mixture.describe(),
 							rootMixtureId: item.mixture.id,
 							ingredientDb: item.mixture.serialize(),

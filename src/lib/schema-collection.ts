@@ -2,6 +2,8 @@ import { Collection } from '@signaldb/core';
 import type { BaseItem, CollectionOptions } from '@signaldb/core';
 import type { ZodMiniType, infer as ZodInfer } from 'zod/v4-mini';
 
+Collection.setFieldTracking(true);
+
 interface SchemaCollectionOptions<T extends ZodMiniType<BaseItem<I>>, I, U = ZodInfer<T>>
 	extends CollectionOptions<ZodInfer<T>, I, U> {
 	schema: T;
