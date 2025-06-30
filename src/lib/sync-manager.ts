@@ -1,30 +1,28 @@
 import { SyncManager } from '@signaldb/sync';
-import { EventEmitter } from '@signaldb/core'
-import { MixtureFiles, Stars } from './persistence.svelte.js';
+import { EventEmitter } from '@signaldb/core';
 
-const apiBaseUrl = '../api';
 const errorEmitter = new EventEmitter();
 errorEmitter.on('error', (message: string) => {
 	// display validation errors to the user
 	console.error('Sync error: ' + message);
 });
 
-const syncManager = new SyncManager({
+export const syncManager = new SyncManager({
 	autostart: false,
 	debounceTime: 1000,
 	pull: async ({ apiPath }) => {
-		const resp = await fetch(`${apiBaseUrl}/${apiPath}`);
+		const resp = await fetch(apiPath);
 		if (!resp.ok) {
 			throw new Error('FilesDb: Failed to fetch cloud files: ' + resp.statusText);
 		}
-    const items = await resp.json();
+		const items = await resp.json();
 
 		return { items };
 	},
 	push: async ({ apiPath }, { changes }) => {
 		await Promise.all(
 			changes.added.map(async (item) => {
-				const response = await fetch(`${apiBaseUrl}/${apiPath}/${item.id}`, {
+				const response = await fetch(`${apiPath}/${item.id}`, {
 					method: 'PUT',
 					body: JSON.stringify(item),
 				});
@@ -38,7 +36,7 @@ const syncManager = new SyncManager({
 
 		await Promise.all(
 			changes.modified.map(async (item) => {
-				const response = await fetch(`${apiBaseUrl}/${apiPath}/${item.id}`, {
+				const response = await fetch(`${apiPath}/${item.id}`, {
 					method: 'PUT',
 					body: JSON.stringify(item),
 				});
@@ -52,7 +50,7 @@ const syncManager = new SyncManager({
 
 		await Promise.all(
 			changes.removed.map(async (item) => {
-				const response = await fetch(`${apiBaseUrl}/${apiPath}/${item.id}`, {
+				const response = await fetch(`${apiPath}/${item.id}`, {
 					method: 'DELETE',
 					body: JSON.stringify(item),
 				});
@@ -65,27 +63,4 @@ const syncManager = new SyncManager({
 		);
 	},
 });
-if (MixtureFiles) {
-	syncManager.addCollection(MixtureFiles, {
-		name: 'mixtures',
-		apiPath: 'mixtures',
-	});
-}
-if (Stars) {
-	syncManager.addCollection(Stars, {
-		name: 'stars',
-		apiPath: 'stars',
-	});
-}
-
-export function startSync() {
-  syncManager.startSync('mixtures');
-  syncManager.startSync('stars');
-}
-
-export function pauseSync() {
-  syncManager.pauseSync('mixtures');
-  syncManager.pauseSync('stars');
-}
-
 

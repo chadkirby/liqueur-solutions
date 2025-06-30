@@ -5,6 +5,30 @@ import { z } from 'zod/v4-mini';
 
 export const currentDataVersion = 1;
 
+
+export const zMixtureList = z.object({
+	ingredientHash: z.string(),
+	name: z.string(),
+	id: z.string(),
+	desc: z.string(),
+	accessTime: z.iso.datetime(), // ISO date string
+});
+
+/**
+ * Metadata to support the FilesDrawer component.
+ */
+export type MixtureListMetadata = z.infer<typeof zMixtureList>;
+
+export function getMixtureListMetadata(mxData: FileDataV1): MixtureListMetadata {
+	return {
+		ingredientHash: mxData._ingredientHash,
+		name: mxData.name,
+		id: mxData.id,
+		desc: mxData.desc,
+		accessTime: mxData.accessTime,
+	};
+}
+
 const zMixtureData = z.object({
 	id: z.string(),
 	// ids, and other data for this sub-mixture's ingredients

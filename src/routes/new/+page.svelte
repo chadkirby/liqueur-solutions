@@ -1,34 +1,48 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { currentDataVersion } from '$lib/data-format.js';
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 	import { newSpirit } from '$lib/mixture-factories.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
-	import { insertFile } from '$lib/persistence.svelte.js';
 	import { generateStorageId } from '$lib/storage-id.js';
-	import { onMount } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 
-    onMount(async () => {
-        const adjectives = ['Untitled', 'New', 'Delicious', 'Refreshing', 'Tasty', 'Boozy'];
-        const nouns = ['Mixture', 'Solution', 'Blend', 'Beverage', 'Drink', 'Mix'];
+	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
-        const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+	onMount(async () => {
+		const adjectives = ['Untitled', 'New', 'Delicious', 'Refreshing', 'Tasty', 'Boozy'];
+		const nouns = ['Mixture', 'Solution', 'Blend', 'Beverage', 'Drink', 'Mix'];
 
-        const spirit = newSpirit(500, 40);
-        const mixture = new Mixture(componentId(), [
-            { name: '', id: componentId(), item: spirit, mass: spirit.mass },
-            { name: '', id: componentId(), item: SubstanceComponent.new('water'), mass: 200 },
-            { name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
-        ]);
+		const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 
-        const item = {
-            id: generateStorageId(),
-            name,
-            mixture,
-        } as const;
+		const spirit = newSpirit(500, 40);
+		const mixture = new Mixture(componentId(), [
+			{ name: '', id: componentId(), item: spirit, mass: spirit.mass },
+			{ name: '', id: componentId(), item: SubstanceComponent.new('water'), mass: 200 },
+			{ name: '', id: componentId(), item: SubstanceComponent.new('sucrose'), mass: 80 },
+		]);
 
-        await insertFile(item);
-        goto(`/edit/${item.id}`);
-    });
+		const id = generateStorageId();
+        await persistenceContext.mixtureFiles?.isReady();
+		persistenceContext.mixtureFiles?.replaceOne(
+			{ id },
+			{
+				version: currentDataVersion,
+				id,
+				name: name,
+				accessTime: new Date().toISOString(),
+				desc: mixture.describe(),
+				rootMixtureId: mixture.id,
+				ingredientDb: mixture.serialize(),
+				_ingredientHash: mixture.getIngredientHash(name),
+			},
+			{
+				upsert: true,
+			},
+		);
+		goto(`/edit/${id}`);
+	});
 </script>
 
 <p>Creating new mixture...</p>

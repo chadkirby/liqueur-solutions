@@ -45,7 +45,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }: RequestE
 			.filter((obj) => obj.key.startsWith(prefix))
 			.map((obj) => {
 				const id = obj.key.split('/').pop()!;
-				return id;
+				return { id };
 			});
 
 		console.log(`[Stars] Found ${stars.length} stars for user ${prefix}`);

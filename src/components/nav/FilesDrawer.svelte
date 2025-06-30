@@ -14,40 +14,32 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, type FileDataV1 } from '$lib/data-format.js';
+	import { isV0Data, isV1Data, zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { SvelteSet } from 'svelte/reactivity';
-	import {
-		MixtureFiles,
-		Stars,
-		deleteFile,
-		hasEquivalentItem,
-		insertFile,
-		loadMixture,
-		toggleStar,
-	} from '$lib/persistence.svelte.js';
+
+	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { getContext } from 'svelte';
+	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
 	const starredIds = $derived(
-		new SvelteSet(Stars?.find({}, { fields: { id: 1 } }).map((s) => s.id) || []),
+		new SvelteSet(persistenceContext.stars?.find({}).map((s) => s.id) || []),
 	);
 
 	const mixtureFiles = $derived(
-		MixtureFiles?.find({}, { sort: { accessTime: -1 } }).map((f) => ({
-			...f,
-			starred: starredIds.has(f.id),
-		})),
+		persistenceContext.mixtureFiles?.find({}, { sort: { accessTime: -1 } }).fetch(),
 	);
 
-	const tempFiles = $derived(mixtureFiles?.filter((f) => f.starred === false));
-	const starredFiles = $derived(mixtureFiles?.filter((f) => f.starred === true));
+	const tempFiles = $derived(mixtureFiles?.filter((f) => !starredIds.has(f.id)));
+	const starredFiles = $derived(mixtureFiles?.filter((f) => starredIds.has(f.id)));
 
 	const { mixtureStore }: Props = $props();
 
@@ -62,7 +54,8 @@
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
-		deleteFile(id);
+		persistenceContext.mixtureFiles?.removeOne({ id });
+		persistenceContext.stars?.removeOne({ id });
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -107,7 +100,17 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const mixture = loadMixture(id);
+					const resp = await fetch(`/api/mixtures/${id}`);
+			if (!resp.ok) {
+				console.error('Failed to load mixture', await resp.text());
+				return;
+			}
+			const mxData = zFileDataV1.safeParse(await resp.json());
+			if (!mxData.success) {
+				console.error('Failed to parse mixture data', mxData.error);
+				return;
+			}
+			const mixture = Mixture.deserialize(mxData.data.rootMixtureId, mxData.data.ingredientDb);
 			if (mixture && mixture.isValid) {
 				mixtureStore.addIngredientTo(filesDrawer.parentId, {
 					name,
@@ -138,8 +141,10 @@
 		mixture: Mixture;
 	}): Promise<void> {
 		if (!isStorageId(item.id)) return;
-		if (hasEquivalentItem(item.mixture.getIngredientHash(item.name))) return;
-		await insertFile(item);
+		if (!persistenceContext.mixtureFiles) return;
+		const hash = item.mixture.getIngredientHash(item.name);
+		if (persistenceContext.mixtureFiles.findOne({ _ingredientHash: hash })) return;
+		await persistenceContext.upsertFile(item);
 	}
 
 	$effect(() => {
@@ -240,7 +245,7 @@
 						"
 					>
 						<div class="flex flex-row items-center w-full">
-							<Button onclick={() => toggleStar(id)}>
+							<Button onclick={() => persistenceContext.toggleStar(id)}>
 								{#if starredIds.has(id)}
 									<StarSolid size="xs" />
 								{:else}

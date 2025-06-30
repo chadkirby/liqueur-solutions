@@ -5,11 +5,19 @@
 	import { experimental__simple } from '@clerk/themes';
 	import { writable } from 'svelte/store';
 	import { setContext } from 'svelte';
+	import {
+		type PersistenceContext,
+		createMixturesCollection,
+		createStarsCollection,
+		PERSISTENCE_CONTEXT_KEY,
+	} from '$lib/contexts.js';
+	import { browser } from '$app/environment';
 
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { pauseSync, startSync } from '$lib/sync-manager.js';
+	import { syncManager } from '$lib/sync-manager.js';
+	import { currentDataVersion } from '$lib/data-format.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
@@ -18,6 +26,61 @@
 		children?: Snippet;
 	}
 
+	const persistenceContext: PersistenceContext = browser
+		? {
+				mixtureFiles: createMixturesCollection(),
+				stars: createStarsCollection(),
+				upsertFile: (item: { id: string; name: string; mixture: any }) => {
+					if (!persistenceContext.mixtureFiles) return;
+					persistenceContext.mixtureFiles.replaceOne(
+						{ id: item.id },
+						{
+							version: currentDataVersion,
+							id: item.id,
+							name: item.name,
+							accessTime: new Date().toISOString(),
+							desc: item.mixture.describe(),
+							rootMixtureId: item.mixture.id,
+							ingredientDb: item.mixture.serialize(),
+							_ingredientHash: item.mixture.getIngredientHash(item.name),
+						},
+						{ upsert: true },
+					);
+				},
+				toggleStar: (id: string) => {
+					if (!persistenceContext.stars) return false;
+					const existing = persistenceContext.stars.findOne({ id });
+					if (existing) {
+						persistenceContext.stars.removeOne({ id });
+						return false;
+					} else {
+						persistenceContext.stars.insert({ id });
+						return true;
+					}
+				},
+			}
+		: {
+				mixtureFiles: null,
+				stars: null,
+				upsertFile: () => {},
+				toggleStar: () => false,
+			};
+
+	setContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY, persistenceContext);
+
+	if (
+		persistenceContext.mixtureFiles &&
+		persistenceContext.stars
+	) {
+		syncManager.addCollection(persistenceContext.mixtureFiles, {
+			name: 'mixtureFiles',
+			apiPath: '/api/mixtures',
+		});
+		syncManager.addCollection(persistenceContext.stars, {
+			name: 'stars',
+			apiPath: '/api/stars',
+		});
+	}
 
 	let { children }: Props = $props();
 	console.log('Clerk layout');
@@ -41,10 +104,10 @@
 			unsubscribeFromClerk = clerk.addListener(({ user }) => {
 				clerkUser.set(user ?? null);
 				if (user) {
-					startSync();
-
+					console.log('User signed in:', user.id);
+					syncManager.startAll();
 				} else {
-					pauseSync();
+					syncManager.pauseAll();
 				}
 			});
 		});
@@ -54,6 +117,7 @@
 			if (unsubscribeFromClerk) {
 				unsubscribeFromClerk();
 			}
+			syncManager.dispose();
 		};
 	});
 </script>

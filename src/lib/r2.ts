@@ -1,4 +1,5 @@
-import type { R2Bucket } from '@cloudflare/workers-types';
+import type { R2Bucket } from '@cloudflare/workers-types/2023-07-01';
+export type * from '@cloudflare/workers-types/2023-07-01';
 
 /**
  * Cloudflare R2 bucket configuration and access.

@@ -1,7 +1,7 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 
-import type { R2Bucket } from '@cloudflare/workers-types';
+import type { R2Bucket } from '@cloudflare/workers-types/2023-07-01';
 
 declare global {
 	namespace App {

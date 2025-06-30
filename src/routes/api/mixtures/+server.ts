@@ -4,8 +4,8 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import type { FileDataV1 } from '$lib/data-format.js';
-import { Mixture } from '$lib/mixture.js';
+import { zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+import { readMixtureObject } from './r2-mx-utils.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
@@ -30,7 +30,10 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 
 		// List all file objects for this authenticated user from R2 and return as array
 		const prefix = `files/${safeId}/`;
-		const listedFiles = await bucket.list({ prefix });
+		const listedFiles = await bucket.list({
+			prefix,
+			include: ['customMetadata'],
+		});
 
 		let truncated = listedFiles.truncated;
 		let cursor = listedFiles.truncated ? listedFiles.cursor : undefined;
@@ -39,6 +42,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 			const next = await bucket.list({
 				prefix,
 				cursor,
+				include: ['customMetadata'],
 			});
 			listedFiles.objects.push(...next.objects);
 
@@ -51,30 +55,12 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		const result: FileDataV1[] = [];
 
 		for (const item of listedFiles.objects) {
-			try {
-				const file = await bucket.get(item.key);
-				if (!file) {
-					console.log(`[Mixtures] No file found for id: ${item.key}`);
-					continue; // Skip to the next item if file not found
-				}
-
-				const fileData = (await file.json()) as FileDataV1;
-				// exclude the ingredientJSON (shouldn't exist) and ingredientDb fields from the response
-				const { ingredientJSON, ingredientDb, accessTime, _ingredientHash, ...rest } =
-					fileData as FileDataV1 & { ingredientJSON?: string };
-
-				result.push({
-					...rest,
-					accessTime: new Date(accessTime).toISOString(),
-					_ingredientHash:
-						_ingredientHash ??
-						Mixture.deserialize(rest.rootMixtureId, ingredientDb).getIngredientHash(rest.name),
-				} as FileDataV1);
-			} catch (fileErr) {
-				// Log error for this specific file but continue processing others
-				console.error(`[Mixtures] Error processing file ${item.key}:`, fileErr);
-				// Don't rethrow - we want to continue with other files
+			const data = await readMixtureObject(bucket, item.key);
+			if (!data) {
+				continue;
 			}
+
+			result.push(data);
 		}
 
 		return json(result);
@@ -85,4 +71,3 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		throw error(500, `Failed to process pull: ${err.message}`);
 	}
 };
-

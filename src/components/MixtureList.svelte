@@ -10,19 +10,16 @@
 	import TextInput from './ui-primitives/TextInput.svelte';
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
-	import { getContext } from 'svelte';
-	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { toggleStar, MixtureFiles, Stars } from '$lib/persistence.svelte.js';
 	import AuthButtons from './AuthButtons.svelte';
+	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { getContext } from 'svelte';
+	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
 	let { mixtureStore }: Props = $props();
-
-	// Get Clerk stores from context
-	const clerkStores = getContext<ClerkContext>(CLERK_CONTEXT_KEY);
 
 	let storeId = $derived(mixtureStore.storeId);
 
@@ -40,17 +37,21 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let mxFile = $derived(MixtureFiles?.findOne({ id: storeId }));
-	let isStarred = $derived(Stars?.findOne({ id: storeId }));
+	let mxFile = $derived(persistenceContext.mixtureFiles?.findOne({ id: storeId }));
+	let isStarred = $derived(persistenceContext.stars?.findOne({ id: storeId }));
 
 	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?._ingredientHash);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
 		if (isStarred && isDirty) {
-			// await writeCloudFile(storeId);
+			persistenceContext.upsertFile({
+				id: storeId,
+				name: mixtureStore.name,
+				mixture: mixtureStore.mixture,
+			});
 		} else {
-			await toggleStar(storeId);
+			await persistenceContext.toggleStar(storeId);
 		}
 	}
 </script>
