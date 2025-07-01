@@ -3,7 +3,6 @@ import { createClerkClient } from '@clerk/backend';
 import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$env/static/public';
 import { CLERK_SECRET_KEY } from '$env/static/private';
 import { getR2Bucket } from '$lib/r2';
-import { rollbar } from '$lib/rollbar';
 
 // Initialize Clerk backend client for server-side authentication
 const clerkClient = createClerkClient({
@@ -21,7 +20,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		// Set userId in locals (undefined if not signed in)
 		event.locals.userId = authObject?.userId ?? undefined;
 	} catch (err) {
-		rollbar.error('Clerk authentication failed:', err as Error);
+		console.error('Clerk authentication failed:', err);
 		event.locals.userId = undefined;
 	}
 
@@ -34,7 +33,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 export const handleError: HandleServerError = ({ error, event }) => {
 	const e = error as Error;
 	// Log to Cloudflare's built-in logging
-	rollbar.error('Server error:', {
+	console.error('Server error:', {
 		message: e.message,
 		stack: e.stack,
 		url: event.url.pathname,
