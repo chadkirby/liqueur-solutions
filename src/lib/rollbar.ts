@@ -12,6 +12,9 @@ export const rollbar = new Rollbar({
 	captureUnhandledRejections: !isServer,
 	// Disable browser monitoring on server
 	addErrorContext: !isServer,
+	// avoid cloudflare workers problem see
+	// https://github.com/rollbar/rollbar.js/issues/1129
+	autoInstrument: false,
 	environment: import.meta.env.PROD ? 'production' : 'development',
 	enabled: import.meta.env.PROD, // Only enable in production
 	payload: {
