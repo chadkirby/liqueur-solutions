@@ -1,7 +1,8 @@
 <script>
 	import { page } from '$app/state';
+	import { rollbar } from '$lib/rollbar';
 	// log the error so we can see it in the cloudflare logs
-	console.error(page.error);
+	rollbar.error(page.error ?? 'Unknown error');
 </script>
 
 <div class="error-container">

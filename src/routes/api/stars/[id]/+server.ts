@@ -4,7 +4,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import type { FileDataV1 } from '$lib/data-format.js';
+import { rollbar } from '$lib/rollbar';
 
 // update the file with the given id
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
@@ -27,13 +27,13 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 	try {
 		const obj = await bucket.put(`stars/${safeId}/${mixtureId}`, JSON.stringify(true));
 		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
+			rollbar.error(`[PUT] Failed to put item for id: ${mixtureId}`);
 			throw error(500, `Failed to put item for id: ${mixtureId}`);
 		}
-		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
+		rollbar.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
 		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[PUT] Error processing push:`, err.message, err);
+		rollbar.error(`[PUT] Error processing push:`, err.message, err);
 		throw error(500, `Failed to process push: ${err.message}`);
 	}
 };
@@ -58,8 +58,8 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
 		await bucket.delete(`stars/${safeId}/${mixtureId}`);
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		rollbar.error(`[DELETE] Error processing delete:`, err.message, err);
+		throw error(500, `Failed to process delete: ${err.message}`);
 	}
 	return json({ ok: true });
 };
