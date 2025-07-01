@@ -11,7 +11,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"check:all": "yarn svelte-check && yarn test:unit && yarn test",
+		"check:all": "pnpm run svelte-check && pnpm run test:unit && pnpm run test",
 		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -72,13 +72,13 @@
 	},
 	"engines": {
 		"node": "20.x",
-		"yarn": "1.22.x",
-		"npm": "use yarn",
-		"pnpm": "use yarn"
+		"yarn": "use pnpm",
+		"npm": "use pnpm",
+		"pnpm": "10.12.4"
 	},
 	"volta": {
 		"node": "20.12.1",
-		"yarn": "1.22.22"
+		"pnpm": "10.12.4"
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
