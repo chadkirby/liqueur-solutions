@@ -6,6 +6,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
 import { zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
 import { readMixtureObject, writeMixtureObject } from '../r2-mx-utils.js';
+import { rollbar } from '$lib/rollbar';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
@@ -29,15 +30,13 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		// get the requested file for this authenticated user from R2.
 		const data = await readMixtureObject(bucket, key);
 		if (!data) {
-			console.log(`[Pull] No file found: files/${safeId}/${mixtureId}`);
-			// return 404
 			throw error(404, `File not found for id: files/${safeId}/${mixtureId}`);
 		}
 
 		return json(data);
 	} catch (err: any) {
 		// Explicitly type err
-		console.error(`[Pull] Error processing list:`, err.message, err);
+		rollbar.error(`Error GET file:`, err.message, err);
 		// Even in case of error generating patch, try to send the LMI
 		throw error(500, `Failed to process pull: ${err.message}`);
 	}
@@ -66,20 +65,20 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 		const rawData = await request.json();
 		const parsedData = zFileDataV1.safeParse(rawData);
 		if (!parsedData.success) {
-			console.error(`[PUT] Invalid data for id: ${mixtureId}`, parsedData.error.issues);
+			rollbar.error(`[PUT] Invalid data for id: ${mixtureId}`, parsedData.error.issues);
 			throw error(400, `Invalid data for id: ${mixtureId}`);
 		}
 		const item: FileDataV1 = parsedData.data;
 		const obj = await writeMixtureObject(bucket, key, item);
 
 		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
+			rollbar.error(`[PUT] Failed to put item for id: ${mixtureId}`);
 			throw error(500, `Failed to put item for id: ${mixtureId}`);
 		}
-		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
+		rollbar.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
 		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[PUT] Error processing push:`, err.message, err);
+		rollbar.error(`[PUT] Error processing push:`, err.message, err);
 		throw error(500, `Failed to process push: ${err.message}`);
 	}
 };
@@ -104,8 +103,8 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
 		await bucket.delete(`files/${safeId}/${mixtureId}`);
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		rollbar.error(`[DELETE] Error deleting file:`, err.message, err);
+		throw error(500, `Failed to process delete: ${err.message}`);
 	}
 	return json({ ok: true });
 };

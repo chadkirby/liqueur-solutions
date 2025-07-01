@@ -1,10 +1,11 @@
 import { SyncManager } from '@signaldb/sync';
 import { EventEmitter } from '@signaldb/core';
+import { rollbar } from '$lib/rollbar';
 
 const errorEmitter = new EventEmitter();
 errorEmitter.on('error', (message: string) => {
 	// display validation errors to the user
-	console.error('Sync error: ' + message);
+	rollbar.error('Sync error: ' + message);
 });
 
 export const syncManager = new SyncManager({

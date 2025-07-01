@@ -8,6 +8,7 @@
 	import { getContext, onDestroy, untrack } from 'svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { rollbar } from '$lib/rollbar';
 
 	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 	let error = $state<string | null>(null);
@@ -31,7 +32,6 @@
 					totals: getTotals(mixture),
 					ingredientHash: _ingredientHash,
 				});
-				console.log('Initialized mixture store for ID', id, store);
 				unsubscribeMixture = store.subscribe((upd) => {
 					persistenceContext.upsertFile({
 						id: upd.storeId,
@@ -42,7 +42,7 @@
 				return store;
 			});
 		} catch (err) {
-			console.error('Error initializing mixture store:', err);
+			rollbar.error('Error initializing mixture store:', err as Error);
 			error = (err as Error).message;
 			return null;
 		}

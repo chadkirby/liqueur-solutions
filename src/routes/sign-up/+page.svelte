@@ -29,7 +29,6 @@
 	function mountComponent() {
 		// Ensure we are in the browser, the container exists, and the clerk instance is ready
 		if (browser && signUpContainer && clerkInstanceValue) {
-			console.log('Mounting SignUp component...');
 			clerkInstanceValue.mountSignUp(signUpContainer, {
 				redirectUrl: data.next, // Pass redirect URL from load function
 				// Add appearance options if needed
@@ -52,7 +51,6 @@
 	onDestroy(() => {
 		// Cleanup: Unmount the component and unsubscribe
 		if (browser && signUpContainer && clerkInstanceValue) {
-			console.log('Unmounting SignUp component...');
 			clerkInstanceValue.unmountSignUp(signUpContainer);
 		}
 		unsubscribeInstance();
