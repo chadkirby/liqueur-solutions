@@ -4,7 +4,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
-import { zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+import { type FileDataV1 } from '$lib/data-format.js';
 import { readMixtureObject } from './r2-mx-utils.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		const prefix = `files/${safeId}/`;
 		const listedFiles = await bucket.list({
 			prefix,
-			include: ['customMetadata'],
+			// include: ['customMetadata'],
 		});
 
 		let truncated = listedFiles.truncated;
@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 			const next = await bucket.list({
 				prefix,
 				cursor,
-				include: ['customMetadata'],
+				// include: ['customMetadata'],
 			});
 			listedFiles.objects.push(...next.objects);
 
