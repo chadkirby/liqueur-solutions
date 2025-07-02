@@ -74,7 +74,7 @@
 		"node": "20.x",
 		"yarn": "use pnpm",
 		"npm": "use pnpm",
-		"pnpm": "10.12.4"
+		"pnpm": "10.x"
 	},
 	"volta": {
 		"node": "20.12.1",

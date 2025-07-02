@@ -1,0 +1,18 @@
+{
+  "name": "liqueur-solutions",
+  "compatibility_date": "2025-07-01",
+  "build": {
+    "command": "pnpm run build"
+  },
+  "r2_buckets": [
+    {
+      "binding": "MIXTURE_BUCKET",
+      "bucket_name": "mixture-files",
+      "preview_bucket_name": "mixture-files-dev"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
