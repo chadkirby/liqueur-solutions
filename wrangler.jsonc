@@ -2,20 +2,17 @@
 	"name": "liqueur-solutions",
 	"compatibility_date": "2025-07-01",
 	"build": {
-		"command": "pnpm run build",
+		"command": "pnpm run build"
 	},
 	"r2_buckets": [
 		{
 			"binding": "MIXTURE_BUCKET",
 			"bucket_name": "mixture-files",
-			"preview_bucket_name": "mixture-files-dev",
-		},
+			"preview_bucket_name": "mixture-files-dev"
+		}
 	],
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1,
-	},
-	"var": {
-		"VOLTA_FEATURE_PNPM": 1,
-	},
+		"head_sampling_rate": 1
+	}
 }
