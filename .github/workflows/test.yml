@@ -18,22 +18,22 @@ jobs:
         uses: volta-cli/action@v4
 
       # Cache Strategy:
-      # 1. Try exact match using yarn.lock hash
+      # 1. Try exact match using pnpm-lock.yaml hash
       # 2. If no match, fall back to any previous cache for this OS
       # 3. If still no match, create new cache
-      - name: Cache yarn dependencies
+      - name: Cache pnpm dependencies
         uses: actions/cache@v3
         with:
           # Define what paths should be cached
           path: |
             **/node_modules
-            .yarn/cache
-          # Primary cache key - unique per yarn.lock change
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          # Fallback key - matches any previous cache for this OS/yarn combo
+            ~/.pnpm-store
+          # Primary cache key - unique per pnpm-lock.yaml change
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          # Fallback key - matches any previous cache for this OS/pnpm combo
           # Useful when dependencies partially change
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-pnpm-
 
       # Similar cache strategy for Playwright browsers
       # Avoids re-downloading browsers on every run
@@ -41,31 +41,31 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
       # Install dependencies if cache miss or partial hit
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: build
-        run: yarn build
+        run: pnpm build
 
       # Run type checking
       - name: Run Svelte Check
-        run: yarn svelte-check
+        run: pnpm svelte-check
 
       # Run unit tests
       - name: Run Unit Tests
-        run: yarn test:unit
+        run: pnpm test:unit
 
       # Install Playwright if not in cache
       - name: Install Playwright
         run: |
-          yarn playwright install
-          yarn playwright install-deps
+          pnpm playwright install
+          pnpm playwright install-deps
 
       # Run E2E tests
       - name: Run Playwright Tests
-        run: yarn test
+        run: pnpm test
