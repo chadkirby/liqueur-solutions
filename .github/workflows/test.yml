@@ -9,8 +9,8 @@ jobs:
     # Environment variables available to all steps in this job
     env:
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-      PUBLIC_REPLICACHE_LICENSE_KEY: ${{ secrets.PUBLIC_REPLICACHE_LICENSE_KEY }}
       PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      VOLTA_FEATURE_PNPM: 1
     steps:
       - uses: actions/checkout@v4
 
