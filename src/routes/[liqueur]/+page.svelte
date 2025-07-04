@@ -8,6 +8,8 @@
 
 	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
+    console.log('Creating new mixture from URL params:', page.url.searchParams);
+
 	onMount(async () => {
 		const { mixture } = deserializeFromUrl(page.url.searchParams);
 		if (!mixture.isValid) throw new Error("Can't load invalid mixture");
@@ -21,6 +23,7 @@
 			name,
 			mixture,
 		});
+    console.log('going to edit page with ID:', id);
 		goto(`/edit/${id}`, { replaceState: true });
 	});
 </script>

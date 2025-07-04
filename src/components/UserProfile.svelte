@@ -35,6 +35,7 @@
 	function mountComponent() {
 		// Ensure we are in the browser, the container exists, and the clerk instance is ready
 		if (browser && userProfileContainer && clerkInstanceValue && $clerkUser) {
+			console.log('Mounting UserProfile component...');
 			clerkInstanceValue.mountUserProfile(userProfileContainer, {
 				// Add appearance options if needed, e.g.,
 				// appearance: { baseTheme: experimental__simple }
@@ -57,6 +58,7 @@
 	onDestroy(() => {
 		// Cleanup: Unmount the component and unsubscribe from stores
 		if (browser && userProfileContainer && clerkInstanceValue) {
+			console.log('Unmounting UserProfile component...');
 			clerkInstanceValue.unmountUserProfile(userProfileContainer);
 		}
 		unsubscribeInstance();

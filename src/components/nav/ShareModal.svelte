@@ -5,7 +5,6 @@
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { shareModal } from '$lib/share-modal-store.svelte';
 	import { serializeToUrl } from '$lib/url-serialization.js';
-	import { rollbar } from '$lib/rollbar';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -25,7 +24,7 @@
 				toastStatus = false;
 			}, 2000);
 		} catch (error) {
-			rollbar.error('Failed to copy URL to clipboard', error as Error);
+			console.error('Failed to copy URL to clipboard', error);
 		}
 	};
 

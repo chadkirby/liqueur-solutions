@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Drawer, Drawerhead, Fileupload, Tooltip } from 'svelte-5-ui-lib';
+	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
 		ListOutline,
@@ -14,7 +14,7 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, zFileDataV1 } from '$lib/data-format.js';
+	import { isV0Data, isV1Data, zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
 	import { deserializeFromUrl } from '$lib/url-serialization.js';
@@ -25,7 +25,6 @@
 	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
 	import { getContext } from 'svelte';
 	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
-	import { rollbar } from '$lib/rollbar';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -101,14 +100,14 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const resp = await fetch(`/api/mixtures/${id}`);
+					const resp = await fetch(`/api/mixtures/${id}`);
 			if (!resp.ok) {
-				rollbar.error('Failed to load mixture', await resp.text());
+				console.error('Failed to load mixture', await resp.text());
 				return;
 			}
 			const mxData = zFileDataV1.safeParse(await resp.json());
 			if (!mxData.success) {
-				rollbar.error('Failed to parse mixture data', mxData.error);
+				console.error('Failed to parse mixture data', mxData.error);
 				return;
 			}
 			const mixture = Mixture.deserialize(mxData.data.rootMixtureId, mxData.data.ingredientDb);
@@ -168,7 +167,7 @@
 							name: v1Data.name,
 							mixture: Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb),
 						});
-					else rollbar.warn('Invalid file format', item);
+					else console.warn('Invalid file format', item);
 				}
 			};
 			reader.readAsText(importFiles[0]);

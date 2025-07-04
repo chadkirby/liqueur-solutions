@@ -6,11 +6,11 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2';
 import { type FileDataV1 } from '$lib/data-format.js';
 import { readMixtureObject } from './r2-mx-utils.js';
-import { rollbar } from '$lib/rollbar';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
 		// Development mode: no R2 available
+		console.log(`[Pull-Dev] DEV MODE. Returning empty patch and LMI 0.`);
 		throw error(500, 'R2 not available in development mode');
 	}
 	const bucket = getR2Bucket(platform);
@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 
 	if (!userId) {
 		// Unauthenticated: no data
-		rollbar.log(`[Mixtures] Unauthenticated access attempt. Returning empty patch and LMI 0.`);
+		console.log(`[Mixtures] Unauthenticated access attempt. Returning empty patch and LMI 0.`);
 		throw error(401, 'Unauthorized');
 	}
 
@@ -50,7 +50,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 			cursor = next.truncated ? next.cursor : undefined;
 		}
 
-		rollbar.log(`[Mixtures] Found ${listedFiles.objects.length} files for user ${userId}`);
+		console.log(`[Mixtures] Found ${listedFiles.objects.length} files for user ${userId}`);
 
 		const result: FileDataV1[] = [];
 
@@ -66,7 +66,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		return json(result);
 	} catch (err: any) {
 		// Explicitly type err
-		rollbar.error(`[Mixtures] Error processing list:`, err.message, err);
+		console.error(`[Mixtures] Error processing list:`, err.message, err);
 		// Even in case of error generating patch, try to send the LMI
 		throw error(500, `Failed to process pull: ${err.message}`);
 	}
