@@ -55,12 +55,20 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		const result: FileDataV1[] = [];
 
 		for (const item of listedFiles.objects) {
-			const data = await readMixtureObject(bucket, item.key);
-			if (!data) {
+			const obj = await readMixtureObject(bucket, item.key);
+			if (obj === 404) {
 				continue;
 			}
+			if (!obj.success) {
+				console.error(
+					`[Mixtures] Invalid data for id: ${item.key}. Issues: ${obj.error.issues
+						.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+						.join(', ')}`,
+				);
+				continue; // Skip invalid objects
+			}
 
-			result.push(data);
+			result.push(obj.data);
 		}
 
 		return json(result);

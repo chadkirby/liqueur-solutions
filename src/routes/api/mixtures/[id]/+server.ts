@@ -27,14 +27,23 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		const key = `files/${safeId}/${mixtureId}`;
 
 		// get the requested file for this authenticated user from R2.
-		const data = await readMixtureObject(bucket, key);
-		if (!data) {
-			console.log(`[Pull] No file found: files/${safeId}/${mixtureId}`);
-			// return 404
-			throw error(404, `File not found for id: files/${safeId}/${mixtureId}`);
+		const obj = await readMixtureObject(bucket, key);
+		if (obj === 404) {
+			throw error(404, { message: `File not found for id: files/${safeId}/${mixtureId}` });
+		}
+		if (!obj?.success) {
+			throw error(
+				400,
+				`Invalid data for id: ${mixtureId}` +
+					(obj.error.issues.length
+						? `; Details: ${obj.error.issues
+								.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+								.join(', ')}`
+						: ''),
+			);
 		}
 
-		return json(data);
+		return json(obj.data);
 	} catch (err: any) {
 		// Explicitly type err
 		console.error(`[Pull] Error processing list:`, err.message, err);
