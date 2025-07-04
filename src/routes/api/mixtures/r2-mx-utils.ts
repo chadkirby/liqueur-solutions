@@ -5,7 +5,7 @@ import {
 	type FileDataV1,
 } from '$lib/data-format.js';
 import type { R2Bucket, R2Object } from '$lib/r2.js';
-import type { ZodSafeParseError, ZodSafeParseSuccess } from 'zod/v4';
+import type { ZodError } from 'zod/v4';
 
 export async function writeMixtureObject(
 	bucket: R2Bucket,
@@ -20,7 +20,9 @@ export async function writeMixtureObject(
 export async function readMixtureObject(
 	bucket: R2Bucket,
 	key: string,
-): Promise<ZodSafeParseSuccess<FileDataV1> | ZodSafeParseError<FileDataV1> | 404> {
+): Promise<
+	{ success: true; data: FileDataV1 } | { success: false; error: ZodError<FileDataV1> } | 404
+> {
 	const file = await bucket.get(key);
 	if (!file) {
 		console.log(`[Mixtures] No file found for id: ${key}`);
@@ -46,7 +48,7 @@ export async function readMixtureObject(
 			});
 		}
 		if (!parsedData.success) {
-			return parsedData as ZodSafeParseError<FileDataV1>;
+			return parsedData as { success: false; error: ZodError<FileDataV1> };
 		}
 	}
 	if (parsedData.success && parsedData.data._ingredientHash === '<hash>') {

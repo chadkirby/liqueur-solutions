@@ -48,7 +48,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 		// Explicitly type err
 		console.error(`[Pull] Error processing list:`, err.message, err);
 		// Even in case of error generating patch, try to send the LMI
-		throw error(500, `Failed to process pull: ${err.message}`);
+		throw error(err.status ? err.status : 500, `Failed to process pull: ${err.message}`);
 	}
 };
 
@@ -89,7 +89,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 		return json({ ok: true });
 	} catch (err: any) {
 		console.error(`[PUT] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		throw error(err.status ? err.status : 500, `Failed to process push: ${err.message}`);
 	}
 };
 

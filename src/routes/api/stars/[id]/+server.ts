@@ -34,7 +34,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 		return json({ ok: true });
 	} catch (err: any) {
 		console.error(`[PUT] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		throw error(err.status ? err.status : 500, `Failed to process push: ${err.message}`);
 	}
 };
 
