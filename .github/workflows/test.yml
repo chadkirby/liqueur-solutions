@@ -39,6 +39,7 @@ jobs:
       # Avoids re-downloading browsers on every run
       - name: Cache Playwright browsers
         uses: actions/cache@v3
+        id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -62,6 +63,7 @@ jobs:
 
       # Install Playwright if not in cache
       - name: Install Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           pnpm playwright install
           pnpm playwright install-deps
