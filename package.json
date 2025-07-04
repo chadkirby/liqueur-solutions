@@ -11,7 +11,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"check:all": "yarn svelte-check && yarn test:unit && yarn test",
+		"check:all": "pnpm run svelte-check && pnpm run test:unit && pnpm run test",
 		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -32,8 +32,8 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.49.1",
-		"@sveltejs/adapter-cloudflare": "^7.0.3",
-		"@sveltejs/kit": "^2.20.8",
+		"@sveltejs/adapter-cloudflare": "7.0.4",
+		"@sveltejs/kit": "2.22.2",
 		"@sveltejs/vite-plugin-svelte": "^5.1.0",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/svelte": "^5.2.8",
@@ -72,19 +72,20 @@
 	},
 	"engines": {
 		"node": "20.x",
-		"yarn": "1.22.x",
-		"npm": "use yarn",
-		"pnpm": "use yarn"
+		"yarn": "use pnpm",
+		"npm": "use pnpm",
+		"pnpm": "10.x"
 	},
 	"volta": {
 		"node": "20.12.1",
-		"yarn": "1.22.22"
+		"pnpm": "10.12.4"
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
 		"@clerk/backend": "^1.32.0",
 		"@clerk/clerk-js": "^5.63.5",
 		"@clerk/themes": "^2.2.4",
+		"@clerk/types": "^4.62.1",
 		"@cloudflare/workers-types": "^4.20250524.0",
 		"@signaldb/core": "^1.6.0",
 		"@signaldb/indexeddb": "^1.1.0",

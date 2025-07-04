@@ -40,8 +40,17 @@ test('can edit spirit volume directly', async ({ page }) => {
 
 	await page.getByRole('button', { name: 'Spirit' }).click();
 	await page.getByRole('button', { name: 'Spirit' }).getByRole('textbox').first().click();
+	await expect(
+		page.getByRole('button', { name: 'Spirit' }).getByRole('textbox').first(),
+	).toHaveValue('96.8');
+	// wait for the input to be focused
+	await page.waitForTimeout(10);
 	await page.keyboard.type('200');
 	await page.keyboard.press('Enter');
+	// spirit volume should be updated
+	await expect(
+		page.getByRole('button', { name: 'Spirit' }).getByRole('textbox').first(),
+	).toHaveValue('200');
 	await expectTotals(page, {
 		volume: '332',
 		abv: '24.9',
