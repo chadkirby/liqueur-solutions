@@ -32,8 +32,6 @@ export function deserialize(item: FileDataV2, ingredients: IngredientItemData[])
 	} as const;
 }
 
-
-
 const starSchema = z.strictObject({
 	id: z.string(),
 });
@@ -121,14 +119,33 @@ export const persistenceContext = {
 			return;
 		}
 		const data = createFileDataV2(item);
-		mixturesCollection.replaceOne({ id: item.id }, data, { upsert: true });
 		const serialized = item.mixture.serialize();
+
+		mixturesCollection.replaceOne({ id: item.id }, data, { upsert: true });
+
+		const existingIngredients = ingredientsCollections.find({}).fetch();
 		ingredientsCollections.batch(() => {
-			ingredientsCollections.removeMany({
-				id: { $in: serialized.map((ing) => ing.id) },
-			});
-			ingredientsCollections.insertMany(serialized);
+			// Remove ingredients that are no longer in the mixture
+			for (const existing of existingIngredients) {
+				const found = serialized.find((ing) => ing.id === existing.id);
+				if (!found) {
+					// Remove the ingredient if it no longer exists in the mixture
+					ingredientsCollections.removeOne({ id: existing.id });
+				}
+			}
+			// Upsert ingredients that are in the mixture
+			// This will update existing ones and insert new ones
+			for (const ingredient of serialized) {
+				const existing = existingIngredients.find((ing) => ing.id === ingredient.id);
+				if (existing && deepEqual(existing.item, ingredient.item)) {
+					// No change, skip
+					continue;
+				}
+				// Upsert the ingredient
+				ingredientsCollections.replaceOne({ id: ingredient.id }, ingredient, { upsert: true });
+			}
 		});
+		return data;
 	},
 	toggleStar(id: string) {
 		const starsCollection = getStarsCollection();
@@ -143,3 +160,42 @@ export const persistenceContext = {
 		}
 	},
 } as const;
+
+/**
+ * Efficient deep equality comparison that handles all JavaScript types
+ */
+function deepEqual(a: any, b: any): boolean {
+	if (a === b) return true;
+
+	if (a == null || b == null) return a === b;
+
+	if (typeof a !== typeof b) return false;
+
+	if (typeof a !== 'object') return false;
+
+	if (Array.isArray(a) !== Array.isArray(b)) return false;
+
+	if (Array.isArray(a)) {
+		if (a.length !== b.length) return false;
+		for (let i = 0; i < a.length; i++) {
+			if (!deepEqual(a[i], b[i])) return false;
+		}
+		return true;
+	}
+
+	if (a instanceof Date && b instanceof Date) {
+		return a.getTime() === b.getTime();
+	}
+
+	const keysA = Object.keys(a);
+	const keysB = Object.keys(b);
+
+	if (keysA.length !== keysB.length) return false;
+
+	for (const key of keysA) {
+		if (!keysB.includes(key)) return false;
+		if (!deepEqual(a[key], b[key])) return false;
+	}
+
+	return true;
+}

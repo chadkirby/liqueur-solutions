@@ -15,7 +15,6 @@
 	let unsubscribeMixture: (() => void) | null = null;
 
 	const mixtureStore = $derived.by(() => {
-		debugger;
 		const id = page.params.id;
 		const mxData = persistenceContext.mixtureFiles?.findOne({ id });
 		const ingredients = persistenceContext.getIngredientsCollection(id)?.find({}).fetch() ?? [];
