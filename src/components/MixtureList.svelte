@@ -11,9 +11,8 @@
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	import AuthButtons from './AuthButtons.svelte';
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { persistenceContext } from '$lib/persistence.js';
 	import { getContext } from 'svelte';
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
 	interface Props {
 		mixtureStore: MixtureStore;

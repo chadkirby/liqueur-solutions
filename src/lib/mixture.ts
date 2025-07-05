@@ -49,7 +49,7 @@ export class Mixture implements CommonComponent {
 	static deserialize(rootMixtureId: string, ingredientData: IngredientItemData[]) {
 		const ingredients: Array<InMemoryIngredient> = [];
 
-		const db = new Map(ingredientData.map((item) => [item.id, item]));
+		const db = new Map(ingredientData.map(({ id, item }) => [id, item]));
 		const mixtureData = db.get(rootMixtureId);
 		if (!mixtureData || !isMixtureData(mixtureData)) {
 			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
@@ -69,10 +69,9 @@ export class Mixture implements CommonComponent {
 				mass,
 				name,
 				item,
-				notes,
 			});
 		}
-		return new Mixture(mixtureData.id, ingredients);
+		return new Mixture(rootMixtureId, ingredients);
 	}
 
 	constructor(
@@ -126,31 +125,32 @@ export class Mixture implements CommonComponent {
 	}
 
 	/**
-	 * Get data in a format compatible with storage (ReadonlyJSONValue)
+	 * Get data in a format compatible with storage
 	 */
-	private serializeMixtureData(): MixtureData {
+	private serializeMixtureData(): IngredientItemData {
 		return {
 			id: this.id,
-			ingredients: this._ingredientList.map(({ id, mass, name, notes }) => ({
-				id,
-				mass,
-				name,
-			})),
+			item: {
+				ingredients: this._ingredientList.map(({ id, mass, name }) => ({
+					id,
+					mass,
+					name,
+				})),
+			},
 		} as const;
 	}
 
 	serialize(): IngredientItemData[] {
-		const rootData = this.serializeMixtureData();
 		const ingredientData: IngredientItemData[] = this._ingredientList.flatMap(({ id, item }) => {
 			if (item instanceof Mixture) {
-				return [item.serializeMixtureData(), ...item.serialize()];
+				return item.serialize();
 			}
 			if (item instanceof SubstanceComponent) {
-				return [item.serializeSubstanceData()];
+				return { id, item: item.serializeSubstanceData() };
 			}
 			throw new Error('Invalid ingredient');
 		});
-		return [rootData, ...ingredientData];
+		return [this.serializeMixtureData(), ...ingredientData];
 	}
 
 	analyze(precision = 0): MixtureAnalysis {

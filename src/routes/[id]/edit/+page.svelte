@@ -5,20 +5,20 @@
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { page } from '$app/state';
 
-	import { getContext, onDestroy, untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { Mixture } from '$lib/mixture.js';
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { persistenceContext } from '$lib/persistence.js';
 
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 	let error = $state<string | null>(null);
 	// UI state
 	let mixtureName = $state<string>('');
 	let unsubscribeMixture: (() => void) | null = null;
 
 	const mixtureStore = $derived.by(() => {
+		debugger;
 		const id = page.params.id;
 		const mxData = persistenceContext.mixtureFiles?.findOne({ id });
-		const ingredients = persistenceContext.ingredients?.find({}).fetch() ?? [];
+		const ingredients = persistenceContext.getIngredientsCollection(id)?.find({}).fetch() ?? [];
 		if (!mxData) return null;
 		try {
 			return untrack(() => {

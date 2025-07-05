@@ -5,13 +5,7 @@
 	import { experimental__simple } from '@clerk/themes';
 	import { writable } from 'svelte/store';
 	import { setContext } from 'svelte';
-	import {
-		type PersistenceContext,
-		createMixturesCollection,
-		createStarsCollection,
-		PERSISTENCE_CONTEXT_KEY,
-	} from '$lib/contexts.js';
-	import { browser } from '$app/environment';
+	import { persistenceContext } from '$lib/persistence.js';
 
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
@@ -23,45 +17,6 @@
 
 	interface Props {
 		children?: Snippet;
-	}
-
-	const persistenceContext: PersistenceContext = browser
-		? {
-				mixtureFiles: createMixturesCollection(),
-				stars: createStarsCollection(),
-				ingredients: null,
-				upsertFile: () => {},
-				toggleStar: (id: string) => {
-					if (!persistenceContext.stars) return false;
-					const existing = persistenceContext.stars.findOne({ id });
-					if (existing) {
-						persistenceContext.stars.removeOne({ id });
-						return false;
-					} else {
-						persistenceContext.stars.insert({ id });
-						return true;
-					}
-				},
-			}
-		: {
-				mixtureFiles: null,
-				stars: null,
-				ingredients: null,
-				upsertFile: () => {},
-				toggleStar: () => false,
-			};
-
-	setContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY, persistenceContext);
-
-	if (persistenceContext.mixtureFiles && persistenceContext.stars) {
-		syncManager.addCollection(persistenceContext.mixtureFiles, {
-			name: 'mixtureFiles',
-			apiPath: '/api/mixtures',
-		});
-		syncManager.addCollection(persistenceContext.stars, {
-			name: 'stars',
-			apiPath: '/api/stars',
-		});
 	}
 
 	let { children }: Props = $props();

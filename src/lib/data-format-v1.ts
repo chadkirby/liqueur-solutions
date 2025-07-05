@@ -1,5 +1,13 @@
 import { z } from 'zod/v4-mini';
-import { zMixtureData, zSubstanceData, type FileDataV2, type IngredientItemData } from './data-format.js';
+import {
+	isSubstanceItem,
+	zMixtureData,
+	zSubstanceData,
+	type FileDataV2,
+	type IngredientItemData,
+	type MixtureData,
+	type SubstanceData,
+} from './data-format.js';
 
 // prettier-ignore
 const zIngredientDbEntry = z.tuple([
@@ -25,10 +33,15 @@ export function v1ToV2(data: FileDataV1): { mx: FileDataV2; ingredients: Ingredi
 	const { ingredientDb, rootMixtureId, ...rest } = data;
 	const mx: FileDataV2 = {
 		...rest,
-    rootIngredientId: rootMixtureId,
+		rootIngredientId: rootMixtureId,
 		version: 2,
 	};
-	const ingredients = ingredientDb.map(([_id, item]) => item);
+	const ingredients: IngredientItemData[] = ingredientDb.map(([id, item]) => {
+		if (isSubstanceItem(item)) {
+			return { id, item: item as SubstanceData };
+		}
+		return { id, item: item as MixtureData };
+	});
 	return { mx, ingredients };
 }
 

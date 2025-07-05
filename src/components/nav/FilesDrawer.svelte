@@ -10,29 +10,21 @@
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
-	import { generateStorageId, isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
+	import { isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
 	import {
-		createFileDataV2,
 		getIngredientHash,
-		isV0Data,
-		zFileDataV2,
-		type FileDataV2,
 		type UnifiedSerializationDataV2,
 	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
-	import { decompress, deserialize, deserializeFromUrl } from '$lib/url-serialization.js';
-	import { componentId, Mixture } from '$lib/mixture.js';
+	import { decompress, deserialize } from '$lib/url-serialization.js';
+	import {  Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { SvelteSet } from 'svelte/reactivity';
 
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
-	import { getContext } from 'svelte';
-	import { it } from 'node:test';
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
+	import { persistenceContext } from '$lib/persistence.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;

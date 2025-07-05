@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
+	import { persistenceContext } from '$lib/persistence.js';
 	import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
 	import { newSpirit } from '$lib/mixture-factories.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
 	import { generateStorageId } from '$lib/storage-id.js';
-	import { getContext, onMount } from 'svelte';
-
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
+	import { onMount } from 'svelte';
 
 	onMount(async () => {
 		const adjectives = ['Untitled', 'New', 'Delicious', 'Refreshing', 'Tasty', 'Boozy'];
@@ -23,7 +21,9 @@
 		]);
 
 		const id = generateStorageId();
-		await persistenceContext.mixtureFiles?.isReady();
+
+		await persistenceContext.isReady();
+
 		persistenceContext.upsertFile({
 			id,
 			name,
