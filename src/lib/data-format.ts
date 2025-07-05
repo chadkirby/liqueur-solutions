@@ -99,7 +99,6 @@ export function getIngredientHash(
 			for (const item of ingredient.ingredients) {
 				h.update(item.name)
 					.update(item.mass.toString())
-					.update(item.notes || '');
 				if (isSubstanceId(item.id)) h.update(item.id);
 			}
 		}

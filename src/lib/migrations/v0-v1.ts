@@ -41,11 +41,10 @@ function v1Serialize(mx: Mixture): IngredientDbEntry[] {
 function v1SerializeMxData(id: string, ingredients: Mixture['_ingredientList']) {
 	return {
 		id,
-		ingredients: ingredients.map(({ id, mass, name, notes }) => ({
+		ingredients: ingredients.map(({ id, mass, name }) => ({
 			id,
 			mass,
 			name,
-			notes,
 		})),
 	} as const;
 }

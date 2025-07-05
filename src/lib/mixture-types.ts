@@ -26,7 +26,6 @@ export const zIngredientMeta = z.object({
 	id: z.string(),
 	name: z.string(),
 	mass: z.number(),
-	notes: z.optional(z.string()), // Optional notes field
 });
 
 export type IngredientMeta = z.infer<typeof zIngredientMeta>;

@@ -54,7 +54,7 @@ export class Mixture implements CommonComponent {
 		if (!mixtureData || !isMixtureData(mixtureData)) {
 			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
 		}
-		for (const { id, mass, name, notes } of mixtureData.ingredients) {
+		for (const { id, mass, name } of mixtureData.ingredients) {
 			const data = db.get(id);
 			if (!data) {
 				throw new Error(`Ingredient ${id} not found in ingredientDb`);
@@ -135,7 +135,6 @@ export class Mixture implements CommonComponent {
 				id,
 				mass,
 				name,
-				notes,
 			})),
 		} as const;
 	}
@@ -204,7 +203,6 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
-			notes: ingredient.notes,
 		};
 		this._ingredientList.push(ingredientItem);
 		return this;
@@ -238,7 +236,6 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
-			notes: ingredient.notes,
 		};
 		this._ingredientList.splice(index, 1, newIngredient);
 
