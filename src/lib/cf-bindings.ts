@@ -45,14 +45,10 @@ export function getR2Bucket(platform: App.Platform) {
 	return bucket as R2Bucket;
 }
 
-const MIXTURES_DB_BINDING = 'MIXTURES_DB';
-const INGREDIENTS_DB_BINDING = 'INGREDIENTS_DB';
-const STARS_DB_BINDING = 'STARS_DB';
-
-export function getDB(platform: App.Platform, which: 'mixtures' | 'ingredients' | 'stars' ) {
-	const db = platform?.env?.[MIXTURES_DB_BINDING];
+export function getDB(platform: App.Platform) {
+	const db = platform?.env?.['MIXTURES_DB'];
 	if (!db || typeof db === 'string' || !('prepare' in db)) {
-		throw new Error(`Invalid D1 database binding for ${MIXTURES_DB_BINDING}`);
+		throw new Error(`Invalid D1 database binding`);
 	}
 	return db as D1Database;
 }

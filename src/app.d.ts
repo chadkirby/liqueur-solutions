@@ -34,10 +34,6 @@ declare global {
 				MIXTURE_BUCKET?: R2Bucket;
 				/** D1 database for mixture files */
 				MIXTURES_DB?: D1Database;
-				/** D1 database for ingredient items */
-				INGREDIENTS_DB?: D1Database;
-				/** D1 database for mixture stars */
-				STARS_DB?: D1Database;
 				[key: string]: unknown;
 			};
 		}

@@ -3,73 +3,60 @@
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/cf-bindings.js';
-import { zFileDataV2, type FileDataV2 } from '$lib/data-format.js';
-import { readMixtureObject, writeMixtureObject } from '../../api-utils.js';
+import { getDB } from '$lib/cf-bindings.js';
+import { zFileDataV2 } from '$lib/data-format.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		const key = `files/${safeId}/${mixtureId}`;
-
-		// get the requested file for this authenticated user from R2.
-		const obj = await readMixtureObject(bucket, key);
-		if (obj === 404) {
-			throw error(404, { message: `File not found for id: files/${safeId}/${mixtureId}` });
+		const stmt = d1.prepare('SELECT version, id, name, accessTime, desc, rootIngredientId, _ingredientHash FROM mixtures WHERE userid = ? AND id = ?');
+		const result = await stmt.bind(userId, mixtureId).first();
+		if (!result) {
+			throw error(404, { message: `Mixture not found for id: ${mixtureId}` });
 		}
-		if (!obj?.success) {
+		const parsed = zFileDataV2.safeParse(result);
+		if (!parsed.success) {
 			throw error(
 				400,
 				`Invalid data for id: ${mixtureId}` +
-					(obj.error.issues.length
-						? `; Details: ${obj.error.issues
+					(parsed.error.issues.length
+						? `; Details: ${parsed.error.issues
 								.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
 								.join(', ')}`
 						: ''),
 			);
 		}
-
-		return json(obj.data);
+		return json(parsed.data);
 	} catch (err: any) {
-		// Explicitly type err
-		console.error(`[Pull] Error processing list:`, err.message, err);
-		// Even in case of error generating patch, try to send the LMI
-		throw error(err.status ? err.status : 500, `Failed to process pull: ${err.message}`);
+		console.error(`[GET] Error processing mixture:`, err.message, err);
+		throw error(err.status ? err.status : 500, `Failed to process GET: ${err.message}`);
 	}
 };
 
-// update the file with the given id
+// update the mixture with the given id
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
 	const mixtureId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
-
-	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
-	const key = `files/${safeId}/${mixtureId}`;
 
 	try {
 		const rawData = await request.json();
@@ -78,43 +65,49 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 			console.error(`[PUT] Invalid data for id: ${mixtureId}`, parsedData.error.issues);
 			throw error(400, `Invalid data for id: ${mixtureId}`);
 		}
-		const item: FileDataV2 = parsedData.data;
-		const obj = await writeMixtureObject(bucket, key, item);
-
-		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
-			throw error(500, `Failed to put item for id: ${mixtureId}`);
-		}
-		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
+		const item = parsedData.data;
+		const stmt = d1.prepare(
+			`INSERT OR REPLACE INTO mixtures (userid, id, version, name, accessTime, desc, rootIngredientId, _ingredientHash)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+		);
+		await stmt.bind(
+			userId,
+			mixtureId,
+			item.version,
+			item.id,
+			item.name,
+			item.accessTime,
+			item.desc,
+			item.rootIngredientId,
+			item._ingredientHash
+		).run();
 		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[PUT] Error processing push:`, err.message, err);
-		throw error(err.status ? err.status : 500, `Failed to process push: ${err.message}`);
+		console.error(`[PUT] Error processing mixture:`, err.message, err);
+		throw error(err.status ? err.status : 500, `Failed to process PUT: ${err.message}`);
 	}
 };
 
-// delete the file with the given id
+// delete the mixture with the given id
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.delete(`files/${safeId}/${mixtureId}`);
+		const stmt = d1.prepare('DELETE FROM mixtures WHERE userid = ? AND id = ?');
+		await stmt.bind(userId, mixtureId).run();
+		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		console.error(`[DELETE] Error processing mixture:`, err.message, err);
+		throw error(500, `Failed to process DELETE: ${err.message}`);
 	}
-	return json({ ok: true });
 };

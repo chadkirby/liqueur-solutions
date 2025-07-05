@@ -3,63 +3,56 @@
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/cf-bindings';
-import type { FileDataV2 } from '$lib/data-format.js';
+import { getDB } from '$lib/cf-bindings.js';
 
-// update the file with the given id
-export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
+// star the mixture with the given id
+export const PUT: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
-	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
-
 	try {
-		const obj = await bucket.put(`stars/${safeId}/${mixtureId}`, JSON.stringify(true));
-		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
-			throw error(500, `Failed to put item for id: ${mixtureId}`);
-		}
-		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
+		const stmt = d1.prepare(
+			`INSERT OR REPLACE INTO mixture_stars (userid, id) VALUES (?, ?)`
+		);
+		await stmt.bind(userId, mixtureId).run();
 		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[PUT] Error processing push:`, err.message, err);
-		throw error(err.status ? err.status : 500, `Failed to process push: ${err.message}`);
+		console.error(`[PUT] Error processing star:`, err.message, err);
+		throw error(err.status ? err.status : 500, `Failed to process PUT: ${err.message}`);
 	}
 };
 
-// delete the file with the given id
+// unstar the mixture with the given id
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.delete(`stars/${safeId}/${mixtureId}`);
+		const stmt = d1.prepare(
+			'DELETE FROM mixture_stars WHERE userid = ? AND id = ?'
+		);
+		await stmt.bind(userId, mixtureId).run();
+		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		console.error(`[DELETE] Error processing star:`, err.message, err);
+		throw error(500, `Failed to process DELETE: ${err.message}`);
 	}
-	return json({ ok: true });
 };

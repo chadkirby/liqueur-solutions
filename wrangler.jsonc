@@ -9,23 +9,13 @@
 			"binding": "MIXTURE_BUCKET",
 			"bucket_name": "mixture-files-v2",
 			"preview_bucket_name": "mixture-files-dev-v2"
-		},
+		}
 	],
 	"d1_databases": [
 		{
 			"binding": "MIXTURES_DB",
 			"database_name": "mixtures-db-v2",
-			"preview_database_name": "mixtures-db-dev-v2"
-		},
-		{
-			"binding": "INGREDIENTS_DB",
-			"database_name": "ingredients-db-v2",
-			"preview_database_name": "ingredients-db-dev-v2"
-		},
-		{
-			"binding": "STARS_DB",
-			"database_name": "stars-db-v2",
-			"preview_database_name": "stars-db-dev-v2"
+      "database_id": "c1619fb5-c250-493d-a5fc-a5b114f68d49"
 		}
 	],
 	"observability": {

@@ -1,120 +1,115 @@
 /**
- * Server-side endpoint for listing a user's files.
+ * Server-side endpoint for GET/PUT/DELETE a user's ingredient item from D1.
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/cf-bindings.js';
-import { zFileDataV2, type FileDataV2 } from '$lib/data-format.js';
-import { readMixtureObject, writeMixtureObject } from '../../api-utils.js';
+import { getDB } from '$lib/cf-bindings.js';
+import { zIngredientItem } from '$lib/data-format.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const ingdtId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		const key = `files/${safeId}/${ingdtId}`;
-
-		// get the requested file for this authenticated user from R2.
-		const obj = await readMixtureObject(bucket, key);
-		if (obj === 404) {
-			throw error(404, { message: `File not found for id: files/${safeId}/${ingdtId}` });
+		const stmt = d1.prepare('SELECT data FROM ingredients WHERE userid = ? AND id = ?');
+		const result = await stmt.bind(userId, ingdtId).first();
+		if (!result) {
+			throw error(404, { message: `Ingredient not found for id: ${ingdtId}` });
 		}
-		if (!obj?.success) {
+		const parsed = zIngredientItem.safeParse(JSON.parse(result.data as string));
+		if (!parsed.success) {
 			throw error(
 				400,
 				`Invalid data for id: ${ingdtId}` +
-					(obj.error.issues.length
-						? `; Details: ${obj.error.issues
+					(parsed.error.issues.length
+						? `; Details: ${parsed.error.issues
 								.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
 								.join(', ')}`
 						: ''),
 			);
 		}
-
-		return json(obj.data);
+		return json(parsed.data);
 	} catch (err: any) {
-		// Explicitly type err
-		console.error(`[Pull] Error processing list:`, err.message, err);
-		// Even in case of error generating patch, try to send the LMI
-		throw error(err.status ? err.status : 500, `Failed to process pull: ${err.message}`);
+		console.error(`[GET] Error processing ingredient:`, err.message, err);
+		throw error(err.status ? err.status : 500, `Failed to process GET: ${err.message}`);
 	}
 };
 
-// update the file with the given id
+// update the ingredient with the given id
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
 	const ingdtId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
-	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
-	const key = `files/${safeId}/${ingdtId}`;
-
 	try {
 		const rawData = await request.json();
-		const parsedData = zFileDataV2.safeParse(rawData);
+		const parsedData = zIngredientItem.safeParse(rawData);
 		if (!parsedData.success) {
 			console.error(`[PUT] Invalid data for id: ${ingdtId}`, parsedData.error.issues);
 			throw error(400, `Invalid data for id: ${ingdtId}`);
 		}
-		const item: FileDataV2 = parsedData.data;
-		const obj = await writeMixtureObject(bucket, key, item);
-
-		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${ingdtId}`);
-			throw error(500, `Failed to put item for id: ${ingdtId}`);
+		const item = parsedData.data;
+		// mixture_id is required, for both MixtureData and SubstanceData
+		let mixture_id = null;
+		if ('ingredients' in item && Array.isArray(item.ingredients)) {
+			// MixtureData: use item.id as mixture_id
+			mixture_id = item.id;
+		} else if ('id' in item) {
+			// SubstanceData: use item.id as mixture_id
+			mixture_id = item.id;
 		}
-		console.log(`[PUT] Successfully put item for id: ${ingdtId}`, obj.uploaded.toISOString());
+		if (!mixture_id) {
+			throw error(400, `mixture_id could not be determined for id: ${ingdtId}`);
+		}
+		const stmt = d1.prepare(
+			`INSERT OR REPLACE INTO ingredients (userid, id, mixture_id, data)
+			 VALUES (?, ?, ?, ?)`,
+		);
+		await stmt.bind(userId, ingdtId, mixture_id, JSON.stringify(item)).run();
 		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[PUT] Error processing push:`, err.message, err);
-		throw error(err.status ? err.status : 500, `Failed to process push: ${err.message}`);
+		console.error(`[PUT] Error processing ingredient:`, err.message, err);
+		throw error(err.status ? err.status : 500, `Failed to process PUT: ${err.message}`);
 	}
 };
 
-// delete the file with the given id
+// delete the ingredient with the given id
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 	const ingdtId = params.id;
 
 	if (!platform) {
-		// Development mode: no R2 available, return empty patch
-		throw error(500, 'R2 not available in development mode');
+		throw error(500, 'D1 not available in development mode');
 	}
-	const bucket = getR2Bucket(platform);
+	const d1 = getDB(platform);
 	const userId = locals.userId; // Populated by Clerk middleware
 
 	if (!userId) {
-		// Unauthenticated: no data
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.delete(`files/${safeId}/${ingdtId}`);
+		const stmt = d1.prepare('DELETE FROM ingredients WHERE userid = ? AND id = ?');
+		await stmt.bind(userId, ingdtId).run();
+		return json({ ok: true });
 	} catch (err: any) {
-		console.error(`[Push] Error processing push:`, err.message, err);
-		throw error(500, `Failed to process push: ${err.message}`);
+		console.error(`[DELETE] Error processing ingredient:`, err.message, err);
+		throw error(500, `Failed to process DELETE: ${err.message}`);
 	}
-	return json({ ok: true });
 };
