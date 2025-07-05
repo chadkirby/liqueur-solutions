@@ -17,7 +17,7 @@ import {
 	type DecoratedIngredient,
 	type DecoratedSubstance,
 	type EditableProperty,
-	type IngredientItem,
+	type InMemoryIngredientItem,
 	type IngredientToAdd,
 	type InMemoryIngredient,
 	type MixtureAnalysis,
@@ -242,7 +242,7 @@ export class Mixture implements CommonComponent {
 		return true;
 	}
 
-	replaceIngredientComponent(id: string, item: IngredientItem) {
+	replaceIngredientComponent(id: string, item: InMemoryIngredientItem) {
 		const ingredient = this.getIngredient(id)!;
 		if (ingredient) {
 			ingredient.item = item;
@@ -779,8 +779,8 @@ export function isSubstance(thing: unknown): thing is SubstanceComponent {
 }
 
 export function isSpirit(thing: Mixture): boolean;
-export function isSpirit(thing: IngredientItem): thing is Mixture;
-export function isSpirit(thing: IngredientItem) {
+export function isSpirit(thing: InMemoryIngredientItem): thing is Mixture;
+export function isSpirit(thing: InMemoryIngredientItem) {
 	return (
 		thing instanceof Mixture &&
 		thing.size > 0 &&
@@ -793,10 +793,10 @@ export function isSpirit(thing: IngredientItem) {
 export function isSweetenerMixture(mx: Mixture) {
 	return mx.size > 0 && mx.eachSubstance().every((x) => isSweetenerId(x.substanceId));
 }
-export function isSweetenerSubstance(thing: IngredientItem): thing is SubstanceComponent {
+export function isSweetenerSubstance(thing: InMemoryIngredientItem): thing is SubstanceComponent {
 	return isSubstance(thing) && isSweetenerId(thing.substanceId);
 }
-export function isSweetener(thing: IngredientItem) {
+export function isSweetener(thing: InMemoryIngredientItem) {
 	if (isMixture(thing)) return isSweetenerMixture(thing);
 	return isSweetenerSubstance(thing);
 }
@@ -819,7 +819,7 @@ export function isWaterSubstance(substance: SubstanceComponent) {
 export function isWaterMixture(mx: Mixture) {
 	return mx.size > 0 && mx.eachSubstance().every((x) => isWaterSubstance(x.item));
 }
-export function isWater(thing: IngredientItem) {
+export function isWater(thing: InMemoryIngredientItem) {
 	if (isMixture(thing)) return isWaterMixture(thing);
 	return isWaterSubstance(thing);
 }
