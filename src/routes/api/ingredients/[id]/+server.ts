@@ -8,7 +8,7 @@ import { zFileDataV2, type FileDataV2 } from '$lib/data-format.js';
 import { readMixtureObject, writeMixtureObject } from '../../api-utils.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
-	const mixtureId = params.id;
+	const ingdtId = params.id;
 
 	if (!platform) {
 		// Development mode: no R2 available, return empty patch
@@ -24,17 +24,17 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 
 	try {
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		const key = `files/${safeId}/${mixtureId}`;
+		const key = `files/${safeId}/${ingdtId}`;
 
 		// get the requested file for this authenticated user from R2.
 		const obj = await readMixtureObject(bucket, key);
 		if (obj === 404) {
-			throw error(404, { message: `File not found for id: files/${safeId}/${mixtureId}` });
+			throw error(404, { message: `File not found for id: files/${safeId}/${ingdtId}` });
 		}
 		if (!obj?.success) {
 			throw error(
 				400,
-				`Invalid data for id: ${mixtureId}` +
+				`Invalid data for id: ${ingdtId}` +
 					(obj.error.issues.length
 						? `; Details: ${obj.error.issues
 								.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
@@ -54,7 +54,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 
 // update the file with the given id
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
-	const mixtureId = params.id;
+	const ingdtId = params.id;
 
 	if (!platform) {
 		// Development mode: no R2 available, return empty patch
@@ -69,23 +69,23 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 	}
 
 	const safeId = userId.replace(/[^a-z0-9]/gi, '_');
-	const key = `files/${safeId}/${mixtureId}`;
+	const key = `files/${safeId}/${ingdtId}`;
 
 	try {
 		const rawData = await request.json();
 		const parsedData = zFileDataV2.safeParse(rawData);
 		if (!parsedData.success) {
-			console.error(`[PUT] Invalid data for id: ${mixtureId}`, parsedData.error.issues);
-			throw error(400, `Invalid data for id: ${mixtureId}`);
+			console.error(`[PUT] Invalid data for id: ${ingdtId}`, parsedData.error.issues);
+			throw error(400, `Invalid data for id: ${ingdtId}`);
 		}
 		const item: FileDataV2 = parsedData.data;
 		const obj = await writeMixtureObject(bucket, key, item);
 
 		if (!obj) {
-			console.error(`[PUT] Failed to put item for id: ${mixtureId}`);
-			throw error(500, `Failed to put item for id: ${mixtureId}`);
+			console.error(`[PUT] Failed to put item for id: ${ingdtId}`);
+			throw error(500, `Failed to put item for id: ${ingdtId}`);
 		}
-		console.log(`[PUT] Successfully put item for id: ${mixtureId}`, obj.uploaded.toISOString());
+		console.log(`[PUT] Successfully put item for id: ${ingdtId}`, obj.uploaded.toISOString());
 		return json({ ok: true });
 	} catch (err: any) {
 		console.error(`[PUT] Error processing push:`, err.message, err);
@@ -95,7 +95,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 
 // delete the file with the given id
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
-	const mixtureId = params.id;
+	const ingdtId = params.id;
 
 	if (!platform) {
 		// Development mode: no R2 available, return empty patch
@@ -111,7 +111,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 
 	try {
 		const safeId = userId.replace(/[^a-zA-Z0-9]/g, '_');
-		await bucket.delete(`files/${safeId}/${mixtureId}`);
+		await bucket.delete(`files/${safeId}/${ingdtId}`);
 	} catch (err: any) {
 		console.error(`[Push] Error processing push:`, err.message, err);
 		throw error(500, `Failed to process push: ${err.message}`);

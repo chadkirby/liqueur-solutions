@@ -2,7 +2,7 @@ import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { createClerkClient } from '@clerk/backend';
 import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$env/static/public';
 import { CLERK_SECRET_KEY } from '$env/static/private';
-import { getR2Bucket } from '$lib/r2';
+import { getR2Bucket } from '$lib/cf-bindings';
 
 // Initialize Clerk backend client for server-side authentication
 const clerkClient = createClerkClient({

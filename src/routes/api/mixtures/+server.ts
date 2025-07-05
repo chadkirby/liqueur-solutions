@@ -3,9 +3,9 @@
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/r2';
-import { type FileDataV1 } from '$lib/data-format.js';
-import { readMixtureObject } from './r2-mx-utils.js';
+import { getR2Bucket } from '$lib/cf-bindings.js';
+import { type FileDataV2 } from '$lib/data-format.js';
+import { readMixtureObject } from '../api-utils.js';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
 	if (!platform) {
@@ -52,7 +52,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 
 		console.log(`[Mixtures] Found ${listedFiles.objects.length} files for user ${userId}`);
 
-		const result: FileDataV1[] = [];
+		const result: FileDataV2[] = [];
 
 		for (const item of listedFiles.objects) {
 			const obj = await readMixtureObject(bucket, item.key);

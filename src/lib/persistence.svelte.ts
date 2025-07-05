@@ -1,14 +1,11 @@
 import { Mixture } from './mixture.js';
-import { type FileDataV1, type IngredientDbEntry } from '$lib/data-format.js';
+import { type FileDataV2, type IngredientItemData } from '$lib/data-format.js';
 
-export function deserialize(item: FileDataV1): FileDataV1 {
-	// some interim files have ingredientJSON instead of ingredientDb
-	const ingredientDb: IngredientDbEntry[] =
-		'ingredientJSON' in item ? JSON.parse(item.ingredientJSON as string) : item.ingredientDb;
+export function deserialize(item: FileDataV2, ingredients: IngredientItemData[]): FileDataV2 {
 	// make sure we have a valid ingredientHash (older files might not have it)
 	const _ingredientHash =
 		item._ingredientHash ??
-		Mixture.deserialize(item.rootMixtureId, ingredientDb).getIngredientHash(item.name);
+		Mixture.deserialize(item.rootIngredientId, ingredients).getIngredientHash(item.name);
 
 	// Ensure accessTime is a valid ISO string
 	const accessTime = new Date(item.accessTime).toISOString();
@@ -19,7 +16,6 @@ export function deserialize(item: FileDataV1): FileDataV1 {
 	return {
 		...copy,
 		accessTime,
-		ingredientDb: [...ingredientDb],
 		_ingredientHash,
 	} as const;
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as r2Utils from '../r2-mx-utils.js';
-import { zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+import * as r2Utils from '../../api-utils.js';
+import { zFileDataV2, type FileDataV2 } from '$lib/data-format.js';
 
 import * as server from './+server.js';
 import { readResponseBody } from '$lib/test-utils.js';
@@ -35,12 +35,12 @@ describe('/api/mixtures/[id] endpoint', () => {
 	describe('GET', () => {
 		it('returns 401 if unauthenticated', async () => {
 			const event = { params, platform, locals: {} } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status',  401);
+			await expect(server.GET(event)).rejects.toHaveProperty('status', 401);
 		});
 
 		it('returns 500 if platform missing', async () => {
 			const event = { params, platform: undefined, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.GET(event)).rejects.toHaveProperty('status', 500);
 		});
 
 		it('returns 404 if file not found', async () => {
@@ -68,13 +68,13 @@ describe('/api/mixtures/[id] endpoint', () => {
 		});
 
 		it('returns 200 and file data on success', async () => {
-			const fileData: FileDataV1 = {
+			const fileData: FileDataV2 = {
 				version: 1,
 				id: 'mix1',
 				name: 'Test Mixture',
 				accessTime: new Date().toISOString(),
 				desc: 'desc',
-				rootMixtureId: 'root',
+				rootIngredientId: 'root',
 				ingredientDb: [['db1', { id: 'i1', ingredients: [] }]],
 				_ingredientHash: 'hash',
 			};
@@ -93,19 +93,19 @@ describe('/api/mixtures/[id] endpoint', () => {
 		it('returns 500 on R2 error', async () => {
 			vi.spyOn(r2Utils, 'readMixtureObject').mockRejectedValueOnce(new Error('R2 fail'));
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.GET(event)).rejects.toHaveProperty('status', 500);
 		});
 	});
 
 	describe('PUT', () => {
 		it('returns 401 if unauthenticated', async () => {
 			const event = { params, platform, locals: {}, request: { json: vi.fn() } } as any;
-			await expect(server.PUT(event)).rejects.toHaveProperty('status',  401);
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 401);
 		});
 
 		it('returns 500 if platform missing', async () => {
 			const event = { params, platform: undefined, locals, request: { json: vi.fn() } } as any;
-			await expect(server.PUT(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
 		});
 
 		it('returns 400 if invalid data', async () => {
@@ -115,21 +115,21 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue({ not: 'valid' }) },
 			} as any;
-			vi.spyOn(zFileDataV1, 'safeParse').mockReturnValue({
+			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({
 				success: false,
 				error: { issues: [] },
 			} as any);
-			await expect(server.PUT(event)).rejects.toHaveProperty('status',  400);
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 400);
 		});
 
 		it('returns 200 and ok on success', async () => {
-			const validData: FileDataV1 = {
+			const validData: FileDataV2 = {
 				version: 1,
 				id: 'mix1',
 				name: 'Test Mixture',
 				accessTime: new Date().toISOString(),
 				desc: 'desc',
-				rootMixtureId: 'root',
+				rootIngredientId: 'root',
 				ingredientDb: [['db1', { id: 'i1', ingredients: [] }]],
 				_ingredientHash: 'hash',
 			};
@@ -139,7 +139,7 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue(validData) },
 			} as any;
-			vi.spyOn(zFileDataV1, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
+			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
 			vi.spyOn(r2Utils, 'writeMixtureObject').mockResolvedValueOnce({
 				key: 'key',
 				version: 'v1',
@@ -156,18 +156,18 @@ describe('/api/mixtures/[id] endpoint', () => {
 			});
 			const response = await server.PUT(event);
 			expect(response.status).toBe(200);
-          const bodyData = await readResponseBody(response.body!);
-      expect(bodyData).toEqual({ ok: true });
+			const bodyData = await readResponseBody(response.body!);
+			expect(bodyData).toEqual({ ok: true });
 		});
 
 		it('returns 500 on write error', async () => {
-			const validData: FileDataV1 = {
+			const validData: FileDataV2 = {
 				version: 1,
 				id: 'mix1',
 				name: 'Test Mixture',
 				accessTime: new Date().toISOString(),
 				desc: 'desc',
-				rootMixtureId: 'root',
+				rootIngredientId: 'root',
 				ingredientDb: [['db1', { id: 'i1', ingredients: [] }]],
 				_ingredientHash: 'hash',
 			};
@@ -177,9 +177,9 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue(validData) },
 			} as any;
-			vi.spyOn(zFileDataV1, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
+			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
 			vi.spyOn(r2Utils, 'writeMixtureObject').mockResolvedValueOnce(null);
-			await expect(server.PUT(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
 		});
 
 		it('returns 500 on R2 error', async () => {
@@ -190,21 +190,21 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue(validData) },
 			} as any;
-			vi.spyOn(zFileDataV1, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
+			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
 			vi.spyOn(r2Utils, 'writeMixtureObject').mockRejectedValueOnce(new Error('fail'));
-			await expect(server.PUT(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
 		});
 	});
 
 	describe('DELETE', () => {
 		it('returns 401 if unauthenticated', async () => {
 			const event = { params, platform, locals: {} } as any;
-			await expect(server.DELETE(event)).rejects.toHaveProperty('status',  401);
+			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 401);
 		});
 
 		it('returns 500 if platform missing', async () => {
 			const event = { params, platform: undefined, locals } as any;
-			await expect(server.DELETE(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 500);
 		});
 
 		it('returns 200 and ok on success', async () => {
@@ -212,14 +212,14 @@ describe('/api/mixtures/[id] endpoint', () => {
 			const event = { params, platform, locals } as any;
 			const response = await server.DELETE(event);
 			expect(response.status).toBe(200);
-          const bodyData = await readResponseBody(response.body!);
+			const bodyData = await readResponseBody(response.body!);
 			expect(bodyData).toEqual({ ok: true });
 		});
 
 		it('returns 500 on R2 error', async () => {
 			mockBucket.delete.mockRejectedValueOnce(new Error('fail'));
 			const event = { params, platform, locals } as any;
-			await expect(server.DELETE(event)).rejects.toHaveProperty('status',  500);
+			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 500);
 		});
 	});
 });

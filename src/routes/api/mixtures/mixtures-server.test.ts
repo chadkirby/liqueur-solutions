@@ -26,7 +26,7 @@ describe('GET /api/mixtures', () => {
     locals = { userId: 'user123' };
 
     // Get the mocked function
-    const { readMixtureObject } = await import('./r2-mx-utils.js');
+    const { readMixtureObject } = await import('../api-utils.js');
     mockReadMixtureObject = readMixtureObject as any;
     mockReadMixtureObject.mockReset();
   });

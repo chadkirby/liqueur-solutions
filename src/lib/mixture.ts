@@ -26,7 +26,7 @@ import {
 	getIngredientHash,
 	isMixtureData,
 	isSubstanceData,
-	type IngredientDbEntry,
+	type IngredientItemData,
 	type MixtureData,
 } from './data-format.js';
 
@@ -46,10 +46,10 @@ export type MappedSubstance = {
 };
 
 export class Mixture implements CommonComponent {
-	static deserialize(rootMixtureId: string, ingredientData: IngredientDbEntry[]) {
+	static deserialize(rootMixtureId: string, ingredientData: IngredientItemData[]) {
 		const ingredients: Array<InMemoryIngredient> = [];
 
-		const db = new Map(ingredientData);
+		const db = new Map(ingredientData.map((item) => [item.id, item]));
 		const mixtureData = db.get(rootMixtureId);
 		if (!mixtureData || !isMixtureData(mixtureData)) {
 			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
@@ -94,7 +94,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientHash(name: string) {
-		return getIngredientHash({ name, desc: this.describe(), ingredientDb: this.serialize() });
+		return getIngredientHash({ name, desc: this.describe() }, this.serialize());
 	}
 
 	getIngredient(id: string) {
@@ -103,7 +103,7 @@ export class Mixture implements CommonComponent {
 
 	clone(): this {
 		const data = this.serialize();
-		return Mixture.deserialize(data[0][0], data) as this;
+		return Mixture.deserialize(data[0].id, data) as this;
 	}
 
 	/**
@@ -140,18 +140,18 @@ export class Mixture implements CommonComponent {
 		} as const;
 	}
 
-	serialize(): IngredientDbEntry[] {
-		const rootData = [this.id, this.serializeMixtureData()] as const;
-		const ingredientData: IngredientDbEntry[] = this._ingredientList.flatMap(({ id, item }) => {
+	serialize(): IngredientItemData[] {
+		const rootData = this.serializeMixtureData();
+		const ingredientData: IngredientItemData[] = this._ingredientList.flatMap(({ id, item }) => {
 			if (item instanceof Mixture) {
-				return [[id, item.serializeMixtureData()], ...item.serialize()];
+				return [item.serializeMixtureData(), ...item.serialize()];
 			}
 			if (item instanceof SubstanceComponent) {
-				return [[id, item.serializeSubstanceData()]];
+				return [item.serializeSubstanceData()];
 			}
 			throw new Error('Invalid ingredient');
 		});
-		return [[...rootData], ...ingredientData];
+		return [rootData, ...ingredientData];
 	}
 
 	analyze(precision = 0): MixtureAnalysis {

@@ -10,20 +10,28 @@
 	} from 'flowbite-svelte-icons';
 	import Portal from 'svelte-portal';
 	import { filesDrawer } from '$lib/files-drawer-store.svelte';
-	import { isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
+	import { generateStorageId, isStorageId, toStorageId, type StorageId } from '$lib/storage-id.js';
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+	import {
+		createFileDataV2,
+		getIngredientHash,
+		isV0Data,
+		zFileDataV2,
+		type FileDataV2,
+		type UnifiedSerializationDataV2,
+	} from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
-	import { deserializeFromUrl } from '$lib/url-serialization.js';
+	import { decompress, deserialize, deserializeFromUrl } from '$lib/url-serialization.js';
 	import { componentId, Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
 	import { getContext } from 'svelte';
+	import { it } from 'node:test';
 	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
 
 	interface Props {
@@ -100,23 +108,23 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-					const resp = await fetch(`/api/mixtures/${id}`);
+			const resp = await fetch(`/api/mixtures/${id}`);
 			if (!resp.ok) {
 				console.error('Failed to load mixture', await resp.text());
 				return;
 			}
-			const mxData = zFileDataV1.safeParse(await resp.json());
-			if (!mxData.success) {
-				console.error('Failed to parse mixture data', mxData.error);
-				return;
-			}
-			const mixture = Mixture.deserialize(mxData.data.rootMixtureId, mxData.data.ingredientDb);
-			if (mixture && mixture.isValid) {
-				mixtureStore.addIngredientTo(filesDrawer.parentId, {
-					name,
-					mass: mixture.mass,
-					item: mixture,
-				});
+			try {
+				const mxData = deserialize(await resp.json());
+				const mixture = Mixture.deserialize(mxData.mx.rootIngredientId, mxData.ingredients);
+				if (mixture && mixture.isValid) {
+					mixtureStore.addIngredientTo(filesDrawer.parentId, {
+						name,
+						mass: mixture.mass,
+						item: mixture,
+					});
+				}
+			} catch (error) {
+				console.error('Failed to parse mixture data', error);
 			}
 		};
 	}
@@ -135,17 +143,15 @@
 
 	let importFiles: FileList | undefined = $state();
 
-	async function writeUnlessExists(item: {
-		id: string;
-		name: string;
-		mixture: Mixture;
-	}): Promise<void> {
-		if (!isStorageId(item.id)) return;
+	async function writeUnlessExists(item: UnifiedSerializationDataV2): Promise<void> {
+		const { mx, ingredients } = item;
+		if (!isStorageId(mx.id)) return;
 		if (!persistenceContext.mixtureFiles) return;
-		const hash = item.mixture.getIngredientHash(item.name);
+		const hash = getIngredientHash(mx, ingredients);
 		if (persistenceContext.mixtureFiles.findOne({ _ingredientHash: hash })) return;
-		await persistenceContext.upsertFile(item);
-		await persistenceContext.toggleStar(item.id);
+		const mixture = Mixture.deserialize(mx.rootIngredientId, ingredients);
+		await persistenceContext.upsertFile({ id: mx.id, name: mx.name, mixture });
+		await persistenceContext.toggleStar(mx.id);
 	}
 
 	$effect(() => {
@@ -154,20 +160,18 @@
 			reader.onload = () => {
 				const data = JSON.parse(reader.result as string);
 				for (const item of data) {
-					if ('href' in item && 'name' in item) {
-						const url = new URL(resolveRelativeUrl(item.href));
-						const { mixture } = deserializeFromUrl(url.searchParams);
-						writeUnlessExists({ id: componentId(), name: item.name, mixture });
-						continue;
+					try {
+						if ('href' in item && 'name' in item) {
+							const url = new URL(resolveRelativeUrl(item.href));
+							const data = decompress(url.searchParams, item.name);
+							writeUnlessExists(data);
+						} else {
+							const data = deserialize(item);
+							writeUnlessExists(data);
+						}
+					} catch (error) {
+						console.warn('Invalid file format', error);
 					}
-					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data)
-						writeUnlessExists({
-							id: v1Data.id,
-							name: v1Data.name,
-							mixture: Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb),
-						});
-					else console.warn('Invalid file format', item);
 				}
 			};
 			reader.readAsText(importFiles[0]);

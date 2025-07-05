@@ -3,7 +3,7 @@
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/r2.js';
+import { getR2Bucket } from '$lib/cf-bindings.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }: RequestEvent) => {
 	if (!platform) {

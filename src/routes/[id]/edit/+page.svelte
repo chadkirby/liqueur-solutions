@@ -18,12 +18,13 @@
 	const mixtureStore = $derived.by(() => {
 		const id = page.params.id;
 		const mxData = persistenceContext.mixtureFiles?.findOne({ id });
+		const ingredients = persistenceContext.ingredients?.find({}).fetch() ?? [];
 		if (!mxData) return null;
 		try {
 			return untrack(() => {
-				const { name, rootMixtureId, ingredientDb, _ingredientHash } = mxData;
+				const { name, rootIngredientId: rootMixtureId, _ingredientHash } = mxData;
 				mixtureName = name;
-				const mixture = Mixture.deserialize(rootMixtureId, ingredientDb);
+				const mixture = Mixture.deserialize(rootMixtureId, ingredients);
 				const store = new MixtureStore({
 					storeId: id,
 					name,

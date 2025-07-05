@@ -3,8 +3,8 @@
  */
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getR2Bucket } from '$lib/r2';
-import type { FileDataV1 } from '$lib/data-format.js';
+import { getR2Bucket } from '$lib/cf-bindings';
+import type { FileDataV2 } from '$lib/data-format.js';
 
 // update the file with the given id
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {

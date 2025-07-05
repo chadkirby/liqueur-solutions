@@ -1,16 +1,17 @@
+import type { IngredientDbEntry } from '$lib/data-format-v1.js';
 import {
 	getIngredientHash,
 	getMixtureListMetadata,
-	zFileDataV1,
-	type FileDataV1,
+	zFileDataV2,
+	type FileDataV2,
 } from '$lib/data-format.js';
-import type { R2Bucket, R2Object } from '$lib/r2.js';
+import type { R2Bucket, R2Object } from '$lib/cf-bindings.js';
 import type { ZodError } from 'zod/v4';
 
 export async function writeMixtureObject(
 	bucket: R2Bucket,
 	key: string,
-	mxData: FileDataV1,
+	mxData: FileDataV2,
 ): Promise<R2Object | null> {
 	return bucket.put(key, JSON.stringify(mxData), {
 		customMetadata: getMixtureListMetadata(mxData),
@@ -21,7 +22,7 @@ export async function readMixtureObject(
 	bucket: R2Bucket,
 	key: string,
 ): Promise<
-	{ success: true; data: FileDataV1 } | { success: false; error: ZodError<FileDataV1> } | 404
+	{ success: true; data: FileDataV2 } | { success: false; error: ZodError<FileDataV2> } | 404
 > {
 	const file = await bucket.get(key);
 	if (!file) {
@@ -30,7 +31,11 @@ export async function readMixtureObject(
 	}
 	const { ingredientJSON, ...rawData } = (await file.json()) as Record<string, unknown>;
 
-	let parsedData = zFileDataV1.safeParse({
+	// const ingredientDb: IngredientDbEntry[] = ingredientJSON
+	// 	? JSON.parse(ingredientJSON as string)
+	// 	: null;
+
+	let parsedData = zFileDataV2.safeParse({
 		...rawData,
 	});
 	if (!parsedData.success) {
@@ -42,13 +47,13 @@ export async function readMixtureObject(
 		};
 		// If we have cured data, try to parse again
 		if (Object.keys(curedData).length > 0) {
-			parsedData = zFileDataV1.safeParse({
+			parsedData = zFileDataV2.safeParse({
 				...rawData,
 				...curedData,
 			});
 		}
 		if (!parsedData.success) {
-			return parsedData as { success: false; error: ZodError<FileDataV1> };
+			return parsedData as { success: false; error: ZodError<FileDataV2> };
 		}
 	}
 	if (parsedData.success && parsedData.data._ingredientHash === '<hash>') {

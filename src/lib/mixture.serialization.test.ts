@@ -1,7 +1,7 @@
 import { describe, test, expect, assert } from 'vitest';
 import { Mixture } from './mixture.js';
 import { SubstanceComponent } from './ingredients/substance-component.js';
-import { currentDataVersion, type FileDataV1 } from './data-format.js';
+import { currentDataVersion, type FileDataV2 } from './data-format.js';
 
 // We're not testing the actual storage system, just the
 // serialization/deserialization process that would be used by the
@@ -22,19 +22,22 @@ describe('Storage serialization for notes', () => {
 		const ingredientDb = mixture.serialize();
 
 		// Create file data structure (what would be stored)
-		const fileData: FileDataV1 = {
+		const fileData: FileDataV2 = {
 			version: currentDataVersion,
 			id: 'test-id',
 			name: 'Test Mixture',
 			accessTime: new Date().toISOString(),
 			desc: 'Test description',
-			rootMixtureId: mixture.id,
+			rootIngredientId: mixture.id,
 			ingredientDb,
 			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
 		// Deserialize from storage format
-		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
+		const deserializedMixture = Mixture.deserialize(
+			fileData.rootIngredientId,
+			fileData.ingredientDb,
+		);
 
 		// Check if notes were preserved
 		const ingredient = deserializedMixture.findIngredient()!;
@@ -51,18 +54,21 @@ describe('Storage serialization for notes', () => {
 		});
 
 		const ingredientDb = mixture.serialize();
-		const fileData: FileDataV1 = {
+		const fileData: FileDataV2 = {
 			version: currentDataVersion,
 			id: 'test-id',
 			name: 'Test Mixture',
 			accessTime: new Date().toISOString(),
 			desc: 'Test description',
-			rootMixtureId: mixture.id,
+			rootIngredientId: mixture.id,
 			ingredientDb,
 			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
-		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
+		const deserializedMixture = Mixture.deserialize(
+			fileData.rootIngredientId,
+			fileData.ingredientDb,
+		);
 
 		const ingredient = deserializedMixture.findIngredient()!;
 		expect(ingredient.notes).toBe('');
@@ -77,18 +83,21 @@ describe('Storage serialization for notes', () => {
 		});
 
 		const ingredientDb = mixture.serialize();
-		const fileData: FileDataV1 = {
+		const fileData: FileDataV2 = {
 			version: currentDataVersion,
 			id: 'test-id',
 			name: 'Test Mixture',
 			accessTime: new Date().toISOString(),
 			desc: 'Test description',
-			rootMixtureId: mixture.id,
+			rootIngredientId: mixture.id,
 			ingredientDb,
 			_ingredientHash: mixture.getIngredientHash('Test Mixture'),
 		};
 
-		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
+		const deserializedMixture = Mixture.deserialize(
+			fileData.rootIngredientId,
+			fileData.ingredientDb,
+		);
 
 		const ingredient = deserializedMixture.findIngredient()!;
 		expect(ingredient.notes).toBeUndefined();
@@ -122,19 +131,22 @@ describe('Storage serialization for notes', () => {
 		const ingredientDb = outerMixture.serialize();
 
 		// Create file data structure
-		const fileData: FileDataV1 = {
+		const fileData: FileDataV2 = {
 			version: currentDataVersion,
 			id: 'test-id',
 			name: 'Test Nested Mixture',
 			accessTime: new Date().toISOString(),
 			desc: 'Test description',
-			rootMixtureId: outerMixture.id,
+			rootIngredientId: outerMixture.id,
 			ingredientDb,
 			_ingredientHash: outerMixture.getIngredientHash('Test Nested Mixture'),
 		};
 
 		// Deserialize from storage format
-		const deserializedMixture = Mixture.deserialize(fileData.rootMixtureId, fileData.ingredientDb);
+		const deserializedMixture = Mixture.deserialize(
+			fileData.rootIngredientId,
+			fileData.ingredientDb,
+		);
 
 		// Get the ingredients
 		const simpleIngredient = deserializedMixture.findIngredient(

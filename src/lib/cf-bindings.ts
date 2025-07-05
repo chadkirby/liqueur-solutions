@@ -1,4 +1,4 @@
-import type { R2Bucket } from '@cloudflare/workers-types/2023-07-01';
+import type { R2Bucket, D1Database } from '@cloudflare/workers-types/2023-07-01';
 export type * from '@cloudflare/workers-types/2023-07-01';
 
 /**
@@ -43,4 +43,16 @@ export function getR2Bucket(platform: App.Platform) {
 		throw new Error(`Invalid R2 bucket binding for ${R2_BINDING}`);
 	}
 	return bucket as R2Bucket;
+}
+
+const MIXTURES_DB_BINDING = 'MIXTURES_DB';
+const INGREDIENTS_DB_BINDING = 'INGREDIENTS_DB';
+const STARS_DB_BINDING = 'STARS_DB';
+
+export function getDB(platform: App.Platform, which: 'mixtures' | 'ingredients' | 'stars' ) {
+	const db = platform?.env?.[MIXTURES_DB_BINDING];
+	if (!db || typeof db === 'string' || !('prepare' in db)) {
+		throw new Error(`Invalid D1 database binding for ${MIXTURES_DB_BINDING}`);
+	}
+	return db as D1Database;
 }

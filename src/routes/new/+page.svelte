@@ -29,7 +29,7 @@
 			name,
 			mixture,
 		});
-		goto(`/edit/${id}`, { replaceState: true });
+		goto(`/${id}/edit`, { replaceState: true });
 	});
 </script>
 

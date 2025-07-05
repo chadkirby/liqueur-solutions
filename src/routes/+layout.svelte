@@ -17,7 +17,6 @@
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
 	import { syncManager } from '$lib/sync-manager.js';
-	import { currentDataVersion, getIngredientHash } from '$lib/data-format.js';
 	// 1) Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
@@ -30,26 +29,8 @@
 		? {
 				mixtureFiles: createMixturesCollection(),
 				stars: createStarsCollection(),
-				upsertFile: (item: { id: string; name: string; mixture: any }) => {
-					if (!persistenceContext.mixtureFiles) return;
-					const accessTime = new Date().toISOString();
-					const desc = item.mixture.describe();
-					const ingredientDb = item.mixture.serialize();
-					persistenceContext.mixtureFiles.replaceOne(
-						{ id: item.id },
-						{
-							version: currentDataVersion,
-							id: item.id,
-							name: item.name,
-							accessTime,
-							desc,
-							rootMixtureId: item.mixture.id,
-							ingredientDb,
-							_ingredientHash: getIngredientHash({ name: item.name, desc, ingredientDb }),
-						},
-						{ upsert: true },
-					);
-				},
+				ingredients: null,
+				upsertFile: () => {},
 				toggleStar: (id: string) => {
 					if (!persistenceContext.stars) return false;
 					const existing = persistenceContext.stars.findOne({ id });
@@ -65,6 +46,7 @@
 		: {
 				mixtureFiles: null,
 				stars: null,
+				ingredients: null,
 				upsertFile: () => {},
 				toggleStar: () => false,
 			};
