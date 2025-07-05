@@ -4,7 +4,6 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit';
 import { getR2Bucket } from '$lib/r2.js';
-import { rollbar } from '$lib/rollbar';
 
 export const GET: RequestHandler = async ({ params, platform, locals }: RequestEvent) => {
 	if (!platform) {
@@ -49,12 +48,12 @@ export const GET: RequestHandler = async ({ params, platform, locals }: RequestE
 				return { id };
 			});
 
-		rollbar.log(`[Stars] Found ${stars.length} stars for user ${prefix}`);
+		console.log(`[Stars] Found ${stars.length} stars for user ${prefix}`);
 		return json(stars);
 	} catch (err: any) {
 		// Explicitly type err
-		rollbar.error(`[Stars] Error processing list:`, err.message, err);
+		console.error(`[Pull] Error processing list:`, err.message, err);
 		// Even in case of error generating patch, try to send the LMI
-		throw error(500, `Failed to process stars list: ${err.message}`);
+		throw error(500, `Failed to process pull: ${err.message}`);
 	}
 };
