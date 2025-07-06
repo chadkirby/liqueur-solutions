@@ -61,16 +61,10 @@ export const zMxMetaItem = z.strictObject({
 	hash: z.string(),
 });
 
-export const zIngredientItem = z.union([
-	z.strictObject({
-		id: zStorageId,
-		item: zMixtureData,
-	}),
-	z.strictObject({
-		id: zStorageId,
-		item: zSubstanceData,
-	}),
-]);
+export const zIngredientItem = z.strictObject({
+	id: zStorageId,
+	item: z.union([zMixtureData, zSubstanceData]),
+});
 export type IngredientItemData = z.infer<typeof zIngredientItem>;
 
 export const zFileDataV2 = z.strictObject({

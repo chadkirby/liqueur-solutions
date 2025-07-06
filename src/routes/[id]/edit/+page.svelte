@@ -17,9 +17,9 @@
 	let unsubscribeMixture: (() => void) | null = null;
 
 	const mixtureStore = $derived.by(() => {
-		const id = page.params.id;
-		const mxData = persistenceContext.mixtureFiles?.findOne({ id });
-		const ingredients = persistenceContext.getIngredientsCollection(id)?.find({}).fetch() ?? [];
+		const mxId = page.params.id;
+		const mxData = persistenceContext.mixtureFiles?.findOne({ id: mxId });
+		const ingredients = persistenceContext.getIngredientsCollection(mxId)?.find({}).fetch() ?? [];
 		if (!mxData) return null;
 		try {
 			return untrack(() => {
@@ -27,14 +27,14 @@
 				mixtureName = name;
 				const mixture = Mixture.deserialize(rootMixtureId, ingredients);
 				const store = new MixtureStore({
-					storeId: id,
+					storeId: mxId,
 					name,
 					mixture,
 					totals: getTotals(mixture),
 					ingredientHash: getIngredientHash({name, desc}, ingredients),
 				});
 				setContext<MixtureStoreContext>(MIXTURE_STORE_CONTEXT_KEY, store);
-				console.log('Initialized mixture store for ID', id, store);
+				console.log('Initialized mixture store for ID', mxId, store);
 				unsubscribeMixture = store.subscribe((upd) => {
 					persistenceContext.upsertMx({
 						id: upd.storeId,

@@ -20,12 +20,17 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	}
 
 	try {
-		const stmt = d1.prepare('SELECT version, id, name, accessTime, desc, rootIngredientId, _ingredientHash FROM mixtures WHERE userid = ? AND id = ?');
+		const stmt = d1.prepare(`SELECT * FROM mixtures WHERE userid = ? AND id = ?`);
 		const result = await stmt.bind(userId, mixtureId).first();
 		if (!result) {
 			throw error(404, { message: `Mixture not found for id: ${mixtureId}` });
 		}
-		const parsed = zFileDataV2.safeParse(result);
+		// ensure starred is a boolean
+		result.starred = Boolean(result.starred);
+		// Remove userid field before validation since it's not part of the data model
+		const { userid, ...dataWithoutUserId } = result;
+		console.log(`[GET] Processing mixture row:`, dataWithoutUserId);
+		const parsed = zFileDataV2.safeParse(dataWithoutUserId);
 		if (!parsed.success) {
 			throw error(
 				400,
@@ -62,25 +67,21 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 		const rawData = await request.json();
 		const parsedData = zFileDataV2.safeParse(rawData);
 		if (!parsedData.success) {
-			console.error(`[PUT] Invalid data for id: ${mixtureId}`, parsedData.error.issues);
-			throw error(400, `Invalid data for id: ${mixtureId}`);
+			console.error(`[PUT] Invalid mixture data for id: ${mixtureId}`, parsedData.error.issues);
+			throw error(
+				400,
+				`Invalid mixture data for id: ${mixtureId}: ${JSON.stringify(parsedData.error.issues)}`,
+			);
 		}
 		const item = parsedData.data;
+
+		// Get field names dynamically from the validated data
+		const fields = Object.keys(item);
 		const stmt = d1.prepare(
-			`INSERT OR REPLACE INTO mixtures (userid, id, version, name, accessTime, desc, rootIngredientId, _ingredientHash)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+			`INSERT OR REPLACE INTO mixtures (userid, ${fields.join(', ')})
+			 VALUES (?, ${fields.map(() => '?').join(', ')})`,
 		);
-		await stmt.bind(
-			userId,
-			mixtureId,
-			item.version,
-			item.id,
-			item.name,
-			item.accessTime,
-			item.desc,
-			item.rootIngredientId,
-			item._ingredientHash
-		).run();
+		await stmt.bind(userId, ...fields.map((field) => item[field as keyof typeof item])).run();
 		return json({ ok: true });
 	} catch (err: any) {
 		console.error(`[PUT] Error processing mixture:`, err.message, err);

@@ -19,11 +19,11 @@ function listen(collection: SchemaCollection<any, any>, name: string) {
 		'changed',
 		'removed',
 		'persistence.init',
-		'persistence.transmitted',
-		'persistence.received',
-		'persistence.pullStarted',
-		'persistence.pullCompleted',
-		'persistence.pushStarted',
+		// 'persistence.transmitted',
+		// 'persistence.received',
+		// 'persistence.pullStarted',
+		// 'persistence.pullCompleted',
+		// 'persistence.pushStarted',
 		'persistence.pushCompleted',
 	] as const;
 	events.forEach((event) => {
@@ -35,7 +35,7 @@ function listen(collection: SchemaCollection<any, any>, name: string) {
 
 const collections: Map<
 	string,
-	{ persistenceInit: Promise<void>; collection: SchemaCollection<any, any> }
+	{ ready: Promise<unknown>; collection: SchemaCollection<any, any> }
 > = new Map();
 
 function getMixturesCollection(): SchemaCollection<typeof zFileDataV2, string> | null {
@@ -52,7 +52,10 @@ function getMixturesCollection(): SchemaCollection<typeof zFileDataV2, string> |
 		});
 		listen(collection, 'mixtures');
 		collections.set('mixtures', {
-			persistenceInit: new Promise((resolve) => collection.once('persistence.init', resolve)),
+			ready: Promise.all([
+				collection.isReady(),
+				new Promise<void>((resolve) => collection.once('persistence.init', resolve)),
+			]),
 			collection,
 		});
 	}
@@ -76,7 +79,10 @@ function getIngredientsCollection(
 		});
 		listen(collection, collectionId);
 		collections.set(collectionId, {
-			persistenceInit: new Promise((resolve) => collection.once('persistence.init', resolve)),
+			ready: Promise.all([
+				collection.isReady(),
+				new Promise<void>((resolve) => collection.once('persistence.init', resolve)),
+			]),
 			collection,
 		});
 	}
@@ -93,22 +99,21 @@ export const persistenceContext = {
 	get mixtureFiles() {
 		return getMixturesCollection();
 	},
-	getIngredientsCollection(id: string) {
-		return getIngredientsCollection(id);
+	getIngredientsCollection(mxId: string) {
+		return getIngredientsCollection(mxId);
 	},
 	async isReady() {
 		if (!browser) return; // Ensure this runs only in the browser
 		await Promise.all([
 			syncManager.isReady(),
-			...Array.from(collections.values()).map(({ persistenceInit }) => persistenceInit),
-			...Array.from(collections.values()).map(({ collection }) => collection.isReady()),
+			...Array.from(collections.values()).map(({ ready }) => ready),
 		]);
 	},
 	async syncAll() {
 		if (!browser) return; // Ensure this runs only in the browser
 		return await syncManager.syncAll();
 	},
-	async getMxData(id: string): Promise<UnifiedSerializationDataV2 | null> {
+	async getExportData(id: string): Promise<UnifiedSerializationDataV2 | null> {
 		const mixturesCollection = getMixturesCollection();
 		if (!mixturesCollection) return null; // browser
 		const mx = mixturesCollection.findOne({ id });
@@ -119,7 +124,7 @@ export const persistenceContext = {
 		const ingredients = getIngredientsCollection(id)?.find({}).fetch() || [];
 		return { mx, ingredients };
 	},
-	upsertMx(item: { id: string; name: string; mixture: Mixture }) {
+	upsertMx(item: { id: string; name: string; mixture: Mixture }, extras?: Partial<FileDataV2>) {
 		const mixturesCollection = getMixturesCollection();
 		const ingredientsCollections = getIngredientsCollection(item.id);
 		if (!mixturesCollection || !ingredientsCollections) {
@@ -127,10 +132,12 @@ export const persistenceContext = {
 			return;
 		}
 		const data = createFileDataV2(item);
+		const existing = mixturesCollection.findOne({ id: item.id });
+		if (!deepEqual(existing, data)) {
+			mixturesCollection.replaceOne({ id: item.id }, { ...data, ...extras }, { upsert: true });
+		}
+
 		const serialized = item.mixture.serialize();
-
-		mixturesCollection.replaceOne({ id: item.id }, data, { upsert: true });
-
 		const existingIngredients = ingredientsCollections.find({}).fetch();
 		ingredientsCollections.batch(() => {
 			// Remove ingredients that are no longer in the mixture
@@ -189,15 +196,14 @@ export const persistenceContext = {
 	},
 	toggleStar(id: string) {
 		const mixturesCollection = getMixturesCollection();
-		if (!mixturesCollection) return false; // browser
+		if (!mixturesCollection) return; // browser
 		const existing = mixturesCollection.findOne({ id });
-		if (!existing) return false; // Not found, can't toggle star
+		if (!existing) return; // Not found, can't toggle star
 		const isStarred = existing.starred;
 		mixturesCollection.replaceOne(
 			{ id },
 			{ ...existing, starred: !isStarred }, // Toggle starred status
 		);
-		return !isStarred; // Return new starred status
 	},
 } as const;
 

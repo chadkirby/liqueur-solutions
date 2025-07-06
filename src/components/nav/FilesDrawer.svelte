@@ -14,7 +14,7 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { createFileDataV2, getIngredientHash, type UnifiedSerializationDataV2 } from '$lib/data-format.js';
+	import { getIngredientHash, type UnifiedSerializationDataV2 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
 	import { decompress, deserialize } from '$lib/url-serialization.js';
 	import { Mixture } from '$lib/mixture.js';
@@ -35,6 +35,7 @@
 
 	const { mixtureStore }: Props = $props();
 
+	/* svelte-ignore state_referenced_locally */
 	let showTempFiles = $state(starredFiles?.length === 0);
 	const files = $derived([
 		...(starredFiles ? starredFiles : []),
@@ -136,8 +137,7 @@
 		const hash = getIngredientHash(mx, ingredients);
 		if (persistenceContext.mixtureFiles.findOne({ hash })) return;
 		const mixture = Mixture.deserialize(mx.rootIngredientId, ingredients);
-		await persistenceContext.upsertMx({ id: mx.id, name: mx.name, mixture });
-		await persistenceContext.toggleStar(mx.id);
+		await persistenceContext.upsertMx({ id: mx.id, name: mx.name, mixture }, {starred: true});
 	}
 
 	$effect(() => {
