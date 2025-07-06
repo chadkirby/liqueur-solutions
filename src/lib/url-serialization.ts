@@ -80,6 +80,24 @@ export function deserialize(data: unknown): UnifiedSerializationDataV2 {
 			ingredients: v2Data.ingredients,
 		};
 	}
+
+	if (typeof data === 'object' && data !== null && 'ingredientDb' in data) {
+		try {
+			const db = (data as any).ingredientDb.map(([id, x]: [string, any]) => [
+				id,
+				'ingredients' in x ? { ingredients: x.ingredients } : x,
+			]);
+			const v1 = zFileDataV1.safeParse({ ...data, ingredientDb: db });
+			if (v1.success) {
+				const v2Data = v1ToV2(v1.data);
+				return {
+					mx: v2Data.mx,
+					ingredients: v2Data.ingredients,
+				};
+			}
+		} catch (_ignore) {}
+	}
+
 	if (isV0Data(data)) {
 		const v1Data = portV0DataToV1(data);
 		const v2Data = v1ToV2(v1Data);

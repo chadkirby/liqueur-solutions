@@ -5,9 +5,11 @@
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { page } from '$app/state';
 
-	import { onDestroy, untrack } from 'svelte';
+	import { onDestroy, setContext, untrack } from 'svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import { persistenceContext } from '$lib/persistence.js';
+	import { getIngredientHash } from '$lib/data-format.js';
+	import { MIXTURE_STORE_CONTEXT_KEY, type MixtureStoreContext } from '$lib/contexts.js';
 
 	let error = $state<string | null>(null);
 	// UI state
@@ -21,7 +23,7 @@
 		if (!mxData) return null;
 		try {
 			return untrack(() => {
-				const { name, rootIngredientId: rootMixtureId, _ingredientHash } = mxData;
+				const { name, desc, rootIngredientId: rootMixtureId } = mxData;
 				mixtureName = name;
 				const mixture = Mixture.deserialize(rootMixtureId, ingredients);
 				const store = new MixtureStore({
@@ -29,11 +31,12 @@
 					name,
 					mixture,
 					totals: getTotals(mixture),
-					ingredientHash: _ingredientHash,
+					ingredientHash: getIngredientHash({name, desc}, ingredients),
 				});
+				setContext<MixtureStoreContext>(MIXTURE_STORE_CONTEXT_KEY, store);
 				console.log('Initialized mixture store for ID', id, store);
 				unsubscribeMixture = store.subscribe((upd) => {
-					persistenceContext.upsertFile({
+					persistenceContext.upsertMx({
 						id: upd.storeId,
 						name: upd.name,
 						mixture: upd.mixture,
@@ -61,12 +64,18 @@
 <div class="p-2 max-w-2xl mx-auto font-sans">
 	{#if error}
 		<div class="p-4 text-red-600">Error: {error}</div>
+		<div class="p-4">
+			<a href="/new" class="text-blue-600 hover:underline">Create a new mixture</a>
+		</div>
 	{:else if mixtureStore}
 		<MixtureList {mixtureStore} />
 		<BottomNav {mixtureStore} />
 	{:else}
 		<div class="p-4 text-gray-500">
 			Mixture data could not be initialized. (ID: {page.params.id})
+		</div>
+		<div class="p-4">
+			<a href="/new" class="text-blue-600 hover:underline">Create a new mixture</a>
 		</div>
 	{/if}
 </div>

@@ -7,12 +7,13 @@
 		children: Snippet;
 		isActive?: boolean;
 	} & HTMLProps;
-	let { children, class: classProp, id, isActive, ...handlers }: Props = $props();
+	let { children, class: classProp, id, isActive, disabled, ...handlers }: Props = $props();
 </script>
 
 <button
 	type="button"
 	{id}
+	{disabled}
 	{...handlers}
 	class={[
 		'text-center',
@@ -24,6 +25,7 @@
 		'flex-row',
 		'gap-1',
 		isActive && '!bg-primary-200 !dark:bg-primary-700 !dark:border-primary-600',
+		disabled && 'opacity-50 cursor-not-allowed',
 		classProp,
 	]}
 >

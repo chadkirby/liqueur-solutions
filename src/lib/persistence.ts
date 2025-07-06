@@ -2,103 +2,96 @@ import { Mixture } from './mixture.js';
 import { SchemaCollection } from '$lib/schema-collection.js';
 import svelteReactivityAdapter from '@signaldb/svelte';
 import createIndexedDBAdapter from '@signaldb/indexeddb';
-import { z } from 'zod/v4-mini';
 import {
 	createFileDataV2,
 	zFileDataV2,
 	zIngredientItem,
 	type FileDataV2,
 	type IngredientItemData,
+	type UnifiedSerializationDataV2,
 } from '$lib/data-format.js';
 import { browser } from '$app/environment';
 import { syncManager } from './sync-manager.js';
 
-export function deserialize(item: FileDataV2, ingredients: IngredientItemData[]): FileDataV2 {
-	// make sure we have a valid ingredientHash (older files might not have it)
-	const _ingredientHash =
-		item._ingredientHash ??
-		Mixture.deserialize(item.rootIngredientId, ingredients).getIngredientHash(item.name);
-
-	// Ensure accessTime is a valid ISO string
-	const accessTime = new Date(item.accessTime).toISOString();
-
-	const copy = { ...item };
-	delete (copy as any).ingredientJSON; // remove old field if it exists
-
-	return {
-		...copy,
-		accessTime,
-		_ingredientHash,
-	} as const;
+function listen(collection: SchemaCollection<any, any>, name: string) {
+	const events = [
+		'added',
+		'changed',
+		'removed',
+		'persistence.init',
+		'persistence.transmitted',
+		'persistence.received',
+		'persistence.pullStarted',
+		'persistence.pullCompleted',
+		'persistence.pushStarted',
+		'persistence.pushCompleted',
+	] as const;
+	events.forEach((event) => {
+		collection.on(event, () => {
+			console.log(`[${name}] ${event}`);
+		});
+	});
 }
 
-const starSchema = z.strictObject({
-	id: z.string(),
-});
+const collections: Map<
+	string,
+	{ persistenceInit: Promise<void>; collection: SchemaCollection<any, any> }
+> = new Map();
 
-let mixturesCollection: SchemaCollection<typeof zFileDataV2, string> | null = null;
-function getMixturesCollection() {
+function getMixturesCollection(): SchemaCollection<typeof zFileDataV2, string> | null {
 	if (!browser) return null; // Ensure this runs only in the browser
-	if (!mixturesCollection) {
-		mixturesCollection = new SchemaCollection({
+	if (!collections.has('mixtures')) {
+		const collection = new SchemaCollection({
 			schema: zFileDataV2,
 			reactivity: svelteReactivityAdapter,
 			persistence: createIndexedDBAdapter<FileDataV2, string>('mixtures'),
 		});
-		syncManager.addCollection(mixturesCollection, {
+		syncManager.addCollection(collection, {
 			name: 'mixtureFiles',
 			apiPath: '/api/mixtures',
 		});
+		listen(collection, 'mixtures');
+		collections.set('mixtures', {
+			persistenceInit: new Promise((resolve) => collection.once('persistence.init', resolve)),
+			collection,
+		});
 	}
-	return mixturesCollection;
+	return collections.get('mixtures')?.collection ?? null;
 }
 
-let starsCollection: SchemaCollection<typeof starSchema, string> | null = null;
-function getStarsCollection() {
+function getIngredientsCollection(
+	id: string,
+): SchemaCollection<typeof zIngredientItem, string> | null {
 	if (!browser) return null; // Ensure this runs only in the browser
-	if (!starsCollection) {
-		starsCollection = new SchemaCollection({
-			schema: starSchema,
+	const collectionId = `ingredients-${id}`;
+	if (!collections.has(collectionId)) {
+		const collection = new SchemaCollection({
+			schema: zIngredientItem,
 			reactivity: svelteReactivityAdapter,
-			persistence: createIndexedDBAdapter<z.infer<typeof starSchema>, string>('mixture-stars'),
+			persistence: createIndexedDBAdapter<IngredientItemData, string>(ingredientsIndexedDbName(id)),
 		});
-		syncManager.addCollection(starsCollection, {
-			name: 'stars',
-			apiPath: '/api/stars',
+		syncManager.addCollection(collection, {
+			name: collectionId,
+			apiPath: ingredientsEndpoint(id),
+		});
+		listen(collection, collectionId);
+		collections.set(collectionId, {
+			persistenceInit: new Promise((resolve) => collection.once('persistence.init', resolve)),
+			collection,
 		});
 	}
-	return starsCollection;
+	return collections.get(collectionId)?.collection ?? null;
 }
-
-const ingredientsCollections: Map<
-	string,
-	SchemaCollection<typeof zIngredientItem, string>
-> = new Map();
-function getIngredientsCollection(id: string) {
-	if (!browser) return null; // Ensure this runs only in the browser
-	if (!ingredientsCollections.has(id)) {
-		ingredientsCollections.set(
-			id,
-			new SchemaCollection({
-				schema: zIngredientItem,
-				reactivity: svelteReactivityAdapter,
-				persistence: createIndexedDBAdapter<IngredientItemData, string>(`ingredient-db-${id}`),
-			}),
-		);
-		syncManager.addCollection(ingredientsCollections.get(id)!, {
-			name: `ingredients-${id}`,
-			apiPath: `/api/ingredients/${id}`,
-		});
-	}
-	return ingredientsCollections.get(id)!;
+function ingredientsEndpoint(id: string) {
+	return `/api/ingredients/${id}`;
+}
+function ingredientsIndexedDbName(id: string) {
+	return `ingredient-db-${id}`;
 }
 
 export const persistenceContext = {
 	get mixtureFiles() {
 		return getMixturesCollection();
-	},
-	get stars() {
-		return getStarsCollection();
 	},
 	getIngredientsCollection(id: string) {
 		return getIngredientsCollection(id);
@@ -106,12 +99,27 @@ export const persistenceContext = {
 	async isReady() {
 		if (!browser) return; // Ensure this runs only in the browser
 		await Promise.all([
-			getMixturesCollection()?.isReady(),
-			getStarsCollection()?.isReady(),
-			...Array.from(ingredientsCollections.values()).map((col) => col.isReady()),
+			syncManager.isReady(),
+			...Array.from(collections.values()).map(({ persistenceInit }) => persistenceInit),
+			...Array.from(collections.values()).map(({ collection }) => collection.isReady()),
 		]);
 	},
-	upsertFile(item: { id: string; name: string; mixture: Mixture }) {
+	async syncAll() {
+		if (!browser) return; // Ensure this runs only in the browser
+		return await syncManager.syncAll();
+	},
+	async getMxData(id: string): Promise<UnifiedSerializationDataV2 | null> {
+		const mixturesCollection = getMixturesCollection();
+		if (!mixturesCollection) return null; // browser
+		const mx = mixturesCollection.findOne({ id });
+		if (!mx) return null; // Not found
+		const ingredientsCollection = getIngredientsCollection(id);
+		if (!ingredientsCollection) return null; // No ingredients collection for this ID
+		await ingredientsCollection.isReady();
+		const ingredients = getIngredientsCollection(id)?.find({}).fetch() || [];
+		return { mx, ingredients };
+	},
+	upsertMx(item: { id: string; name: string; mixture: Mixture }) {
 		const mixturesCollection = getMixturesCollection();
 		const ingredientsCollections = getIngredientsCollection(item.id);
 		if (!mixturesCollection || !ingredientsCollections) {
@@ -142,22 +150,54 @@ export const persistenceContext = {
 					continue;
 				}
 				// Upsert the ingredient
-				ingredientsCollections.replaceOne({ id: ingredient.id }, ingredient, { upsert: true });
+				ingredientsCollections.replaceOne(
+					{ id: ingredient.id },
+					{ ...ingredient },
+					{ upsert: true },
+				);
 			}
 		});
 		return data;
 	},
+	async removeMixture(id: string) {
+		const mixturesCollection = getMixturesCollection();
+		const existing = mixturesCollection?.findOne({ id });
+		if (!existing) return false; // Not found, can't remove
+		mixturesCollection?.removeOne({ id });
+
+		await fetch(ingredientsEndpoint(id), {
+			method: 'DELETE',
+		});
+
+		const indexedDbName = ingredientsIndexedDbName(id);
+		// Remove the IndexedDB for this mixture's ingredients
+		const request = indexedDB.deleteDatabase(indexedDbName);
+		return new Promise<boolean>((resolve) => {
+			request.onsuccess = () => {
+				collections.delete(`ingredients-${id}`); // Remove from our map
+				resolve(true); // Successfully removed
+			};
+			request.onerror = () => {
+				console.error(`Failed to delete IndexedDB for ingredients: ${indexedDbName}`);
+				resolve(false); // Failed to remove
+			};
+			request.onblocked = () => {
+				console.warn(`IndexedDB deletion for ingredients is blocked: ${indexedDbName}`);
+				resolve(false); // Blocked, can't remove
+			};
+		});
+	},
 	toggleStar(id: string) {
-		const starsCollection = getStarsCollection();
-		if (!starsCollection) return false; // browser
-		const existing = starsCollection.findOne({ id });
-		if (existing) {
-			starsCollection.removeOne({ id });
-			return false;
-		} else {
-			starsCollection.insert({ id });
-			return true;
-		}
+		const mixturesCollection = getMixturesCollection();
+		if (!mixturesCollection) return false; // browser
+		const existing = mixturesCollection.findOne({ id });
+		if (!existing) return false; // Not found, can't toggle star
+		const isStarred = existing.starred;
+		mixturesCollection.replaceOne(
+			{ id },
+			{ ...existing, starred: !isStarred }, // Toggle starred status
+		);
+		return !isStarred; // Return new starred status
 	},
 } as const;
 

@@ -13,11 +13,12 @@
 
 		const id = generateStorageId();
 		await persistenceContext.isReady();
-		await persistenceContext.upsertFile({
+		await persistenceContext.upsertMx({
 			id,
 			name,
 			mixture,
 		});
+		await persistenceContext.isReady();
 		goto(`/${id}/edit`, { replaceState: true });
 	});
 </script>

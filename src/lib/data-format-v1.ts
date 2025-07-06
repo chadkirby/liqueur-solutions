@@ -30,11 +30,13 @@ export const zFileDataV1 = z.strictObject({
 export type FileDataV1 = z.infer<typeof zFileDataV1>;
 
 export function v1ToV2(data: FileDataV1): { mx: FileDataV2; ingredients: IngredientItemData[] } {
-	const { ingredientDb, rootMixtureId, ...rest } = data;
+	const { ingredientDb, rootMixtureId, accessTime, _ingredientHash, ...rest } = data;
 	const mx: FileDataV2 = {
 		...rest,
+		updated: accessTime,
+		hash: _ingredientHash,
+		starred: false, // default to not starred
 		rootIngredientId: rootMixtureId,
-		version: 2,
 	};
 	const ingredients: IngredientItemData[] = ingredientDb.map(([id, item]) => {
 		if (isSubstanceItem(item)) {

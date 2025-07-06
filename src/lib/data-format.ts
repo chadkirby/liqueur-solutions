@@ -5,8 +5,6 @@ import { SimpleHash } from './simple-hash.js';
 import { z } from 'zod/v4-mini';
 import { isStorageId } from './storage-id.js';
 
-export const currentDataVersion = 2;
-
 const zStorageId = z.string().check(
 	z.refine(isStorageId, {
 		message: 'Invalid storage ID',
@@ -57,6 +55,12 @@ export const isSubstanceItem = (item: unknown): item is z.infer<typeof zSubstanc
 	return zSubstanceData.safeParse(item).success;
 };
 
+export const zMxMetaItem = z.strictObject({
+	id: zStorageId,
+	updated: z.iso.datetime(), // ISO date string
+	hash: z.string(),
+});
+
 export const zIngredientItem = z.union([
 	z.strictObject({
 		id: zStorageId,
@@ -70,13 +74,13 @@ export const zIngredientItem = z.union([
 export type IngredientItemData = z.infer<typeof zIngredientItem>;
 
 export const zFileDataV2 = z.strictObject({
-	version: z.literal(currentDataVersion),
 	id: zStorageId,
 	name: z.string(),
-	accessTime: z.iso.datetime(), // ISO date string
 	desc: z.string(), // denormalized mixture.describe() string
 	rootIngredientId: zStorageId, // pointer to the root mixture in the ingredientDb
-	_ingredientHash: z.string(),
+	updated: z.iso.datetime(), // ISO date string
+	hash: z.string(),
+	starred: z.boolean(), // starred status
 });
 
 // for writing to a single file/json object
@@ -87,18 +91,19 @@ export const zUnifiedSerializationDataV2 = z.object({
 
 export type UnifiedSerializationDataV2 = z.infer<typeof zUnifiedSerializationDataV2>;
 
-export function createFileDataV2(item: { id: string; name: string; mixture: Mixture }): FileDataV2 {
-	const accessTime = new Date().toISOString();
+export function createFileDataV2(
+	item: { id: string; name: string; mixture: Mixture },
+	ingredients = item.mixture.serialize(),
+): FileDataV2 {
 	const desc = item.mixture.describe();
-	const ingredients = item.mixture.serialize();
 	return {
-		version: currentDataVersion,
 		id: item.id,
 		name: item.name,
-		accessTime,
 		desc,
 		rootIngredientId: item.mixture.id,
-		_ingredientHash: getIngredientHash({ name: item.name, desc }, ingredients),
+		updated: new Date().toISOString(),
+		hash: getIngredientHash({ name: item.name, desc }, ingredients),
+		starred: false, // default to not starred
 	} as const;
 }
 

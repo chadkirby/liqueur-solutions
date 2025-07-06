@@ -12,7 +12,6 @@
 
 	import AuthButtons from './AuthButtons.svelte';
 	import { persistenceContext } from '$lib/persistence.js';
-	import { getContext } from 'svelte';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -37,14 +36,13 @@
 		}, 100);
 
 	let mxFile = $derived(persistenceContext.mixtureFiles?.findOne({ id: storeId }));
-	let isStarred = $derived(persistenceContext.stars?.findOne({ id: storeId }));
-
-	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?._ingredientHash);
+	let isStarred = $derived(mxFile?.starred ?? false);
+	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?.hash);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
 		if (isStarred && isDirty) {
-			persistenceContext.upsertFile({
+			persistenceContext.upsertMx({
 				id: storeId,
 				name: mixtureStore.name,
 				mixture: mixtureStore.mixture,

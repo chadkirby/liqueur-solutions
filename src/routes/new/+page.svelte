@@ -24,7 +24,7 @@
 
 		await persistenceContext.isReady();
 
-		persistenceContext.upsertFile({
+		persistenceContext.upsertMx({
 			id,
 			name,
 			mixture,
