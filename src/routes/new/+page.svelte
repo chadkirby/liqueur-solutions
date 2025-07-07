@@ -28,6 +28,7 @@
 			id,
 			name,
 			mixture,
+			starred: false,
 		});
 		goto(`/${id}/edit`, { replaceState: true });
 	});

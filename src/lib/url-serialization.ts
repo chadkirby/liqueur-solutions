@@ -20,7 +20,7 @@ export function serializeToUrl(
 	pathname: '' | '/edit' = '',
 ): URL {
 	const data: UnifiedSerializationDataV2 = {
-		mx: createFileDataV2({ id: generateStorageId(), name, mixture }),
+		mx: createFileDataV2({ id: generateStorageId(), name, mixture, starred: false }),
 		ingredients: mixture.serialize(),
 	};
 	const buf = strToU8(JSON.stringify(data), true);

@@ -92,14 +92,13 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-			const resp = await fetch(`/api/mixtures/${id}`);
-			if (!resp.ok) {
-				console.error('Failed to load mixture', await resp.text());
+			const data = await persistenceContext.getExportData(id);
+			if (!data) {
+				console.error('Failed to load mixture data for', id);
 				return;
 			}
 			try {
-				const mxData = deserialize(await resp.json());
-				const mixture = Mixture.deserialize(mxData.mx.rootIngredientId, mxData.ingredients);
+				const mixture = Mixture.deserialize(data.mx.rootIngredientId, data.ingredients);
 				if (mixture && mixture.isValid) {
 					mixtureStore.addIngredientTo(filesDrawer.parentId, {
 						name,
@@ -137,7 +136,7 @@
 		const hash = getIngredientHash(mx, ingredients);
 		if (persistenceContext.mixtureFiles.findOne({ hash })) return;
 		const mixture = Mixture.deserialize(mx.rootIngredientId, ingredients);
-		await persistenceContext.upsertMx({ id: mx.id, name: mx.name, mixture }, {starred: true});
+		await persistenceContext.upsertMx({ id: mx.id, name: mx.name, mixture, starred: true });
 	}
 
 	$effect(() => {

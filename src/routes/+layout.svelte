@@ -10,7 +10,6 @@
 	import '../app.postcss';
 	import type { UserResource } from '@clerk/types';
 	import { CLERK_CONTEXT_KEY, type ClerkContext } from '$lib/contexts.js';
-	import { syncManager } from '$lib/sync-manager.js';
 	// Create two stores: one for the Clerk instance, one for the current user.
 	const clerkInstance = writable<Clerk | null>(null);
 	const clerkUser = writable<UserResource | null>(null);
@@ -42,9 +41,9 @@
 				clerkUser.set(user ?? null);
 				if (user) {
 					console.log('User signed in:', user.id);
-					syncManager.startAll();
+					persistenceContext.startSync();
 				} else {
-					syncManager.pauseAll();
+					persistenceContext.stopSync();
 				}
 			});
 		});
@@ -68,7 +67,7 @@
 			if (unsubscribeFromClerk) {
 				unsubscribeFromClerk();
 			}
-			syncManager.dispose();
+			persistenceContext.dispose();
 		};
 	});
 </script>

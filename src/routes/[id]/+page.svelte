@@ -17,6 +17,7 @@
 			id,
 			name,
 			mixture,
+			starred: false,
 		});
 		await persistenceContext.isReady();
 		goto(`/${id}/edit`, { replaceState: true });

@@ -35,9 +35,13 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let mxFile = $derived(persistenceContext.mixtureFiles?.findOne({ id: storeId }));
-	let isStarred = $derived(mxFile?.starred ?? false);
-	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?.hash);
+	let isStarred = $derived(
+		persistenceContext.mixtureFiles?.findOne({ id: storeId }, { fields: { starred: 1 } })
+			?.starred ?? false,
+	);
+	let isDirty = $derived(
+		persistenceContext.mixtureFiles?.findOne({ id: storeId }, { fields: { hash: 1 } })?.hash === mixtureStore.ingredientHash,
+	);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
@@ -46,6 +50,7 @@
 				id: storeId,
 				name: mixtureStore.name,
 				mixture: mixtureStore.mixture,
+				starred: true,
 			});
 		} else {
 			persistenceContext.toggleStar(storeId);

@@ -38,3 +38,28 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	}
 	return json(parsed.data);
 };
+
+export const DELETE: RequestHandler = async ({ params, request, platform, locals }) => {
+	const mxId = params.mxId;
+	if (!mxId) {
+		throw error(400, 'Missing mxId');
+	}
+	if (!platform) {
+		throw error(500, 'D1 not available in development mode');
+	}
+	const d1 = getDB(platform);
+	const userId = locals.userId; // Populated by Clerk middleware
+
+	if (!userId) {
+		throw error(401, 'Unauthorized');
+	}
+
+	try {
+		const stmt = d1.prepare('DELETE FROM ingredients WHERE userid = ? AND mx_id = ?');
+		await stmt.bind(userId, mxId).run();
+		return json({ ok: true });
+	} catch (err: any) {
+		console.error(`[DELETE] Error processing ingredient:`, err.message, err);
+		throw error(500, `Failed to process DELETE: ${err.message}`);
+	}
+};

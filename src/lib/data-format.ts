@@ -86,7 +86,7 @@ export const zUnifiedSerializationDataV2 = z.object({
 export type UnifiedSerializationDataV2 = z.infer<typeof zUnifiedSerializationDataV2>;
 
 export function createFileDataV2(
-	item: { id: string; name: string; mixture: Mixture },
+	item: { id: string; name: string; mixture: Mixture; starred: boolean },
 	ingredients = item.mixture.serialize(),
 ): FileDataV2 {
 	const desc = item.mixture.describe();
@@ -97,7 +97,7 @@ export function createFileDataV2(
 		rootIngredientId: item.mixture.id,
 		updated: new Date().toISOString(),
 		hash: getIngredientHash({ name: item.name, desc }, ingredients),
-		starred: false, // default to not starred
+		starred: item.starred,
 	} as const;
 }
 

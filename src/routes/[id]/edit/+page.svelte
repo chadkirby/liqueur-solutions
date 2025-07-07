@@ -11,16 +11,15 @@
 	import { getIngredientHash } from '$lib/data-format.js';
 	import { MIXTURE_STORE_CONTEXT_KEY, type MixtureStoreContext } from '$lib/contexts.js';
 
-	let error = $state<string | null>(null);
 	// UI state
 	let mixtureName = $state<string>('');
 	let unsubscribeMixture: (() => void) | null = null;
 
-	const mixtureStore = $derived.by(() => {
+	const mixtureStoreOrErr: MixtureStore | { error: string } = $derived.by(() => {
 		const mxId = page.params.id;
 		const mxData = persistenceContext.mixtureFiles?.findOne({ id: mxId });
 		const ingredients = persistenceContext.getIngredientsCollection(mxId)?.find({}).fetch() ?? [];
-		if (!mxData) return null;
+		if (!mxData) return {error: `Mixture with ID ${mxId} not found`};
 		try {
 			return untrack(() => {
 				const { name, desc, rootIngredientId: rootMixtureId } = mxData;
@@ -31,7 +30,7 @@
 					name,
 					mixture,
 					totals: getTotals(mixture),
-					ingredientHash: getIngredientHash({name, desc}, ingredients),
+					ingredientHash: getIngredientHash({ name, desc }, ingredients),
 				});
 				setContext<MixtureStoreContext>(MIXTURE_STORE_CONTEXT_KEY, store);
 				console.log('Initialized mixture store for ID', mxId, store);
@@ -40,18 +39,19 @@
 						id: upd.storeId,
 						name: upd.name,
 						mixture: upd.mixture,
+						starred: mxData.starred,
 					});
 				});
 				return store;
 			});
-		} catch (err) {
-			console.error('Error initializing mixture store:', err);
-			error = (err as Error).message;
-			return null;
+		} catch (error) {
+			console.error('Error initializing mixture store:', error);
+			return { error: error instanceof Error ? error.message : 'Unknown error' };
 		}
 	});
+	const mixtureStore = $derived('error' in mixtureStoreOrErr ? null : mixtureStoreOrErr);
+	const error = $derived('error' in mixtureStoreOrErr ? mixtureStoreOrErr.error : null);
 
-	$inspect(mixtureStore?.name, page.params.id, mixtureStore?.mixture.id);
 	onDestroy(() => {
 		unsubscribeMixture?.();
 	});
@@ -70,12 +70,5 @@
 	{:else if mixtureStore}
 		<MixtureList {mixtureStore} />
 		<BottomNav {mixtureStore} />
-	{:else}
-		<div class="p-4 text-gray-500">
-			Mixture data could not be initialized. (ID: {page.params.id})
-		</div>
-		<div class="p-4">
-			<a href="/new" class="text-blue-600 hover:underline">Create a new mixture</a>
-		</div>
 	{/if}
 </div>
