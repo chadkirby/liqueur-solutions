@@ -1,14 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readResponseBody } from '$lib/test-utils.js';
 
-let mockBucket: any = {};
+let mockDB: any = {};
 
-vi.mock('$lib/r2.js', () => ({
-  getR2Bucket: () => mockBucket,
-}));
-
-vi.mock('./r2-mx-utils', () => ({
-  readMixtureObject: vi.fn(),
+vi.mock('$lib/cf-bindings.js', () => ({
+  getDB: () => mockDB,
 }));
 
 import { GET } from './+server.js';
@@ -16,19 +12,21 @@ import { GET } from './+server.js';
 describe('GET /api/mixtures', () => {
   let platform: any;
   let locals: any;
-  let mockReadMixtureObject: any;
+  let mockPreparedStatement: any;
+  let mockBoundStatement: any;
 
-  beforeEach(async () => {
-    mockBucket = {
-      list: vi.fn(),
+  beforeEach(() => {
+    mockBoundStatement = {
+      all: vi.fn(),
+    };
+    mockPreparedStatement = {
+      bind: vi.fn().mockReturnValue(mockBoundStatement),
+    };
+    mockDB = {
+      prepare: vi.fn().mockReturnValue(mockPreparedStatement),
     };
     platform = { some: 'platform' };
     locals = { userId: 'user123' };
-
-    // Get the mocked function
-    const { readMixtureObject } = await import('../api-utils.js');
-    mockReadMixtureObject = readMixtureObject as any;
-    mockReadMixtureObject.mockReset();
   });
 
   it('returns 401 if unauthenticated', async () => {
@@ -42,13 +40,33 @@ describe('GET /api/mixtures', () => {
   });
 
   it('returns 200 and array of files for authenticated user', async () => {
-    // Setup mocks
-    mockBucket.list.mockResolvedValueOnce({
-      objects: [{ key: 'files/user123/file1' }, { key: 'files/user123/file2' }],
-      truncated: false,
+    // Setup mocks - simulate D1 query results
+    const mockResults = [
+      {
+        userid: 'user123',
+        id: 'file1',
+        name: 'Test Mixture 1',
+        desc: 'Description 1',
+        rootIngredientId: 'root1',
+        updated: '2023-01-01T00:00:00.000Z',
+        hash: 'hash1',
+        starred: false,
+      },
+      {
+        userid: 'user123',
+        id: 'file2',
+        name: 'Test Mixture 2',
+        desc: 'Description 2',
+        rootIngredientId: 'root2',
+        updated: '2023-01-02T00:00:00.000Z',
+        hash: 'hash2',
+        starred: true,
+      },
+    ];
+    mockBoundStatement.all.mockResolvedValueOnce({
+      results: mockResults,
+      success: true,
     });
-    const mockFileData = { success: true, data: { id: 'file1' } };
-    mockReadMixtureObject.mockResolvedValue(mockFileData);
 
     const event = { platform, locals } as any;
     const response = await GET(event);
@@ -56,27 +74,45 @@ describe('GET /api/mixtures', () => {
 
     const bodyData = await readResponseBody(response.body!);
     expect(Array.isArray(bodyData)).toBe(true);
+    expect(bodyData).toHaveLength(2);
   });
 
-  it('skips invalid or 404 objects', async () => {
-    mockBucket.list.mockResolvedValueOnce({
-      objects: [{ key: 'files/user123/file1' }, { key: 'files/user123/file2' }],
-      truncated: false,
+  it('skips invalid data and returns valid mixtures', async () => {
+    // Setup mocks - simulate D1 query results with invalid data
+    const mockResults = [
+      {
+        userid: 'user123',
+        id: 'file1',
+        name: 'Valid Mixture',
+        desc: 'Description',
+        rootIngredientId: 'root1',
+        updated: '2023-01-01T00:00:00.000Z',
+        hash: 'hash1',
+        starred: false,
+      },
+      {
+        userid: 'user123',
+        id: 'file2',
+        // Missing required fields - will be invalid
+        starred: false,
+      },
+    ];
+    mockBoundStatement.all.mockResolvedValueOnce({
+      results: mockResults,
+      success: true,
     });
-    mockReadMixtureObject
-      .mockResolvedValueOnce(404)
-      .mockResolvedValueOnce({ success: false, error: { issues: [] } });
 
     const event = { platform, locals } as any;
     const response = await GET(event);
     expect(response.status).toBe(200);
 
     const bodyData = await readResponseBody(response.body!);
-    expect(bodyData).toEqual([]);
+    expect(Array.isArray(bodyData)).toBe(true);
+    expect(bodyData).toHaveLength(1); // Only the valid mixture
   });
 
-  it('returns 500 on R2 error', async () => {
-    mockBucket.list.mockRejectedValueOnce(new Error('R2 failure'));
+  it('returns 500 on database error', async () => {
+    mockBoundStatement.all.mockRejectedValueOnce(new Error('Database failure'));
     const event = { platform, locals } as any;
     await expect(GET(event)).rejects.toHaveProperty('status', 500);
   });
