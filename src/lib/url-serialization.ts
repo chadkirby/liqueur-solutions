@@ -1,10 +1,11 @@
 import { Mixture } from '$lib/mixture.js';
-import { strToU8, strFromU8, compressSync } from 'fflate';
+import { compressSync } from 'fflate';
 import * as fflate from 'fflate';
 import {
 	createFileDataV2,
 	isV0Data,
 	zUnifiedSerializationDataV2,
+	type StoredFileDataV0,
 	type UnifiedSerializationDataV2,
 } from '$lib/data-format.js';
 import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
@@ -14,27 +15,22 @@ import { generateStorageId } from './storage-id.js';
 /**
  * Serializes a mixture into a compressed URL-safe string.
  */
-export function serializeToUrl(
-	name = 'mixture',
-	mixture: Mixture,
-	pathname: '' | '/edit' = '',
-): URL {
+export function serializeToUrl(name = 'mixture', mixture: Mixture): URL {
 	const data: UnifiedSerializationDataV2 = {
 		mx: createFileDataV2({ id: generateStorageId(), name, mixture, starred: false }),
 		ingredients: mixture.serialize(),
 	};
-	const buf = strToU8(JSON.stringify(data), true);
+	const jsonString = JSON.stringify(data);
+	const encoder = new TextEncoder();
+	const buf = encoder.encode(jsonString);
 	const compressed = compressSync(buf);
-	const gz = btoa(strFromU8(compressed, true));
+	const gz = btoa(String.fromCharCode(...compressed));
 
 	const params = new URLSearchParams();
 	params.set('gz', gz);
-	if (name) {
-		params.set('name', name);
-	}
 
 	const url = new URL(window.location.origin);
-	url.pathname = pathname;
+	url.pathname = encodeURIComponent(name);
 	url.search = params.toString();
 
 	return url;
@@ -43,12 +39,15 @@ export function serializeToUrl(
 /**
  * Deserializes a mixture from a URL-safe string.
  */
-export function deserializeFromUrl(qs: string | URLSearchParams): {
+export function deserializeFromUrl(
+	qs: string | URLSearchParams,
+	name = '',
+): {
 	name: string;
 	mixture: Mixture;
 } {
 	const params = typeof qs === 'string' ? new URLSearchParams(qs) : qs;
-	const name = params.get('name') || '';
+	name = name || params.get('name') || '';
 	const { mx, ingredients } = decompress(params, name);
 	const mixture = Mixture.deserialize(mx.rootIngredientId, ingredients);
 	return { name, mixture };
@@ -62,8 +61,11 @@ export function decompress(qs: URLSearchParams, name: string) {
 	if (!gz) {
 		throw new Error('No compressed data found');
 	}
-	const buf = fflate.decompressSync(fflate.strToU8(atob(gz), true));
-	const data = JSON.parse(fflate.strFromU8(buf, true));
+	const compressedBytes = Uint8Array.from(atob(gz), (c) => c.charCodeAt(0));
+	const buf = fflate.decompressSync(compressedBytes);
+	const decoder = new TextDecoder();
+	const jsonString = decoder.decode(buf);
+	const data = JSON.parse(jsonString);
 	return deserialize(data);
 }
 
@@ -100,6 +102,14 @@ export function deserialize(data: unknown): UnifiedSerializationDataV2 {
 
 	if (isV0Data(data)) {
 		const v1Data = portV0DataToV1(data);
+		const v2Data = v1ToV2(v1Data);
+		return {
+			mx: v2Data.mx,
+			ingredients: v2Data.ingredients,
+		};
+	}
+	if (isV0Data({ mixture: { data } })) {
+		const v1Data = portV0DataToV1({ mixture: { data } } as StoredFileDataV0);
 		const v2Data = v1ToV2(v1Data);
 		return {
 			mx: v2Data.mx,

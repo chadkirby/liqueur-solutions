@@ -38,7 +38,7 @@ export function v1ToV2(data: FileDataV1): { mx: FileDataV2; ingredients: Ingredi
 		starred: false, // default to not starred
 		rootIngredientId: rootMixtureId,
 	};
-	const ingredients: IngredientItemData[] = ingredientDb.map(([id, item]) => {
+	const ingredients: IngredientItemData[] = ingredientDb.flatMap(([id, item]) => {
 		if (isSubstanceItem(item)) {
 			return { id, item: item as SubstanceData };
 		}

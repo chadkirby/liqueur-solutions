@@ -14,7 +14,7 @@ export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>)
 		desc: data.desc || mixture.describe(),
 		rootMixtureId: mixture.id,
 		ingredientDb: v1Serialize(mixture),
-		_ingredientHash: mixture.getIngredientHash(data.mixture.name),
+		_ingredientHash: mixture.getIngredientHash(data.mixture.name || ''),
 	};
 }
 
@@ -22,19 +22,15 @@ function v1Serialize(mx: Mixture): IngredientDbEntry[] {
 	// @ts-expect-error _ingredientList is private, but we need it for serialization
 	const ingredientList = mx._ingredientList;
 	const rootData = [mx.id, v1SerializeMxData(mx.id, ingredientList)] as const;
-	const ingredientData: IngredientDbEntry[] = ingredientList.flatMap(
-		// @ts-expect-error types are effed
-		({ id, item }) => {
-			if (item instanceof Mixture) {
-				// @ts-expect-error _ingredientList is private, but we need it for serialization
-				return [[id, v1SerializeMxData(item.id, item._ingredientList)], ...item.serialize()];
-			}
-			if (item instanceof SubstanceComponent) {
-				return [[id, item.serializeSubstanceData()]];
-			}
-			throw new Error('Invalid ingredient');
-		},
-	);
+	const ingredientData: IngredientDbEntry[] = ingredientList.flatMap(({ id, item }) => {
+		if (item instanceof Mixture) {
+			return v1Serialize(item);
+		}
+		if (item instanceof SubstanceComponent) {
+			return [[id, item.serializeSubstanceData()]];
+		}
+		throw new Error('Invalid ingredient');
+	});
 	return [[...rootData], ...ingredientData];
 }
 

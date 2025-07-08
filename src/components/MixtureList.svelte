@@ -2,7 +2,7 @@
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
-	import { StarOutline, StarSolid, StarHalfStrokeSolid } from 'flowbite-svelte-icons';
+	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import type { ChangeEventHandler } from 'svelte/elements';
@@ -39,22 +39,10 @@
 		persistenceContext.mixtureFiles?.findOne({ id: storeId }, { fields: { starred: 1 } })
 			?.starred ?? false,
 	);
-	let isDirty = $derived(
-		persistenceContext.mixtureFiles?.findOne({ id: storeId }, { fields: { hash: 1 } })?.hash === mixtureStore.ingredientHash,
-	);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
-		if (isStarred && isDirty) {
-			persistenceContext.upsertMx({
-				id: storeId,
-				name: mixtureStore.name,
-				mixture: mixtureStore.mixture,
-				starred: true,
-			});
-		} else {
-			persistenceContext.toggleStar(storeId);
-		}
+		persistenceContext.toggleStar(storeId);
 	}
 </script>
 
@@ -68,12 +56,7 @@
 			"
 	>
 		<Button onclick={handleStar}>
-			{#if isStarred && isDirty}
-				<Tooltip color="default" offset={6} triggeredBy="#dirty-star">
-					This mixture has unsaved changes
-				</Tooltip>
-				<StarHalfStrokeSolid id="dirty-star" />
-			{:else if isStarred}
+			{#if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved
 				</Tooltip>

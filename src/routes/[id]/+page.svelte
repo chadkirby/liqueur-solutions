@@ -8,7 +8,8 @@
 
 
 	onMount(async () => {
-		const { mixture, name } = deserializeFromUrl(page.url.searchParams);
+		const pathname = decodeURIComponent(page.url.pathname.split('/').pop() || '');
+		const { mixture, name } = deserializeFromUrl(page.url.searchParams, pathname);
 		if (!mixture.isValid) throw new Error("Can't load invalid mixture");
 
 		const id = generateStorageId();

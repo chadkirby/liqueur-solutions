@@ -20,6 +20,7 @@ export const zMixtureList = z.strictObject({
 });
 
 export const zMixtureData = z.strictObject({
+	id: z.optional(zStorageId),
 	// ids, and other data for this sub-mixture's ingredients
 	ingredients: z.array(zIngredientMeta),
 });
