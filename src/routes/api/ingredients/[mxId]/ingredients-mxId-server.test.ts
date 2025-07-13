@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readResponseBody } from '$lib/test-utils.js';
-import { zIngredientItem } from '$lib/data-format.js';
 
 import * as server from './+server.js';
 

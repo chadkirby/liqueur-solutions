@@ -24,6 +24,7 @@ export const zMixtureData = z.strictObject({
 	// ids, and other data for this sub-mixture's ingredients
 	ingredients: z.array(zIngredientMeta),
 });
+
 export type MixtureData = z.infer<typeof zMixtureData>;
 
 export const isMixtureItem = (item: unknown): item is MixtureData => {
