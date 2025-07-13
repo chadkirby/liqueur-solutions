@@ -17,7 +17,7 @@ import {
 	type DecoratedIngredient,
 	type DecoratedSubstance,
 	type EditableProperty,
-	type IngredientItem,
+	type InMemoryIngredientItem,
 	type IngredientToAdd,
 	type InMemoryIngredient,
 	type MixtureAnalysis,
@@ -26,7 +26,7 @@ import {
 	getIngredientHash,
 	isMixtureData,
 	isSubstanceData,
-	type IngredientDbEntry,
+	type IngredientItemData,
 	type MixtureData,
 } from './data-format.js';
 
@@ -46,15 +46,15 @@ export type MappedSubstance = {
 };
 
 export class Mixture implements CommonComponent {
-	static deserialize(rootMixtureId: string, ingredientData: IngredientDbEntry[]) {
+	static deserialize(rootMixtureId: string, ingredientData: IngredientItemData[]) {
 		const ingredients: Array<InMemoryIngredient> = [];
 
-		const db = new Map(ingredientData);
+		const db = new Map(ingredientData.map(({ id, item }) => [id, item]));
 		const mixtureData = db.get(rootMixtureId);
 		if (!mixtureData || !isMixtureData(mixtureData)) {
 			throw new Error(`Mixture ${rootMixtureId} not found in ingredientDb`);
 		}
-		for (const { id, mass, name, notes } of mixtureData.ingredients) {
+		for (const { id, mass, name } of mixtureData.ingredients) {
 			const data = db.get(id);
 			if (!data) {
 				throw new Error(`Ingredient ${id} not found in ingredientDb`);
@@ -69,10 +69,9 @@ export class Mixture implements CommonComponent {
 				mass,
 				name,
 				item,
-				notes,
 			});
 		}
-		return new Mixture(mixtureData.id, ingredients);
+		return new Mixture(rootMixtureId, ingredients);
 	}
 
 	constructor(
@@ -94,7 +93,7 @@ export class Mixture implements CommonComponent {
 	}
 
 	getIngredientHash(name: string) {
-		return getIngredientHash({ name, desc: this.describe(), ingredientDb: this.serialize() });
+		return getIngredientHash({ name, desc: this.describe() }, this.serialize());
 	}
 
 	getIngredient(id: string) {
@@ -103,7 +102,7 @@ export class Mixture implements CommonComponent {
 
 	clone(): this {
 		const data = this.serialize();
-		return Mixture.deserialize(data[0][0], data) as this;
+		return Mixture.deserialize(data[0].id, data) as this;
 	}
 
 	/**
@@ -125,33 +124,28 @@ export class Mixture implements CommonComponent {
 		return this;
 	}
 
-	/**
-	 * Get data in a format compatible with storage (ReadonlyJSONValue)
-	 */
-	private serializeMixtureData(): MixtureData {
-		return {
-			id: this.id,
-			ingredients: this._ingredientList.map(({ id, mass, name, notes }) => ({
-				id,
-				mass,
-				name,
-				notes,
-			})),
-		} as const;
-	}
-
-	serialize(): IngredientDbEntry[] {
-		const rootData = [this.id, this.serializeMixtureData()] as const;
-		const ingredientData: IngredientDbEntry[] = this._ingredientList.flatMap(({ id, item }) => {
-			if (item instanceof Mixture) {
-				return [[id, item.serializeMixtureData()], ...item.serialize()];
-			}
-			if (item instanceof SubstanceComponent) {
-				return [[id, item.serializeSubstanceData()]];
-			}
-			throw new Error('Invalid ingredient');
-		});
-		return [[...rootData], ...ingredientData];
+	serialize(): IngredientItemData[] {
+		return [
+			{
+				id: this.id,
+				item: {
+					ingredients: this._ingredientList.map(({ id, mass, name }) => ({
+						id,
+						mass,
+						name,
+					})),
+				},
+			},
+			...this._ingredientList.flatMap(({ id, item }) => {
+				if (item instanceof Mixture) {
+					return item.serialize();
+				}
+				if (item instanceof SubstanceComponent) {
+					return { id, item: item.serializeSubstanceData() };
+				}
+				throw new Error('Invalid ingredient');
+			}),
+		];
 	}
 
 	analyze(precision = 0): MixtureAnalysis {
@@ -204,7 +198,6 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
-			notes: ingredient.notes,
 		};
 		this._ingredientList.push(ingredientItem);
 		return this;
@@ -238,14 +231,13 @@ export class Mixture implements CommonComponent {
 			name: ingredient.name,
 			item: ingredient.item,
 			mass: ingredient.mass,
-			notes: ingredient.notes,
 		};
 		this._ingredientList.splice(index, 1, newIngredient);
 
 		return true;
 	}
 
-	replaceIngredientComponent(id: string, item: IngredientItem) {
+	replaceIngredientComponent(id: string, item: InMemoryIngredientItem) {
 		const ingredient = this.getIngredient(id)!;
 		if (ingredient) {
 			ingredient.item = item;
@@ -430,6 +422,8 @@ export class Mixture implements CommonComponent {
 		for (const { ingredient } of this.eachIngredient()) {
 			if (ingredient.item instanceof Mixture) {
 				ingredient.item.updateIds();
+			} else {
+				ingredient.id = `${getIdPrefix(ingredient.id) ?? ''}${componentId()}`;
 			}
 		}
 		return this;
@@ -782,8 +776,8 @@ export function isSubstance(thing: unknown): thing is SubstanceComponent {
 }
 
 export function isSpirit(thing: Mixture): boolean;
-export function isSpirit(thing: IngredientItem): thing is Mixture;
-export function isSpirit(thing: IngredientItem) {
+export function isSpirit(thing: InMemoryIngredientItem): thing is Mixture;
+export function isSpirit(thing: InMemoryIngredientItem) {
 	return (
 		thing instanceof Mixture &&
 		thing.size > 0 &&
@@ -796,10 +790,10 @@ export function isSpirit(thing: IngredientItem) {
 export function isSweetenerMixture(mx: Mixture) {
 	return mx.size > 0 && mx.eachSubstance().every((x) => isSweetenerId(x.substanceId));
 }
-export function isSweetenerSubstance(thing: IngredientItem): thing is SubstanceComponent {
+export function isSweetenerSubstance(thing: InMemoryIngredientItem): thing is SubstanceComponent {
 	return isSubstance(thing) && isSweetenerId(thing.substanceId);
 }
-export function isSweetener(thing: IngredientItem) {
+export function isSweetener(thing: InMemoryIngredientItem) {
 	if (isMixture(thing)) return isSweetenerMixture(thing);
 	return isSweetenerSubstance(thing);
 }
@@ -822,7 +816,7 @@ export function isWaterSubstance(substance: SubstanceComponent) {
 export function isWaterMixture(mx: Mixture) {
 	return mx.size > 0 && mx.eachSubstance().every((x) => isWaterSubstance(x.item));
 }
-export function isWater(thing: IngredientItem) {
+export function isWater(thing: InMemoryIngredientItem) {
 	if (isMixture(thing)) return isWaterMixture(thing);
 	return isWaterSubstance(thing);
 }

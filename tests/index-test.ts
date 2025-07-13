@@ -173,7 +173,7 @@ test('can open a copy of a mixture and edits are isolated', async ({ page }) => 
 
 	// Get initial storeId from URL and spirit volume
 	const initialUrl = page.url();
-	const initialStoreId = initialUrl.split('/').pop()!;
+	const initialStoreId = initialUrl.split('/').at(-2)!;
 	await page.getByRole('button', { name: 'Spirit' }).click();
 	const spiritVolumeInput = page
 		.getByRole('button', { name: 'Spirit' })
@@ -199,7 +199,7 @@ test('can open a copy of a mixture and edits are isolated', async ({ page }) => 
 
 	// Verify storeId has changed by checking the URL
 	const copiedUrl = page.url();
-	const copiedStoreId = copiedUrl.split('/').pop()!;
+	const copiedStoreId = copiedUrl.split('/').at(-2)!;
 	expect(copiedStoreId, 'Store ID in URL should change for a copy').not.toBe(initialStoreId);
 
 	// Verify spirit volume is the same in the copy initially
@@ -232,7 +232,7 @@ test('can open a copy of a mixture and edits are isolated', async ({ page }) => 
 
 	// Verify storeId is the original one by checking the URL
 	const currentUrlAfterBack = page.url();
-	const currentStoreIdAfterBack = currentUrlAfterBack.split('/').pop()!;
+	const currentStoreIdAfterBack = currentUrlAfterBack.split('/').at(-2)!;
 	expect(
 		currentStoreIdAfterBack,
 		'Store ID in URL should revert to original after navigating back',

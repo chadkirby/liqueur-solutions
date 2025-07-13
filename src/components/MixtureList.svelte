@@ -2,7 +2,7 @@
 	import { accordionitem, Tooltip } from 'svelte-5-ui-lib';
 	import Button from './ui-primitives/Button.svelte';
 	import Helper from './ui-primitives/Helper.svelte';
-	import { StarOutline, StarSolid, StarHalfStrokeSolid } from 'flowbite-svelte-icons';
+	import { StarOutline, StarSolid } from 'flowbite-svelte-icons';
 	import debounce from 'lodash.debounce';
 
 	import type { ChangeEventHandler } from 'svelte/elements';
@@ -11,9 +11,7 @@
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
 
 	import AuthButtons from './AuthButtons.svelte';
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
-	import { getContext } from 'svelte';
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
+	import { persistenceContext } from '$lib/persistence.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
@@ -37,22 +35,14 @@
 			mixtureStore.setName(newName);
 		}, 100);
 
-	let mxFile = $derived(persistenceContext.mixtureFiles?.findOne({ id: storeId }));
-	let isStarred = $derived(persistenceContext.stars?.findOne({ id: storeId }));
-
-	let isDirty = $derived(mixtureStore.ingredientHash !== mxFile?._ingredientHash);
+	let isStarred = $derived(
+		persistenceContext.mixtureFiles?.findOne({ id: storeId }, { fields: { starred: 1 } })
+			?.starred ?? false,
+	);
 
 	async function handleStar(event?: Event) {
 		event?.preventDefault();
-		if (isStarred && isDirty) {
-			persistenceContext.upsertFile({
-				id: storeId,
-				name: mixtureStore.name,
-				mixture: mixtureStore.mixture,
-			});
-		} else {
-			persistenceContext.toggleStar(storeId);
-		}
+		persistenceContext.toggleStar(storeId);
 	}
 </script>
 
@@ -66,12 +56,7 @@
 			"
 	>
 		<Button onclick={handleStar}>
-			{#if isStarred && isDirty}
-				<Tooltip color="default" offset={6} triggeredBy="#dirty-star">
-					This mixture has unsaved changes
-				</Tooltip>
-				<StarHalfStrokeSolid id="dirty-star" />
-			{:else if isStarred}
+			{#if isStarred}
 				<Tooltip color="default" offset={6} triggeredBy="#saved-star">
 					This mixture is saved
 				</Tooltip>

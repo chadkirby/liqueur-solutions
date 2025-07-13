@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { MixtureStore } from '$lib/mixture-store.svelte.js';
-	import type { IngredientItem } from '$lib/mixture-types.js';
+	import type { InMemoryIngredientItem } from '$lib/mixture-types.js';
 	import { sweetenerIds, type SweetenerType } from '$lib/ingredients/substances.js';
 	import Dropdown from './Dropdown.svelte';
 
 	interface Props {
 		componentId: string;
-		component: IngredientItem;
+		component: InMemoryIngredientItem;
 		mixtureStore: MixtureStore;
 		class?: string;
 		basis?: string;

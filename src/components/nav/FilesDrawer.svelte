@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Drawer, Drawerhead, Fileupload, Li, Tooltip } from 'svelte-5-ui-lib';
+	import { Drawer, Drawerhead, Fileupload, Tooltip } from 'svelte-5-ui-lib';
 	import {
 		CloseCircleSolid,
 		ListOutline,
@@ -14,36 +14,29 @@
 	import { openFile, openFileInNewTab } from '$lib/open-file.js';
 	import { type MixtureStore } from '$lib/mixture-store.svelte.js';
 	import Button from '../ui-primitives/Button.svelte';
-	import { isV0Data, isV1Data, zFileDataV1, type FileDataV1 } from '$lib/data-format.js';
+	import { getIngredientHash, type UnifiedSerializationDataV2 } from '$lib/data-format.js';
 	import Helper from '../ui-primitives/Helper.svelte';
-	import { portV0DataToV1 } from '$lib/migrations/v0-v1.js';
-	import { deserializeFromUrl } from '$lib/url-serialization.js';
-	import { componentId, Mixture } from '$lib/mixture.js';
+	import { decompress, deserialize } from '$lib/url-serialization.js';
+	import { Mixture } from '$lib/mixture.js';
 	import { resolveRelativeUrl } from '$lib/utils.js';
-	import { SvelteSet } from 'svelte/reactivity';
 
-	import { PERSISTENCE_CONTEXT_KEY, type PersistenceContext } from '$lib/contexts.js';
-	import { getContext } from 'svelte';
-	const persistenceContext = getContext<PersistenceContext>(PERSISTENCE_CONTEXT_KEY);
+	import { persistenceContext } from '$lib/persistence.js';
 
 	interface Props {
 		mixtureStore: MixtureStore;
 	}
 
-	const starredIds = $derived(
-		new SvelteSet(persistenceContext.stars?.find({}).map((s) => s.id) || []),
+	const tempFiles = $derived(
+		persistenceContext.mixtureFiles?.find({ starred: false }, { sort: { accessTime: -1 } }).fetch(),
 	);
-
-	const mixtureFiles = $derived(
-		persistenceContext.mixtureFiles?.find({}, { sort: { accessTime: -1 } }).fetch(),
+	const starredFiles = $derived(
+		persistenceContext.mixtureFiles?.find({ starred: true }, { sort: { accessTime: -1 } }).fetch(),
 	);
-
-	const tempFiles = $derived(mixtureFiles?.filter((f) => !starredIds.has(f.id)));
-	const starredFiles = $derived(mixtureFiles?.filter((f) => starredIds.has(f.id)));
 
 	const { mixtureStore }: Props = $props();
 
-	let showTempFiles = $state(false);
+	/* svelte-ignore state_referenced_locally */
+	let showTempFiles = $state(starredFiles?.length === 0);
 	const files = $derived([
 		...(starredFiles ? starredFiles : []),
 		...(showTempFiles && tempFiles ? tempFiles : []),
@@ -54,8 +47,7 @@
 
 	async function removeItem(key: string) {
 		const id = toStorageId(key);
-		persistenceContext.mixtureFiles?.removeOne({ id });
-		persistenceContext.stars?.removeOne({ id });
+		await persistenceContext.removeMixture(id);
 	}
 
 	function domIdFor(key: string, id: StorageId) {
@@ -100,31 +92,33 @@
 	function addToMixture(id: StorageId, name: string) {
 		return async () => {
 			filesDrawer.close();
-					const resp = await fetch(`/api/mixtures/${id}`);
-			if (!resp.ok) {
-				console.error('Failed to load mixture', await resp.text());
+			const data = await persistenceContext.getExportData(id);
+			if (!data) {
+				console.error('Failed to load mixture data for', id);
 				return;
 			}
-			const mxData = zFileDataV1.safeParse(await resp.json());
-			if (!mxData.success) {
-				console.error('Failed to parse mixture data', mxData.error);
-				return;
-			}
-			const mixture = Mixture.deserialize(mxData.data.rootMixtureId, mxData.data.ingredientDb);
-			if (mixture && mixture.isValid) {
-				mixtureStore.addIngredientTo(filesDrawer.parentId, {
-					name,
-					mass: mixture.mass,
-					item: mixture,
-				});
+			try {
+				const mixture = Mixture.deserialize(data.mx.rootIngredientId, data.ingredients);
+				if (mixture && mixture.isValid) {
+					mixtureStore.addIngredientTo(filesDrawer.parentId, {
+						name,
+						mass: mixture.mass,
+						item: mixture,
+					});
+				}
+			} catch (error) {
+				console.error('Failed to parse mixture data', error);
 			}
 		};
 	}
 
-	function handleExport() {
-		// download a json file with all the starred files
-		const data = files?.filter((f) => starredIds.has(f.id)) || [];
-		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+	async function handleExport() {
+		// download a json file with all the shown files
+		const data = files?.filter((f) => f.starred) || [];
+		const exportData: Array<UnifiedSerializationDataV2 | null> = await Promise.all(data.map((f) => {
+			return persistenceContext.getExportData(f.id);
+		}));
+		const blob = new Blob([JSON.stringify(exportData.filter((f) => f), null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
@@ -135,17 +129,14 @@
 
 	let importFiles: FileList | undefined = $state();
 
-	async function writeUnlessExists(item: {
-		id: string;
-		name: string;
-		mixture: Mixture;
-	}): Promise<void> {
-		if (!isStorageId(item.id)) return;
+	async function writeUnlessExists(item: UnifiedSerializationDataV2): Promise<void> {
+		const { mx, ingredients } = item;
+		if (!isStorageId(mx.id)) return;
 		if (!persistenceContext.mixtureFiles) return;
-		const hash = item.mixture.getIngredientHash(item.name);
-		if (persistenceContext.mixtureFiles.findOne({ _ingredientHash: hash })) return;
-		await persistenceContext.upsertFile(item);
-		await persistenceContext.toggleStar(item.id);
+		const hash = getIngredientHash(mx, ingredients);
+		if (persistenceContext.mixtureFiles.findOne({ hash })) return;
+		const mixture = Mixture.deserialize(mx.rootIngredientId, ingredients);
+		await persistenceContext.upsertMx({ id: mx.id, name: mx.name, mixture, starred: true });
 	}
 
 	$effect(() => {
@@ -154,20 +145,18 @@
 			reader.onload = () => {
 				const data = JSON.parse(reader.result as string);
 				for (const item of data) {
-					if ('href' in item && 'name' in item) {
-						const url = new URL(resolveRelativeUrl(item.href));
-						const { mixture } = deserializeFromUrl(url.searchParams);
-						writeUnlessExists({ id: componentId(), name: item.name, mixture });
-						continue;
+					try {
+						if ('href' in item && 'name' in item) {
+							const url = new URL(resolveRelativeUrl(item.href));
+							const data = decompress(url.searchParams, item.name);
+							writeUnlessExists(data);
+						} else {
+							const data = deserialize(item);
+							writeUnlessExists(data);
+						}
+					} catch (error) {
+						console.warn('Invalid file format', error);
 					}
-					const v1Data = isV1Data(item) ? item : isV0Data(item) ? portV0DataToV1(item) : null;
-					if (v1Data)
-						writeUnlessExists({
-							id: v1Data.id,
-							name: v1Data.name,
-							mixture: Mixture.deserialize(v1Data.rootMixtureId, v1Data.ingredientDb),
-						});
-					else console.warn('Invalid file format', item);
 				}
 			};
 			reader.readAsText(importFiles[0]);
@@ -218,8 +207,8 @@
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 mt-2">
-			{#each files as { name, id, desc, accessTime } (id)}
-				{@const lastAccess = new Date(accessTime).toLocaleDateString(navigator.language, {
+			{#each files as { name, id, desc, updated, starred } (id)}
+				{@const lastAccess = new Date(updated).toLocaleDateString(navigator.language, {
 					year: '2-digit',
 					month: 'numeric',
 					day: 'numeric',
@@ -227,6 +216,7 @@
 					minute: '2-digit',
 					hour12: true,
 				})}
+				{@const isCurrent = id === mixtureStore?.storeId}
 				<div
 					class="
 					flex flex-col
@@ -247,7 +237,7 @@
 					>
 						<div class="flex flex-row items-center w-full">
 							<Button onclick={() => persistenceContext.toggleStar(id)}>
-								{#if starredIds.has(id)}
+								{#if starred}
 									<StarSolid size="xs" />
 								{:else}
 									<StarOutline size="xs" />
@@ -281,6 +271,7 @@
 							id={domIdFor('remove', id)}
 							onclick={() => removeItem(id)}
 							onkeydown={goToFile(id)}
+							disabled={isCurrent}
 							class="px-1.5 text-primary-600 dark:text-primary-400"
 						>
 							<CloseCircleSolid size="sm" />
@@ -291,6 +282,7 @@
 							id={domIdFor('open', id)}
 							onclick={goToFile(id)}
 							onkeydown={goToFile(id)}
+							disabled={isCurrent}
 							class="px-1.5 text-primary-600 dark:text-primary-400"
 						>
 							Open
@@ -301,6 +293,7 @@
 							id={domIdFor('add', id)}
 							onclick={addToMixture(id, name)}
 							onkeydown={addToMixture(id, name)}
+							disabled={isCurrent}
 							class="px-1.5 text-primary-600 dark:text-primary-400"
 						>
 							Add

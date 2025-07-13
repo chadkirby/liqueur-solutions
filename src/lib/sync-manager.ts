@@ -11,7 +11,13 @@ export const syncManager = new SyncManager({
 	autostart: false,
 	debounceTime: 1000,
 	pull: async ({ apiPath }) => {
+		console.log('Fetching cloud files from:', apiPath);
 		const resp = await fetch(apiPath);
+		// handle 404
+		if (resp.status === 404) {
+			console.error('FilesDb: Cloud files not found');
+			return { items: [] };
+		}
 		if (!resp.ok) {
 			throw new Error('FilesDb: Failed to fetch cloud files: ' + resp.statusText);
 		}
@@ -20,6 +26,7 @@ export const syncManager = new SyncManager({
 		return { items };
 	},
 	push: async ({ apiPath }, { changes }) => {
+		console.log('Pushing changes to cloud:', apiPath, changes);
 		await Promise.all(
 			changes.added.map(async (item) => {
 				const response = await fetch(`${apiPath}/${item.id}`, {

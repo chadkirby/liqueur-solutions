@@ -1,7 +1,7 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 
-import type { R2Bucket } from '@cloudflare/workers-types/2023-07-01';
+import type { R2Bucket, D1Database } from '@cloudflare/workers-types/2023-07-01';
 
 declare global {
 	namespace App {
@@ -9,6 +9,11 @@ declare global {
 		interface Locals {
 			userId?: string;
 			bucket?: R2Bucket;
+			db?: {
+				mixtures?: D1Database;
+				ingredients?: D1Database;
+				stars?: D1Database;
+			};
 		}
 		// interface PageData {}
 
@@ -27,6 +32,8 @@ declare global {
 			env?: {
 				/** R2 bucket for mixture files. Binding configured in wrangler.toml */
 				MIXTURE_BUCKET?: R2Bucket;
+				/** D1 database for mixture files */
+				MIXTURES_DB?: D1Database;
 				[key: string]: unknown;
 			};
 		}

@@ -7,8 +7,15 @@
 	"r2_buckets": [
 		{
 			"binding": "MIXTURE_BUCKET",
-			"bucket_name": "mixture-files",
-			"preview_bucket_name": "mixture-files-dev"
+			"bucket_name": "mixture-files-v2",
+			"preview_bucket_name": "mixture-files-dev-v2"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "MIXTURES_DB",
+			"database_name": "mixtures-db-v2",
+      "database_id": "d8031035-82c2-4f4c-b33d-0dda970590d0"
 		}
 	],
 	"observability": {

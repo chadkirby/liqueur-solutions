@@ -1,51 +1,44 @@
 import { isSubstanceId } from './ingredients/substances.js';
 import { zIngredientMeta } from './mixture-types.js';
+import type { Mixture } from './mixture.js';
 import { SimpleHash } from './simple-hash.js';
 import { z } from 'zod/v4-mini';
+import { isStorageId } from './storage-id.js';
 
-export const currentDataVersion = 1;
+const zStorageId = z.string().check(
+	z.refine(isStorageId, {
+		message: 'Invalid storage ID',
+	}),
+);
 
-
-export const zMixtureList = z.object({
+export const zMixtureList = z.strictObject({
 	ingredientHash: z.string(),
 	name: z.string(),
-	id: z.string(),
+	id: zStorageId,
 	desc: z.string(),
 	accessTime: z.iso.datetime(), // ISO date string
 });
 
-/**
- * Metadata to support the FilesDrawer component.
- */
-export type MixtureListMetadata = z.infer<typeof zMixtureList>;
-
-export function getMixtureListMetadata(mxData: FileDataV1): MixtureListMetadata {
-	return {
-		ingredientHash: mxData._ingredientHash,
-		name: mxData.name,
-		id: mxData.id,
-		desc: mxData.desc,
-		accessTime: mxData.accessTime,
-	};
-}
-
-const zMixtureData = z.object({
-	id: z.string(),
+export const zMixtureData = z.strictObject({
+	id: z.optional(zStorageId),
 	// ids, and other data for this sub-mixture's ingredients
 	ingredients: z.array(zIngredientMeta),
 });
+
 export type MixtureData = z.infer<typeof zMixtureData>;
 
 export const isMixtureItem = (item: unknown): item is MixtureData => {
 	return zMixtureData.safeParse(item).success;
 };
 
-const zSubstanceData = z.object({
-	id: z.string().check(
-		z.refine(isSubstanceId, {
-			message: 'Invalid substance ID',
-		}),
-	),
+const zSubstanceId = z.string().check(
+	z.refine(isSubstanceId, {
+		message: 'Invalid substance ID',
+	}),
+);
+
+export const zSubstanceData = z.object({
+	id: zSubstanceId,
 });
 
 export type SubstanceData = z.infer<typeof zSubstanceData>;
@@ -60,51 +53,74 @@ export function isSubstanceData(data: IngredientData): data is SubstanceData {
 	return zSubstanceData.safeParse(data).success;
 }
 
-export type SubstanceItem = z.infer<typeof zSubstanceData>;
-
 export const isSubstanceItem = (item: unknown): item is z.infer<typeof zSubstanceData> => {
 	return zSubstanceData.safeParse(item).success;
 };
 
-// prettier-ignore
-const zIngredientDbEntry = z.tuple([
-	z.string(),
-	z.union([zMixtureData, zSubstanceData])
-]);
-export type IngredientDbEntry = z.infer<typeof zIngredientDbEntry>;
-
-export const zFileDataV1 = z.strictObject({
-	version: z.literal(currentDataVersion),
-	id: z.string(),
-	name: z.string(),
-	accessTime: z.iso.datetime(), // ISO date string
-	desc: z.string(), // denormalized mixture.describe() string
-	rootMixtureId: z.string(), // pointer to the root mixture in the ingredientDb
-	ingredientDb: z.array(zIngredientDbEntry),
-	_ingredientHash: z.string(),
+export const zMxMetaItem = z.strictObject({
+	id: zStorageId,
+	updated: z.iso.datetime(), // ISO date string
+	hash: z.string(),
 });
 
-export type FileDataV1 = z.infer<typeof zFileDataV1>;
+export const zIngredientItem = z.strictObject({
+	id: zStorageId,
+	item: z.union([zMixtureData, zSubstanceData]),
+});
+export type IngredientItemData = z.infer<typeof zIngredientItem>;
+
+export const zFileDataV2 = z.strictObject({
+	id: zStorageId,
+	name: z.string(),
+	desc: z.string(), // denormalized mixture.describe() string
+	rootIngredientId: zStorageId, // pointer to the root mixture in the ingredientDb
+	updated: z.iso.datetime(), // ISO date string
+	hash: z.string(),
+	starred: z.boolean(), // starred status
+});
+
+// for writing to a single file/json object
+export const zUnifiedSerializationDataV2 = z.object({
+	mx: zFileDataV2,
+	ingredients: z.array(zIngredientItem),
+});
+
+export type UnifiedSerializationDataV2 = z.infer<typeof zUnifiedSerializationDataV2>;
+
+export function createFileDataV2(
+	item: { id: string; name: string; mixture: Mixture; starred: boolean },
+	ingredients = item.mixture.serialize(),
+): FileDataV2 {
+	const desc = item.mixture.describe();
+	return {
+		id: item.id,
+		name: item.name,
+		desc,
+		rootIngredientId: item.mixture.id,
+		updated: new Date().toISOString(),
+		hash: getIngredientHash({ name: item.name, desc }, ingredients),
+		starred: item.starred,
+	} as const;
+}
+
+export type FileDataV2 = z.infer<typeof zFileDataV2>;
 
 export function getIngredientHash(
-	item: Pick<FileDataV1, 'name' | 'desc' | 'ingredientDb'>,
+	item: Pick<FileDataV2, 'name' | 'desc'>,
+	ingredients: IngredientItemData[],
 ): string {
 	const h = new SimpleHash().update(item.name).update(item.desc);
-	for (const [_, ingredient] of item.ingredientDb) {
-		if ('ingredients' in ingredient) {
-			for (const item of ingredient.ingredients) {
-				h.update(item.name)
-					.update(item.mass.toString())
-					.update(item.notes || '');
-				if (isSubstanceId(item.id)) h.update(item.id);
+	for (const { item } of ingredients) {
+		if ('ingredients' in item) {
+			for (const { name, mass } of item.ingredients) {
+				h.update(name).update(mass.toString());
 			}
+		} else {
+			// it's a substance
+			h.update(item.id);
 		}
 	}
 	return h.toString();
-}
-
-export function isV1Data(data: unknown): data is FileDataV1 {
-	return zFileDataV1.safeParse(data).success;
 }
 
 export interface V0MixtureData {

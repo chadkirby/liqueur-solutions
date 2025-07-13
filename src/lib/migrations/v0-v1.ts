@@ -1,5 +1,6 @@
 import { SubstanceComponent } from '$lib/ingredients/substance-component.js';
-import type { StoredFileDataV0, FileDataV1, V0MixtureData } from '$lib/data-format.js';
+import type { StoredFileDataV0, V0MixtureData } from '$lib/data-format.js';
+import type { FileDataV1, IngredientDbEntry } from '$lib/data-format-v1.js';
 import { componentId, Mixture } from '$lib/mixture.js';
 
 export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>): FileDataV1 {
@@ -12,9 +13,36 @@ export function portV0DataToV1(data: Pick<StoredFileDataV0, 'mixture' | 'desc'>)
 		accessTime: new Date().toISOString(),
 		desc: data.desc || mixture.describe(),
 		rootMixtureId: mixture.id,
-		ingredientDb: mixture.serialize(),
-		_ingredientHash: mixture.getIngredientHash(data.mixture.name),
+		ingredientDb: v1Serialize(mixture),
+		_ingredientHash: mixture.getIngredientHash(data.mixture.name || ''),
 	};
+}
+
+function v1Serialize(mx: Mixture): IngredientDbEntry[] {
+	// @ts-expect-error _ingredientList is private, but we need it for serialization
+	const ingredientList = mx._ingredientList;
+	const rootData = [mx.id, v1SerializeMxData(mx.id, ingredientList)] as const;
+	const ingredientData: IngredientDbEntry[] = ingredientList.flatMap(({ id, item }) => {
+		if (item instanceof Mixture) {
+			return v1Serialize(item);
+		}
+		if (item instanceof SubstanceComponent) {
+			return [[id, item.serializeSubstanceData()]];
+		}
+		throw new Error('Invalid ingredient');
+	});
+	return [[...rootData], ...ingredientData];
+}
+
+function v1SerializeMxData(id: string, ingredients: Mixture['_ingredientList']) {
+	return {
+		id,
+		ingredients: ingredients.map(({ id, mass, name }) => ({
+			id,
+			mass,
+			name,
+		})),
+	} as const;
 }
 
 function makeMixture(components: V0MixtureData['components']): Mixture {

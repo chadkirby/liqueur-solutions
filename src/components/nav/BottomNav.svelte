@@ -112,7 +112,7 @@
 				aria-label="Open a copy"
 				class={btnClass}
 				onclick={() => {
-					const copyUrl = serializeToUrl(`${mixtureStore.name} Copy`, mixtureStore.mixture, '/edit');
+					const copyUrl = serializeToUrl(`${mixtureStore.name} Copy`, mixtureStore.mixture);
 					goto(`${copyUrl.pathname}${copyUrl.search}`, {
 						invalidateAll: true,
 					});

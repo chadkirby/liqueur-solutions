@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { zFileDataV2, type FileDataV2 } from '$lib/data-format.js';
+import { readResponseBody } from '$lib/test-utils.js';
+import { zIngredientItem } from '$lib/data-format.js';
 
 import * as server from './+server.js';
-import { readResponseBody } from '$lib/test-utils.js';
 
 let mockDB: any = {};
 
@@ -10,7 +10,7 @@ vi.mock('$lib/cf-bindings.js', () => ({
 	getDB: () => mockDB,
 }));
 
-describe('/api/mixtures/[id] endpoint', () => {
+describe('/api/ingredients/[mxId]/[id] endpoint', () => {
 	let platform: any;
 	let locals: any;
 	let params: any;
@@ -30,7 +30,7 @@ describe('/api/mixtures/[id] endpoint', () => {
 		};
 		platform = { some: 'platform' };
 		locals = { userId: 'user123' };
-		params = { id: 'mix1' };
+		params = { mxId: 'mixture1', id: 'ingredient1' };
 	});
 
 	describe('GET', () => {
@@ -44,50 +44,51 @@ describe('/api/mixtures/[id] endpoint', () => {
 			await expect(server.GET(event)).rejects.toHaveProperty('status', 500);
 		});
 
-		it('returns 404 if file not found', async () => {
+		it('returns 400 if mxId missing', async () => {
+			const event = { params: { id: 'ingredient1' }, platform, locals } as any;
+			await expect(server.GET(event)).rejects.toHaveProperty('status', 400);
+		});
+
+		it('returns 400 if ingredient id missing', async () => {
+			const event = { params: { mxId: 'mixture1' }, platform, locals } as any;
+			await expect(server.GET(event)).rejects.toHaveProperty('status', 400);
+		});
+
+		it('returns 404 if ingredient not found', async () => {
 			mockBoundStatement.first.mockResolvedValueOnce(null);
 			const event = { params, platform, locals } as any;
 			await expect(server.GET(event)).rejects.toHaveProperty('status', 404);
 		});
 
-		it('returns 400 if invalid data', async () => {
-			const invalidData = {
-				userid: 'user123',
-				id: 'mix1',
-				// Missing required fields
-				starred: false,
-			};
-			mockBoundStatement.first.mockResolvedValueOnce(invalidData);
+		it('returns 400 if invalid data in database', async () => {
+			const invalidData = '{"invalid": "data"}';
+			mockBoundStatement.first.mockResolvedValueOnce({ data: invalidData });
 			const event = { params, platform, locals } as any;
 			await expect(server.GET(event)).rejects.toHaveProperty('status', 400);
 		});
 
-		it('returns 200 and file data on success', async () => {
-			const dbData = {
-				userid: 'user123',
-				id: 'mix1',
-				name: 'Test Mixture',
-				desc: 'desc',
-				rootIngredientId: 'root',
-				updated: new Date().toISOString(),
-				hash: 'hash',
-				starred: false,
+		it('returns 200 and ingredient data on success', async () => {
+			const validIngredientData = {
+				id: 'ingredient1',
+				item: {
+					id: 'water', // Valid substance ID
+				},
 			};
+			const dbData = { data: JSON.stringify(validIngredientData) };
 			mockBoundStatement.first.mockResolvedValueOnce(dbData);
+
 			const event = { params, platform, locals } as any;
 			const response = await server.GET(event);
 			expect(response.status).toBe(200);
-			const bodyData = await readResponseBody(response.body!);
 
-			// Should return data without userid field
-			const { userid, ...expectedData } = dbData;
-			expect(bodyData).toEqual(expectedData);
+			const bodyData = await readResponseBody(response.body!);
+			expect(bodyData).toEqual(validIngredientData);
 		});
 
 		it('returns 500 on database error', async () => {
 			mockBoundStatement.first.mockRejectedValueOnce(new Error('Database fail'));
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status', 500);
+			await expect(server.GET(event)).rejects.toThrow('Database fail');
 		});
 	});
 
@@ -102,14 +103,25 @@ describe('/api/mixtures/[id] endpoint', () => {
 			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
 		});
 
-		it('returns 400 if invalid data', async () => {
+		it('returns 400 if mxId missing', async () => {
+			const event = { params: { id: 'ingredient1' }, platform, locals, request: { json: vi.fn() } } as any;
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 400);
+		});
+
+		it('returns 400 if ingredient id missing', async () => {
+			const event = { params: { mxId: 'mixture1' }, platform, locals, request: { json: vi.fn() } } as any;
+			await expect(server.PUT(event)).rejects.toHaveProperty('status', 400);
+		});
+
+		it('returns 400 if invalid data provided', async () => {
+			const invalidData = { invalid: 'data' };
 			const event = {
 				params,
 				platform,
 				locals,
-				request: { json: vi.fn().mockResolvedValue({ not: 'valid' }) },
+				request: { json: vi.fn().mockResolvedValue(invalidData) },
 			} as any;
-			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({
+			vi.spyOn(zIngredientItem, 'safeParse').mockReturnValue({
 				success: false,
 				error: { issues: [] },
 			} as any);
@@ -117,14 +129,11 @@ describe('/api/mixtures/[id] endpoint', () => {
 		});
 
 		it('returns 200 and ok on success', async () => {
-			const validData: FileDataV2 = {
-				id: 'mix1',
-				name: 'Test Mixture',
-				desc: 'desc',
-				rootIngredientId: 'root',
-				updated: new Date().toISOString(),
-				hash: 'hash',
-				starred: false,
+			const validData = {
+				id: 'ingredient1',
+				item: {
+					id: 'substance1',
+				},
 			};
 			const event = {
 				params,
@@ -132,23 +141,21 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue(validData) },
 			} as any;
-			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
+			vi.spyOn(zIngredientItem, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
 			mockBoundStatement.run.mockResolvedValueOnce({ success: true });
+
 			const response = await server.PUT(event);
 			expect(response.status).toBe(200);
 			const bodyData = await readResponseBody(response.body!);
 			expect(bodyData).toEqual({ ok: true });
 		});
 
-		it('returns 500 on write error', async () => {
-			const validData: FileDataV2 = {
-				id: 'mix1',
-				name: 'Test Mixture',
-				desc: 'desc',
-				rootIngredientId: 'root',
-				updated: new Date().toISOString(),
-				hash: 'hash',
-				starred: false,
+		it('returns 500 on database error', async () => {
+			const validData = {
+				id: 'ingredient1',
+				item: {
+					id: 'substance1',
+				},
 			};
 			const event = {
 				params,
@@ -156,22 +163,10 @@ describe('/api/mixtures/[id] endpoint', () => {
 				locals,
 				request: { json: vi.fn().mockResolvedValue(validData) },
 			} as any;
-			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
+			vi.spyOn(zIngredientItem, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
 			mockBoundStatement.run.mockRejectedValueOnce(new Error('Database fail'));
-			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
-		});
 
-		it('returns 500 on database error', async () => {
-			const validData = { id: 'mix1', foo: 'bar' };
-			const event = {
-				params,
-				platform,
-				locals,
-				request: { json: vi.fn().mockResolvedValue(validData) },
-			} as any;
-			vi.spyOn(zFileDataV2, 'safeParse').mockReturnValue({ success: true, data: validData } as any);
-			mockBoundStatement.run.mockRejectedValueOnce(new Error('fail'));
-			await expect(server.PUT(event)).rejects.toHaveProperty('status', 500);
+			await expect(server.PUT(event)).rejects.toThrow('Database fail');
 		});
 	});
 
@@ -184,6 +179,16 @@ describe('/api/mixtures/[id] endpoint', () => {
 		it('returns 500 if platform missing', async () => {
 			const event = { params, platform: undefined, locals } as any;
 			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 500);
+		});
+
+		it('returns 400 if mxId missing', async () => {
+			const event = { params: { id: 'ingredient1' }, platform, locals } as any;
+			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 400);
+		});
+
+		it('returns 400 if ingredient id missing', async () => {
+			const event = { params: { mxId: 'mixture1' }, platform, locals } as any;
+			await expect(server.DELETE(event)).rejects.toHaveProperty('status', 400);
 		});
 
 		it('returns 200 and ok on success', async () => {
