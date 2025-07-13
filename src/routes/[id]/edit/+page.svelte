@@ -5,7 +5,7 @@
 	import { MixtureStore } from '$lib/mixture-store.svelte.js';
 	import { page } from '$app/state';
 
-	import { onDestroy, setContext, untrack } from 'svelte';
+	import { onDestroy, onMount, setContext, untrack } from 'svelte';
 	import { Mixture } from '$lib/mixture.js';
 	import { persistenceContext } from '$lib/persistence.js';
 	import { getIngredientHash } from '$lib/data-format.js';
@@ -14,6 +14,7 @@
 	// UI state
 	let mixtureName = $state<string>('');
 	let unsubscribeMixture: (() => void) | null = null;
+	let persistenceReady = $state(false);
 
 	const mixtureStoreOrErr: MixtureStore | { error: string } = $derived.by(() => {
 		const mxId = page.params.id;
@@ -52,6 +53,11 @@
 	const mixtureStore = $derived('error' in mixtureStoreOrErr ? null : mixtureStoreOrErr);
 	const error = $derived('error' in mixtureStoreOrErr ? mixtureStoreOrErr.error : null);
 
+	onMount(async () => {
+		await persistenceContext.isReady();
+		persistenceReady = true;
+	});
+
 	onDestroy(() => {
 		unsubscribeMixture?.();
 	});
@@ -62,7 +68,9 @@
 </svelte:head>
 
 <div class="p-2 max-w-2xl mx-auto font-sans">
-	{#if error}
+	{#if !persistenceReady}
+		<div class="p-4 text-gray-600">Loading mixture…</div>
+	{:else if error}
 		<div class="p-4 text-red-600">Error: {error}</div>
 		<div class="p-4">
 			<a href="/new" class="text-blue-600 hover:underline">Create a new mixture</a>
