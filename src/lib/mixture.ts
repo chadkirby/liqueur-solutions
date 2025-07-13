@@ -124,33 +124,28 @@ export class Mixture implements CommonComponent {
 		return this;
 	}
 
-	/**
-	 * Get data in a format compatible with storage
-	 */
-	private serializeMixtureData(): IngredientItemData {
-		return {
-			id: this.id,
-			item: {
-				ingredients: this._ingredientList.map(({ id, mass, name }) => ({
-					id,
-					mass,
-					name,
-				})),
-			},
-		} as const;
-	}
-
 	serialize(): IngredientItemData[] {
-		const ingredientData: IngredientItemData[] = this._ingredientList.flatMap(({ id, item }) => {
-			if (item instanceof Mixture) {
-				return item.serialize();
-			}
-			if (item instanceof SubstanceComponent) {
-				return { id, item: item.serializeSubstanceData() };
-			}
-			throw new Error('Invalid ingredient');
-		});
-		return [this.serializeMixtureData(), ...ingredientData];
+		return [
+			{
+				id: this.id,
+				item: {
+					ingredients: this._ingredientList.map(({ id, mass, name }) => ({
+						id,
+						mass,
+						name,
+					})),
+				},
+			},
+			...this._ingredientList.flatMap(({ id, item }) => {
+				if (item instanceof Mixture) {
+					return item.serialize();
+				}
+				if (item instanceof SubstanceComponent) {
+					return { id, item: item.serializeSubstanceData() };
+				}
+				throw new Error('Invalid ingredient');
+			}),
+		];
 	}
 
 	analyze(precision = 0): MixtureAnalysis {
@@ -427,6 +422,8 @@ export class Mixture implements CommonComponent {
 		for (const { ingredient } of this.eachIngredient()) {
 			if (ingredient.item instanceof Mixture) {
 				ingredient.item.updateIds();
+			} else {
+				ingredient.id = `${getIdPrefix(ingredient.id) ?? ''}${componentId()}`;
 			}
 		}
 		return this;
