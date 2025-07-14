@@ -4,7 +4,9 @@
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
 	"env": {
 		"preview": {
-			"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZXZpZGVudC1sZW11ci04NS5jbGVyay5hY2NvdW50cy5kZXYk",
+			"vars": {
+				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZXZpZGVudC1sZW11ci04NS5jbGVyay5hY2NvdW50cy5kZXYk"
+			},
 			"d1_databases": [
 				{
 					"binding": "MIXTURES_DB",
@@ -14,8 +16,10 @@
 			]
 		},
 		"production": {
-			"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubGlxdWV1ci1zb2x1dGlvbnMuY29tJA",
-			"VITE_ROLLBAR_TOKEN": "005f1f9049f64efe8d99d409bc17d31d",
+			"vars": {
+				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubGlxdWV1ci1zb2x1dGlvbnMuY29tJA",
+				"VITE_ROLLBAR_TOKEN": "005f1f9049f64efe8d99d409bc17d31d"
+			},
 			"d1_databases": [
 				{
 					"binding": "MIXTURES_DB",
