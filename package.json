@@ -71,14 +71,14 @@
 		"wrangler": "4.24.3"
 	},
 	"engines": {
-		"node": "20.x",
+		"node": "22.x",
 		"yarn": "use pnpm",
 		"npm": "use pnpm",
 		"pnpm": "10.x"
 	},
 	"volta": {
-		"node": "20.12.1",
-		"pnpm": "10.13.1"
+		"node": "22.16.0",
+		"pnpm": "10.11.1"
 	},
 	"dependencies": {
 		"@castlenine/svelte-qrcode": "^2.3.0",
