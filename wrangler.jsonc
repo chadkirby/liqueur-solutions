@@ -1,19 +1,35 @@
 {
 	"name": "liqueur-solutions",
-	"compatibility_date": "2025-07-01",
-	"main": ".svelte-kit/cloudflare/_worker.js",
-	"build": {
-		"command": "pnpm run build"
-	},
-	"d1_databases": [
-		{
-			"binding": "MIXTURES_DB",
-			"database_name": "mixtures-db-v2",
-      "database_id": "d8031035-82c2-4f4c-b33d-0dda970590d0"
+	"compatibility_date": "2024-12-22",
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"env": {
+		"preview": {
+			"vars": {
+				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZXZpZGVudC1sZW11ci04NS5jbGVyay5hY2NvdW50cy5kZXYk"
+			},
+			"d1_databases": [
+				{
+					"binding": "MIXTURES_DB",
+					"database_name": "mixtures-db-preview",
+					"database_id": "15b78121-0d68-46b0-b8c1-e8058593e2e0"
+				}
+			]
+		},
+		"production": {
+			"vars": {
+				"PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubGlxdWV1ci1zb2x1dGlvbnMuY29tJA",
+				"VITE_ROLLBAR_TOKEN": "005f1f9049f64efe8d99d409bc17d31d"
+			},
+			"d1_databases": [
+				{
+					"binding": "MIXTURES_DB",
+					"database_name": "mixtures-db-prod",
+					"database_id": "e420085a-124e-4b99-9c34-a6f6a6e02477"
+				}
+			]
 		}
-	],
-	"observability": {
-		"enabled": true,
-		"head_sampling_rate": 1
-	}
+	},
+	"compatibility_flags": [
+    "nodejs_compat"
+  ]
 }
