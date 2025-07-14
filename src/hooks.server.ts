@@ -2,7 +2,6 @@ import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { createClerkClient } from '@clerk/backend';
 import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$env/static/public';
 import { CLERK_SECRET_KEY } from '$env/static/private';
-import { getR2Bucket } from '$lib/cf-bindings';
 
 // Initialize Clerk backend client for server-side authentication
 const clerkClient = createClerkClient({
@@ -23,9 +22,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 		console.error('Clerk authentication failed:', err);
 		event.locals.userId = undefined;
 	}
-
-	event.locals.bucket =
-		event.platform && event.locals.userId ? getR2Bucket(event.platform) : undefined;
 
 	return resolve(event);
 };

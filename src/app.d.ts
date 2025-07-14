@@ -1,14 +1,13 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 
-import type { R2Bucket, D1Database } from '@cloudflare/workers-types/2023-07-01';
+import type { D1Database } from '@cloudflare/workers-types/2023-07-01';
 
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
 			userId?: string;
-			bucket?: R2Bucket;
 			db?: {
 				mixtures?: D1Database;
 				ingredients?: D1Database;
@@ -21,17 +20,9 @@ declare global {
 		 * Platform-specific context from Cloudflare.
 		 *
 		 * The env property contains bindings configured in wrangler.toml:
-		 * ```toml
-		 * [[r2_buckets]]
-		 * binding = 'MIXTURE_BUCKET'          # Name used in code
-		 * bucket_name = 'mixture-files'       # Production bucket
-		 * preview_bucket_name = 'mixture-files-dev'  # Dev bucket
-		 * ```
 		 */
 		interface Platform {
 			env?: {
-				/** R2 bucket for mixture files. Binding configured in wrangler.toml */
-				MIXTURE_BUCKET?: R2Bucket;
 				/** D1 database for mixture files */
 				MIXTURES_DB?: D1Database;
 				[key: string]: unknown;
