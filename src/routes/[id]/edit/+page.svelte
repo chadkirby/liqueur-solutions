@@ -10,11 +10,67 @@
 	import { persistenceContext } from '$lib/persistence.js';
 	import { getIngredientHash } from '$lib/data-format.js';
 	import { MIXTURE_STORE_CONTEXT_KEY, type MixtureStoreContext } from '$lib/contexts.js';
+	import type { ServerLoadData } from './types.js';
 
 	// UI state
 	let mixtureName = $state<string>('');
 	let unsubscribeMixture: (() => void) | null = null;
 	let persistenceReady = $state(false);
+
+	// Get server data from page data
+	const serverData = $derived(page.data as ServerLoadData);
+
+	// Function to sync server data with local collections
+	async function syncServerData(data: ServerLoadData) {
+		if (!data.serverMixture) {
+			return; // No server mixture data to sync
+		}
+
+		await persistenceContext.isReady();
+
+		// Check if server data is newer than local data
+		const localMixture = persistenceContext.mixtureFiles?.findOne(
+			{ id: data.storeId },
+			{ reactive: false }
+		);
+
+		const shouldUpdate = !localMixture ||
+			new Date(data.serverMixture.updated) > new Date(localMixture.updated);
+
+		if (shouldUpdate) {
+			console.log('Syncing server data for:', data.storeId);
+
+			// Sync mixture metadata
+			persistenceContext.mixtureFiles?.replaceOne(
+				{ id: data.storeId },
+				data.serverMixture,
+				{ upsert: true }
+			);
+
+			// Sync ingredients data if provided (controlled by same shouldUpdate flag)
+			if (data.serverIngredients && data.serverIngredients.length > 0) {
+				const ingredientsCollection = persistenceContext.getIngredientsCollection(data.storeId);
+				if (ingredientsCollection) {
+					await ingredientsCollection.isReady();
+
+					console.log('Syncing server ingredients data for:', data.storeId, data.serverIngredients.length, 'ingredients');
+
+					// Batch update ingredients
+					ingredientsCollection.batch(() => {
+						for (const ingredient of data.serverIngredients!) {
+							ingredientsCollection.replaceOne(
+								{ id: ingredient.id },
+								ingredient,
+								{ upsert: true }
+							);
+						}
+					});
+				}
+			}
+		} else {
+			console.log('Local mixture data is up to date for:', data.storeId);
+		}
+	}
 
 	const mixtureStoreOrErr: MixtureStore | { error: string } = $derived.by(() => {
 		const mxId = page.params.id;
@@ -54,6 +110,11 @@
 	const error = $derived('error' in mixtureStoreOrErr ? mixtureStoreOrErr.error : null);
 
 	onMount(async () => {
+		// Sync server data first if available
+		if (serverData.serverMixture) {
+			await syncServerData(serverData);
+		}
+
 		await persistenceContext.isReady();
 		persistenceReady = true;
 	});

@@ -5,6 +5,7 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getDB } from '$lib/cf-bindings.js';
 import { zFileDataV2 } from '$lib/data-format.js';
+import { getMixture } from '$lib/api-utils.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mixtureId = params.id;
@@ -18,35 +19,23 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	if (!userId) {
 		throw error(401, 'Unauthorized');
 	}
-
-	try {
-		const stmt = d1.prepare(`SELECT * FROM mixtures WHERE userid = ? AND id = ?`);
-		const result = await stmt.bind(userId, mixtureId).first();
-		if (!result) {
-			throw error(404, { message: `Mixture not found for id: ${mixtureId}` });
-		}
-		// ensure starred is a boolean
-		result.starred = Boolean(result.starred);
-		// Remove userid field before validation since it's not part of the data model
-		const { userid, ...dataWithoutUserId } = result;
-		console.log(`[GET] Processing mixture row:`, dataWithoutUserId);
-		const parsed = zFileDataV2.safeParse(dataWithoutUserId);
-		if (!parsed.success) {
-			throw error(
-				400,
-				`Invalid data for id: ${mixtureId}` +
-					(parsed.error.issues.length
-						? `; Details: ${parsed.error.issues
-								.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-								.join(', ')}`
-						: ''),
-			);
-		}
-		return json(parsed.data);
-	} catch (err: any) {
-		console.error(`[GET] Error processing mixture:`, err.message, err);
-		throw error(err.status ? err.status : 500, `Failed to process GET: ${err.message}`);
+	if (!mixtureId) {
+		throw error(400, 'Missing mixture id');
 	}
+
+	const parsed = await getMixture(d1, { userId, mxId: mixtureId });
+	if (!parsed.success) {
+		throw error(
+			400,
+			`Invalid data for id: ${mixtureId}` +
+				(parsed.error.issues.length
+					? `; Details: ${parsed.error.issues
+							.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+							.join(', ')}`
+					: ''),
+		);
+	}
+	return json(parsed.data);
 };
 
 // update the mixture with the given id
