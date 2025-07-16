@@ -1,6 +1,10 @@
-
 import { error } from '@sveltejs/kit';
-import { zFileDataV2, zIngredientItem, type IngredientItemData } from '$lib/data-format.js';
+import {
+	zFileDataV2,
+	zIngredientItem,
+	type IngredientData,
+	type IngredientItemData,
+} from '$lib/data-format.js';
 import type { D1Database } from './cf-bindings.js';
 
 export async function getIngredient(
@@ -38,8 +42,8 @@ export async function getMixture(db: D1Database, spec: { userId: string; mxId: s
 
 export async function getAllIngredients(
 	db: D1Database,
-	spec: { userId: string; mxId: string }
-): Promise<IngredientItemData[]> {
+	spec: { userId: string; mxId: string },
+): Promise<{ ingredients: IngredientItemData[]; errors: string[] }> {
 	const { userId, mxId } = spec;
 	if (!userId) {
 		throw error(401, 'Unauthorized');
@@ -48,11 +52,17 @@ export async function getAllIngredients(
 	const result = await stmt.bind(userId, mxId).all();
 
 	const ingredients: IngredientItemData[] = [];
+	const errors: string[] = [];
 	for (const row of result.results) {
 		const parsed = zIngredientItem.safeParse(JSON.parse(row.data as string));
 		if (parsed.success) {
 			ingredients.push(parsed.data);
+		} else {
+			const errString = `[Ingredients] Invalid data for mixture id: ${mxId}. Issues: ${parsed.error.issues
+				.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+				.join(', ')}\n\nRow data: ${JSON.stringify(row)}`;
+			errors.push(errString);
 		}
 	}
-	return ingredients;
+	return { ingredients, errors };
 }

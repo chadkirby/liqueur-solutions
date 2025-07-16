@@ -20,6 +20,7 @@ export const load = async ({ params, platform, locals }: {
 			storeId,
 			serverMixture: null,
 			serverIngredients: null,
+			serverErrors: null,
 		};
 	}
 
@@ -29,21 +30,24 @@ export const load = async ({ params, platform, locals }: {
 		// Fetch mixture and ingredients in parallel
 		const [mixtureResult, ingredientsResult] = await Promise.allSettled([
 			getMixture(d1, { userId: locals.userId, mxId: storeId }),
-			getAllIngredients(d1, { userId: locals.userId, mxId: storeId })
+			getAllIngredients(d1, { userId: locals.userId, mxId: storeId }),
 		]);
 
-		const serverMixture = mixtureResult.status === 'fulfilled' && mixtureResult.value.success
-			? mixtureResult.value.data
-			: null;
+		const serverMixture =
+			mixtureResult.status === 'fulfilled' && mixtureResult.value.success
+				? mixtureResult.value.data
+				: null;
 
-		const serverIngredients = ingredientsResult.status === 'fulfilled'
-			? ingredientsResult.value
-			: null;
+		const serverIngredients =
+			ingredientsResult.status === 'fulfilled' ? ingredientsResult.value.ingredients : null;
+		const serverErrors =
+			ingredientsResult.status === 'fulfilled' ? ingredientsResult.value.errors : [];
 
 		return {
 			storeId,
 			serverMixture,
 			serverIngredients,
+			serverErrors,
 		};
 	} catch (err) {
 		console.warn('Failed to fetch server data for mixture:', storeId, err);
@@ -52,6 +56,7 @@ export const load = async ({ params, platform, locals }: {
 			storeId,
 			serverMixture: null,
 			serverIngredients: null,
+			serverErrors: [`Failed to fetch mixture data: ${(err as Error).message}`],
 		};
 	}
 };

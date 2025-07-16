@@ -10,4 +10,5 @@ export type ServerLoadData = {
 	storeId: string;
 	serverMixture: FileDataV2 | null;
 	serverIngredients: IngredientItemData[] | null;
+	serverErrors: string[] | null;
 };
