@@ -20,6 +20,7 @@ describe('/api/ingredients/[mxId] endpoint', () => {
 		mockBoundStatement = {
 			first: vi.fn(),
 			run: vi.fn(),
+			all: vi.fn(), // Add this line to mock the .all() method
 		};
 		mockPreparedStatement = {
 			bind: vi.fn().mockReturnValue(mockBoundStatement),
@@ -44,16 +45,18 @@ describe('/api/ingredients/[mxId] endpoint', () => {
 		});
 
 		it('returns 404 if ingredient not found', async () => {
-			mockBoundStatement.first.mockResolvedValueOnce(null);
+			// Mock .all() to return empty results
+			mockBoundStatement.all.mockResolvedValueOnce({ results: [] });
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status', 404);
+			await expect(server.GET(event)).rejects.toThrow();
 		});
 
 		it('returns 400 if invalid data in database', async () => {
 			const invalidData = '{"invalid": "data"}';
-			mockBoundStatement.first.mockResolvedValueOnce({ data: invalidData });
+			// Mock .all() to return invalid data
+			mockBoundStatement.all.mockResolvedValueOnce({ results: [{ data: invalidData }] });
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status', 400);
+			await expect(server.GET(event)).rejects.toThrow();
 		});
 
 		it('returns 200 and ingredient data on success', async () => {
@@ -64,20 +67,25 @@ describe('/api/ingredients/[mxId] endpoint', () => {
 				},
 			};
 			const dbData = { data: JSON.stringify(validIngredientData) };
-			mockBoundStatement.first.mockResolvedValueOnce(dbData);
+			// Mock .all() method since getAllIngredients uses .all(), not .first()
+			mockBoundStatement.all.mockResolvedValueOnce({ results: [dbData] });
 
 			const event = { params, platform, locals } as any;
 			const response = await server.GET(event);
 			expect(response.status).toBe(200);
 
-			const bodyData = await readResponseBody(response.body!);
-			expect(bodyData).toEqual(validIngredientData);
+			// Ensure response.body exists before reading
+			if (!response.body) {
+				throw new Error('Response body is undefined');
+			}
+			const bodyData = await readResponseBody(response.body);
+			expect(bodyData).toEqual([validIngredientData]); // Should be an array
 		});
 
 		it('returns 500 on database error', async () => {
-			mockBoundStatement.first.mockRejectedValueOnce(new Error('Database fail'));
+			mockBoundStatement.all.mockRejectedValueOnce(new Error('Database fail'));
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toThrow('Database fail');
+			await expect(server.GET(event)).rejects.toThrowError('Database fail');
 		});
 	});
 

@@ -53,15 +53,19 @@ export async function getAllIngredients(
 
 	const ingredients: IngredientItemData[] = [];
 	const errors: string[] = [];
-	for (const row of result.results) {
-		const parsed = zIngredientItem.safeParse(JSON.parse(row.data as string));
-		if (parsed.success) {
-			ingredients.push(parsed.data);
-		} else {
-			const errString = `[Ingredients] Invalid data for mixture id: ${mxId}. Issues: ${parsed.error.issues
-				.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-				.join(', ')}\n\nRow data: ${JSON.stringify(row)}`;
-			errors.push(errString);
+
+	// Check if result and result.results exist before iterating
+	if (result && result.results) {
+		for (const row of result.results) {
+			const parsed = zIngredientItem.safeParse(JSON.parse(row.data as string));
+			if (parsed.success) {
+				ingredients.push(parsed.data);
+			} else {
+				const errString = `[Ingredients] Invalid data for mixture id: ${mxId}. Issues: ${parsed.error.issues
+					.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+					.join(', ')}\n\nRow data: ${JSON.stringify(row)}`;
+				errors.push(errString);
+			}
 		}
 	}
 	return { ingredients, errors };
