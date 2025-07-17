@@ -2,6 +2,14 @@
 	"name": "liqueur-solutions",
 	"compatibility_date": "2024-12-22",
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	// local settings
+	"d1_databases": [
+		{
+			"binding": "MIXTURES_DB",
+			"database_name": "mixtures-db-local",
+			"database_id": "local-db"
+		}
+	],
 	"env": {
 		"preview": {
 			"vars": {

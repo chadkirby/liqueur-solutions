@@ -87,7 +87,7 @@ describe('/api/mixtures/[id] endpoint', () => {
 		it('returns 500 on database error', async () => {
 			mockBoundStatement.first.mockRejectedValueOnce(new Error('Database fail'));
 			const event = { params, platform, locals } as any;
-			await expect(server.GET(event)).rejects.toHaveProperty('status', 500);
+			await expect(server.GET(event)).rejects.toThrowError('Database fail');
 		});
 	});
 

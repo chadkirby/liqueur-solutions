@@ -4,7 +4,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { getDB } from '$lib/cf-bindings.js';
-import { zIngredientItem } from '$lib/data-format.js';
+import { getAllIngredients } from '$lib/api-utils.js';
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const mxId = params.mxId;
@@ -18,25 +18,15 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	if (!userId) {
 		throw error(401, 'Unauthorized');
 	}
+	if (!mxId) {
+		throw error(400, 'Missing mxId');
+	}
 
-	const stmt = d1.prepare('SELECT data FROM ingredients WHERE userid = ? AND mx_id = ?');
-	const result = await stmt.bind(userId, mxId).first();
-	if (!result) {
-		throw error(404, { message: `Ingredient not found for id: ${mxId}` });
+	const { ingredients } = await getAllIngredients(d1, { userId, mxId });
+	if (!ingredients.length) {
+		throw error(404, { message: `No ingredients found for mixture id: ${mxId}` });
 	}
-	const parsed = zIngredientItem.safeParse(JSON.parse(result.data as string));
-	if (!parsed.success) {
-		throw error(
-			400,
-			`Invalid data for id: ${mxId}` +
-				(parsed.error.issues.length
-					? `; Details: ${parsed.error.issues
-							.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-							.join(', ')}`
-					: ''),
-		);
-	}
-	return json(parsed.data);
+	return json(ingredients);
 };
 
 export const DELETE: RequestHandler = async ({ params, request, platform, locals }) => {
