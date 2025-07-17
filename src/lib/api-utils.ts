@@ -55,7 +55,7 @@ export async function getAllIngredients(
 	const errors: string[] = [];
 
 	// Check if result and result.results exist before iterating
-	if (result && result.results) {
+	if (result?.results) {
 		for (const row of result.results) {
 			const parsed = zIngredientItem.safeParse(JSON.parse(row.data as string));
 			if (parsed.success) {
