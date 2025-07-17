@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	}
 
 	const { ingredients } = await getAllIngredients(d1, { userId, mxId });
-	if (!ingredients || !ingredients.length) {
+	if (!ingredients.length) {
 		throw error(404, { message: `No ingredients found for mixture id: ${mxId}` });
 	}
 	return json(ingredients);
