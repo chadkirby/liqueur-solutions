@@ -1,5 +1,6 @@
 import { SyncManager } from '@signaldb/sync';
 import { EventEmitter } from '@signaldb/core';
+import createIndexedDBAdapter from '@signaldb/indexeddb';
 
 const errorEmitter = new EventEmitter();
 errorEmitter.on('error', (message: string) => {
@@ -10,6 +11,7 @@ errorEmitter.on('error', (message: string) => {
 export const syncManager = new SyncManager({
 	autostart: false,
 	debounceTime: 1000,
+	persistenceAdapter: (name) => createIndexedDBAdapter(name),
 	pull: async ({ apiPath }) => {
 		console.log('Fetching cloud files from:', apiPath);
 		const resp = await fetch(apiPath);
