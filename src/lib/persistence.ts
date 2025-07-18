@@ -105,7 +105,9 @@ export const persistenceContext = {
 	},
 	async startSync() {
 		isSyncing = true;
-		return await syncManager.startAll();
+		console.log('Starting sync for all collections');
+		await syncManager.startAll();
+		await syncManager.isReady();
 	},
 	async stopSync() {
 		isSyncing = false;
@@ -159,11 +161,6 @@ export const persistenceContext = {
 			// Upsert ingredients that are in the mixture
 			// This will update existing ones and insert new ones
 			for (const ingredient of serialized) {
-				const existing = existingIngredients.find((ing) => ing.id === ingredient.id);
-				if (existing && deepEqual(existing.item, ingredient.item)) {
-					// No change, skip
-					continue;
-				}
 				// Upsert the ingredient
 				ingredientsCollections.replaceOne(
 					{ id: ingredient.id },
