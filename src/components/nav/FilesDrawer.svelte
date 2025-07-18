@@ -167,7 +167,7 @@
 <ListOutline class="text-white" onclick={filesDrawer.toggle} />
 
 <Portal target="body">
-	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0">
+	<Drawer {drawerStatus} {closeDrawer} backdrop={true} class="flex flex-col h-full p-0 border-r-slate-200 dark:border-primary-600 border-r-2">
 		<div
 			class="
 			sticky
