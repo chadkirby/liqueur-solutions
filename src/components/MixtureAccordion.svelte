@@ -42,6 +42,7 @@
 	import Helper from './ui-primitives/Helper.svelte';
 	import { ingredientTotals, mixtureTotals } from './MixtureTotals.svelte';
 	import { isSaltId } from '$lib/ingredients/substances.js';
+	import { page } from '$app/state';
 
 	let {
 		mixtureStore,
@@ -143,7 +144,7 @@
 
 	{#if mixture}
 		<Accordion flush={false} isSingle={false} class="mt-1">
-			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id)}
+			{#each mixture.eachIngredient() || [] as { ingredient, mass }, i (ingredient.id + page.url.pathname)}
 				{@const id = ingredient.id}
 				{@const ingredientVolume = mixture.getIngredientVolume(id)}
 				<AccordionItem
